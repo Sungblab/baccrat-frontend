@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>골든 카지노</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+      /* Tailwind CSS의 다크 모드 사용 */
+      :root {
+        --tw-bg-opacity: 1;
+        --tw-text-opacity: 1;
+      }
+      .toast {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+      }
+      .toast.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+      @-webkit-keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+      @keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+      @-webkit-keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+      @keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+      .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      @media (max-width: 640px) {
+        .responsive-table {
+          display: block;
+          width: 100%;
+          overflow-x: auto;
+        }
+      }
+
+      /* 스크롤바 스타일 */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #4b5563 transparent;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+        border-radius: 3px;
+      }
+
+      /* 테이블 행 호버 효 */
+      tbody tr {
+        transition: background-color 0.2s;
+      }
+
+      tbody tr:hover {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+
+      /* Sticky 헤더 스타일 */
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-4 md:p-8">
+      <!-- 헤더 및 로그아웃 버튼 -->
+      <header
+        class="flex flex-col md:flex-row justify-between items-center mb-6"
+      >
+        <h1 class="text-3xl font-bold mb-4 md:mb-0">골든 카지노</h1>
+        <button
+          id="logout"
+          class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full md:w-auto"
+        >
+          로그아웃
+        </button>
+      </header>
+
+      <!-- 게임 관리 섹션 수정 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">게임 관리</h2>
+
+        <!-- 베팅 상태 및 타이머 -->
+        <div
+          class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4"
+        >
+          <div class="flex items-center space-x-4">
+            <div
+              id="bettingStatus"
+              class="text-lg font-semibold text-yellow-400"
+            >
+              현재 상태: 대기중
+            </div>
+            <div id="timer" class="text-2xl font-bold text-blue-400"></div>
+          </div>
+          <button
+            id="startBetting"
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-lg font-bold transition duration-300 w-full md:w-auto"
+          >
+            베팅 시작
+          </button>
+        </div>
+
+        <!-- 실시간 베팅 현황 -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-300">
+            실시간 베팅 현황
+          </h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div
+              class="bg-gradient-to-br from-blue-900 to-blue-800 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">플레이어 베팅</div>
+              <div class="flex justify-between items-center">
+                <div id="playerBets" class="text-xl font-bold text-white">
+                  0
+                </div>
+                <div id="playerBetsCount" class="text-sm text-gray-300">
+                  0명
+                </div>
+              </div>
+            </div>
+            <div
+              class="bg-gradient-to-br from-red-900 to-red-800 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">뱅커 베팅</div>
+              <div class="flex justify-between items-center">
+                <div id="bankerBets" class="text-xl font-bold text-white">
+                  0
+                </div>
+                <div id="bankerBetsCount" class="text-sm text-gray-300">
+                  0명
+                </div>
+              </div>
+            </div>
+            <div
+              class="bg-gradient-to-br from-purple-900 to-purple-800 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">타이 베팅</div>
+              <div class="flex justify-between items-center">
+                <div id="tieBets" class="text-xl font-bold text-white">0</div>
+                <div id="tieBetsCount" class="text-sm text-gray-300">0명</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 게임 결과 관리 -->
+        <div id="pendingResult" class="hidden">
+          <div class="bg-gray-900 p-4 rounded-lg mb-4">
+            <h3 class="text-lg font-semibold mb-3 text-gray-300">
+              대기 중인 게임 결과
+            </h3>
+            <div id="resultDetails" class="mb-4"></div>
+            <div class="flex justify-end space-x-4">
+              <button
+                id="approveResult"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              >
+                승인
+              </button>
+              <button
+                id="rejectResult"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              >
+                거절
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사용자 관리 섹션 수정 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">사용자 관리</h2>
+        <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+          <table class="min-w-full bg-gray-900 rounded-lg">
+            <thead class="bg-gray-800 sticky top-0">
+              <tr>
+                <th class="py-3 px-4 text-left">사용자</th>
+                <th class="py-3 px-4 text-right">코인</th>
+                <th class="py-3 px-4 text-center">상태</th>
+                <th class="py-3 px-4 text-center">권한</th>
+                <th class="py-3 px-4 text-right">승리</th>
+                <th class="py-3 px-4 text-right">패배</th>
+                <th class="py-3 px-4 text-right">총 베팅</th>
+                <th class="py-3 px-4 text-right">승률</th>
+                <th class="py-3 px-4 text-center">관리</th>
+              </tr>
+            </thead>
+            <tbody id="userTable">
+              <!-- 사용자 목록이 여기에 추가됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 최근 게임 기록 섹션 수정 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-semibold text-purple-400">최근 게임 기록</h2>
+          <button
+            onclick="resetGameHistory()"
+            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            기록 초기화
+          </button>
+        </div>
+
+        <!-- 게임 결과 통계 -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div
+            class="bg-gradient-to-br from-blue-900 to-blue-800 p-4 rounded-lg"
+          >
+            <div class="text-sm text-gray-300 mb-1">플레이어 승리</div>
+            <div class="flex justify-between items-center">
+              <div id="playerWins" class="text-xl font-bold text-white">0</div>
+              <div id="playerWinRate" class="text-sm text-gray-300">0%</div>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-red-900 to-red-800 p-4 rounded-lg">
+            <div class="text-sm text-gray-300 mb-1">뱅커 승리</div>
+            <div class="flex justify-between items-center">
+              <div id="bankerWins" class="text-xl font-bold text-white">0</div>
+              <div id="bankerWinRate" class="text-sm text-gray-300">0%</div>
+            </div>
+          </div>
+          <div
+            class="bg-gradient-to-br from-purple-900 to-purple-800 p-4 rounded-lg"
+          >
+            <div class="text-sm text-gray-300 mb-1">타이</div>
+            <div class="flex justify-between items-center">
+              <div id="tieWins" class="text-xl font-bold text-white">0</div>
+              <div id="tieWinRate" class="text-sm text-gray-300">0%</div>
+            </div>
+          </div>
+          <div
+            class="bg-gradient-to-br from-gray-700 to-gray-800 p-4 rounded-lg"
+          >
+            <div class="text-sm text-gray-300 mb-1">전체 게임</div>
+            <div class="text-xl font-bold text-white" id="totalGames">0</div>
+          </div>
+        </div>
+
+        <!-- 최근 결과 표시 -->
+        <div class="bg-gray-900 p-4 rounded-lg mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-300">결과 패턴</h3>
+          <div class="grid grid-cols-6 gap-1" id="recentResults">
+            <!-- 최근 결과가 여기에 추가됩니다 -->
+          </div>
+        </div>
+
+        <!-- 상세 기록 테이블 -->
+        <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
+          <table class="min-w-full bg-gray-900 rounded-lg">
+            <thead class="bg-gray-800 sticky top-0 z-10">
+              <tr>
+                <th class="py-3 px-4 text-left">번호</th>
+                <th class="py-3 px-4 text-left">결과</th>
+                <th class="py-3 px-4 text-left">시간</th>
+                <th class="py-3 px-4 text-right">총 베팅액</th>
+                <th class="py-3 px-4 text-right">베팅 인원</th>
+              </tr>
+            </thead>
+            <tbody id="recentGamesTable">
+              <!-- 게임 기록이 여기 추가 됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 리더보드 섹션 수정 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">리더보드</h2>
+        <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+          <table class="min-w-full bg-gray-900 rounded-lg">
+            <thead class="bg-gray-800 sticky top-0">
+              <tr>
+                <th class="py-3 px-4 text-left">순위</th>
+                <th class="py-3 px-4 text-left">사용자</th>
+                <th class="py-3 px-4 text-right">보유 코인</th>
+                <th class="py-3 px-4 text-right">승률</th>
+                <th class="py-3 px-4 text-right">총 베팅</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTable">
+              <!-- 리더보드 목이터가 여기에 추가됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 전체 베팅 기록 섹션 수정 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">
+          전체 베팅 기록
+        </h2>
+        <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+          <table class="min-w-full bg-gray-900 rounded-lg">
+            <thead class="bg-gray-800 sticky top-0">
+              <tr>
+                <th class="py-3 px-4 text-left">시간</th>
+                <th class="py-3 px-4 text-left">사용자</th>
+                <th class="py-3 px-4 text-center">선</th>
+                <th class="py-3 px-4 text-right">베팅액</th>
+                <th class="py-3 px-4 text-center">결과</th>
+              </tr>
+            </thead>
+            <tbody id="allBettingHistoryTable">
+              <!-- 베팅 기록이 여기에 추가됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 토스트 메시지 -->
+      <div id="toast" class="toast">메시지가 여기에 표시됩니다.</div>
+
+      <!-- 오디오 요소들 -->
+      <audio id="bettingStartSound" src="sound.mp3" preload="auto"></audio>
+      <audio id="bettingEndSound" src="endsound.mp3" preload="auto"></audio>
+      <audio id="playerWinSound" src="player.mp3" preload="auto"></audio>
+      <audio id="bankerWinSound" src="banker.mp3" preload="auto"></audio>
+      <audio id="tieSound" src="tie.mp3" preload="auto"></audio>
+
+      <!-- 환전 관리 섹션 추가 -->
+      <div class="mb-6 bg-gray-800 p-6 rounded-lg shadow">
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">환전 관리</h2>
+        <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+          <table class="min-w-full bg-gray-900 rounded-lg">
+            <thead class="bg-gray-800 sticky top-0">
+              <tr>
+                <th class="py-3 px-4 text-left">신청시간</th>
+                <th class="py-3 px-4 text-left">사용자</th>
+                <th class="py-3 px-4 text-right">신청코인</th>
+                <th class="py-3 px-4 text-right">실수령액</th>
+                <th class="py-3 px-4 text-center">상태</th>
+                <th class="py-3 px-4 text-center">관리</th>
+              </tr>
+            </thead>
+            <tbody id="exchangeRequestsTable">
+              <!-- 환전 요청 목록이 여기에 추가됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "index.html";
+      }
+
+      let socket = io("http://127.0.0.1:5500");
+
+      // 토스트 메시지 표시 함수
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
+
+      // 관리자 권한 확인을 위한 요청
+      async function fetchUsers() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/users-stats",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (res.status === 403 || res.status === 401) {
+            showToast("권한이 없습니다.");
+            window.location.href = "index.html";
+          }
+
+          const stats = await res.json();
+          const userTable = document.getElementById("userTable");
+          userTable.innerHTML = "";
+
+          stats.forEach((user, index) => {
+            const tr = document.createElement("tr");
+            tr.classList.add("text-center");
+            tr.innerHTML = `
+                <td class="py-2">${user.username}</td>
+                <td class="py-2">${user.coins}</td>
+                <td class="py-2">${user.role}</td>
+                <td class="py-2">${user.isApproved ? "승인됨" : "대기 중"}</td>
+                <td class="py-2">${user.wins}</td>
+                <td class="py-2">${user.losses}</td>
+                <td class="py-2">${user.totalBets}</td>
+                <td class="py-2">${user.winRate}</td>
+                <td class="py-2">
+                    ${
+                      !user.isApproved
+                        ? `<button data-id="${user.id}" class="approve-user bg-purple-500 text-white px-2 py-1 rounded mr-2">승인</button>`
+                        : ""
+                    }
+                    <button data-id="${
+                      user.id
+                    }" class="reset-password bg-yellow-500 text-white px-2 py-1 rounded mr-2">비번 초기화</button>
+                    <button data-id="${
+                      user.id
+                    }" class="delete-user bg-red-500 text-white px-2 py-1 rounded mr-2">삭제</button>
+                    ${
+                      user.role !== "superadmin"
+                        ? `
+                    <button 
+                      onclick="toggleAdmin('${user._id}', '${user.role}')"
+                      class="${
+                        user.role === "admin"
+                          ? "bg-gray-600 hover:bg-gray-700"
+                          : "bg-purple-600 hover:bg-purple-700"
+                      } text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      ${user.role === "admin" ? "관리자 해제" : "관리자 지정"}
+                    </button>
+                  `
+                        : ""
+                    }
+                    <button data-id="${
+                      user.id
+                    }" class="adjust-coins bg-blue-500 text-white px-2 py-1 rounded mr-2">코인 조절</button>
+                    
+            `;
+            userTable.appendChild(tr);
+          });
+
+          // 이벤트 리스너 추가
+          document.querySelectorAll(".approve-user").forEach((button) => {
+            button.addEventListener("click", function () {
+              const userId = this.getAttribute("data-id");
+              approveUser(userId);
+            });
+          });
+          document.querySelectorAll(".delete-user").forEach((button) => {
+            button.addEventListener("click", function () {
+              const userId = this.getAttribute("data-id");
+              deleteUser(userId);
+            });
+          });
+          document.querySelectorAll(".reset-password").forEach((button) => {
+            button.addEventListener("click", function () {
+              const userId = this.getAttribute("data-id");
+              resetPassword(userId);
+            });
+          });
+          document.querySelectorAll(".toggle-admin").forEach((button) => {
+            button.addEventListener("click", function () {
+              const userId = this.getAttribute("data-id");
+              const currentRole = this.getAttribute("data-role");
+              toggleAdmin(userId, currentRole);
+            });
+          });
+          document.querySelectorAll(".adjust-coins").forEach((button) => {
+            button.addEventListener("click", function () {
+              const userId = this.getAttribute("data-id");
+              adjustCoins(userId);
+            });
+          });
+          document.querySelectorAll(".view-betting").forEach((button) => {
+            button.addEventListener("click", viewBettingDetails);
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function approveUser(userId) {
+        if (!confirm("이 사용자를 승인하시겠습니까?")) return;
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/users/${userId}/approve`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast(data.message);
+            fetchUsers(); // 목록 새로고침
+          } else {
+            showToast(data.message || "사용자 승인에 실패했습니다.");
+          }
+        } catch (err) {
+          console.error("승인 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      async function deleteUser(userId) {
+        if (!confirm("정말로 이 사용자를 삭제하시겠습니까?")) return;
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/users/${userId}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const data = await res.json();
+
+          if (res.ok) {
+            showToast(data.message);
+            fetchUsers(); // 목록 새로고침
+          } else {
+            showToast(data.message || "사용자 삭제에 실패했습니다.");
+          }
+        } catch (err) {
+          console.error("삭제 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      async function resetPassword(e) {
+        const userId = e.target.getAttribute("data-id");
+        const newPassword = prompt("새 밀번호를 입력하세요:");
+        if (newPassword) {
+          try {
+            const res = await fetch(
+              `http://127.0.0.1:5500/api/admin/users/${userId}/reset-password`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ newPassword }),
+              }
+            );
+            const data = await res.json();
+            showToast(data.message);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+
+      async function toggleAdmin(userId, currentRole) {
+        const isAdmin = currentRole === "admin";
+        const action = isAdmin ? "해제" : "지정";
+
+        if (!confirm(`이 사용자를 관리자서 ${action}하시겠습니까?`)) return;
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/users/${userId}/toggle-admin`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ setAdmin: !isAdmin }),
+            }
+          );
+
+          if (res.ok) {
+            showToast(`관리자가 ${action}되었니다.`);
+            fetchUsers();
+          } else {
+            showToast(`관리자 ${action}에 실패했습니다.`);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      // 실시간 베팅 현황 업데이트 함수
+      function updateBettingStats(stats) {
+        // 코인 총액 표시
+        document.getElementById("playerBets").textContent = stats.player.total;
+        document.getElementById("bankerBets").textContent = stats.banker.total;
+        document.getElementById("tieBets").textContent = stats.tie.total;
+
+        // 베팅 인원 표시
+        document.getElementById(
+          "playerBetsCount"
+        ).textContent = `${stats.player.count}명`;
+        document.getElementById(
+          "bankerBetsCount"
+        ).textContent = `${stats.banker.count}명`;
+        document.getElementById(
+          "tieBetsCount"
+        ).textContent = `${stats.tie.count}명`;
+      }
+
+      // 게임 상태 관리 수정
+      let gameState = {
+        isBetting: false,
+      };
+
+      // 게임 상태에 따른 버튼 활성화/비활성화 함수 수정
+      function updateGameControls() {
+        const startButton = document.getElementById("startBetting");
+
+        startButton.disabled = gameState.isBetting;
+
+        // 버튼 스타일 업데이트
+        if (gameState.isBetting) {
+          startButton.classList.add("opacity-50", "cursor-not-allowed");
+        } else {
+          startButton.classList.remove("opacity-50", "cursor-not-allowed");
+        }
+      }
+
+      // 베팅 시작 버튼 이벤트
+      document
+        .getElementById("startBetting")
+        .addEventListener("click", async () => {
+          if (confirm("베팅을 시작하시겠습니까?")) {
+            socket.emit("start_betting");
+            gameState.isBetting = true;
+            updateGameControls();
+
+            // 베팅 시작 소리 재생
+            const bettingStartSound =
+              document.getElementById("bettingStartSound");
+            bettingStartSound.play();
+          }
+        });
+
+      // Socket.io 이벤트 리스너들
+      socket.on("betting_status", (status) => {
+        gameState.isBetting = status.active;
+        updateGameControls();
+        if (status.stats) {
+          updateBettingStats(status.stats);
+        }
+      });
+
+      socket.on("betting_started", () => {
+        document.getElementById("bettingStatus").textContent =
+          "현재 상태: 베팅 중";
+        gameState.isBetting = true;
+        updateGameControls();
+      });
+
+      socket.on("betting_closed", () => {
+        document.getElementById("bettingStatus").textContent =
+          "현재 상태: 베팅 마감";
+        gameState.isBetting = false;
+        updateGameControls();
+
+        // 베팅 마감 소리 재생
+        const bettingEndSound = document.getElementById("bettingEndSound");
+        bettingEndSound.play();
+      });
+
+      // 페이지 로드 시 초기화
+      document.addEventListener("DOMContentLoaded", () => {
+        updateGameControls();
+        fetchAllBettingHistory();
+        fetchRecentGames();
+      });
+
+      // 리더보드 가져오기
+      async function fetchLeaderboard() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/leaderboard",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const leaderboard = await res.json();
+          const leaderboardTable = document.getElementById("leaderboardTable");
+          leaderboardTable.innerHTML = "";
+
+          leaderboard.forEach((user, index) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-t border-gray-800";
+
+            const rankClass =
+              index < 3
+                ? [
+                    "text-yellow-400 font-bold",
+                    "text-gray-300 font-bold",
+                    "text-orange-400 font-bold",
+                  ][index]
+                : "text-gray-400";
+
+            tr.innerHTML = `
+              <td class="py-3 px-4">
+                <span class="${rankClass}">${index + 1}</span>
+              </td>
+              <td class="py-3 px-4">${user.username}</td>
+              <td class="py-3 px-4 text-right text-yellow-400 font-bold">${
+                user.coins
+              }</td>
+              <td class="py-3 px-4 text-right">${user.winRate}%</td>
+              <td class="py-3 px-4 text-right">${user.totalBets}</td>
+            `;
+            leaderboardTable.appendChild(tr);
+          });
+        } catch (err) {
+          console.error(err);
+          showToast("리더보드를 불러오는데 실패했습니다.");
+        }
+      }
+
+      // 전체 베팅 기록 가져오기 함수
+      async function fetchAllBettingHistory() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/all-betting-history",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error("베팅 기록을 불러오는데 실패했습다.");
+          }
+
+          const allBets = await res.json();
+          const container = document.getElementById("allBettingHistoryTable");
+          container.innerHTML = "";
+
+          if (allBets.length === 0) {
+            container.innerHTML = `
+              <tr>
+                <td colspan="5" class="py-4 text-center text-gray-400">
+                  베팅 록이 없습니다.
+                </td>
+              </tr>
+            `;
+            return;
+          }
+
+          allBets.forEach((bet) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-t border-gray-800";
+
+            const resultClass =
+              bet.result === "win"
+                ? "text-green-400"
+                : bet.result === "lose"
+                ? "text-red-400"
+                : "text-yellow-400";
+
+            const resultText =
+              bet.result === "win"
+                ? "승리"
+                : bet.result === "lose"
+                ? "패배"
+                : "환급";
+
+            const choiceKorean = {
+              player: "플레이어",
+              banker: "뱅커",
+              tie: "타이",
+            };
+
+            const profitClass =
+              bet.profit >= 0 ? "text-green-400" : "text-red-400";
+            const profitPrefix = bet.profit >= 0 ? "+" : "";
+
+            tr.innerHTML = `
+              <td class="py-3 px-4 text-sm text-gray-400">
+                ${new Date(bet.date).toLocaleString()}
+              </td>
+              <td class="py-3 px-4">${bet.username}</td>
+              <td class="py-3 px-4 text-center">
+                ${choiceKorean[bet.choice]} → ${choiceKorean[bet.gameResult]}
+              </td>
+              <td class="py-3 px-4 text-right">
+                <span class="text-yellow-400">${bet.coins}</span>
+                <span class="${profitClass} ml-2">(${profitPrefix}${
+              bet.profit
+            })</span>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <span class="${resultClass} font-semibold">${resultText}</span>
+              </td>
+            `;
+            container.appendChild(tr);
+          });
+        } catch (err) {
+          console.error("베팅 기록 조회 에러:", err);
+          showToast("베팅 기록을 불러오는데 실패했습니다.");
+        }
+      }
+
+      // 로그아웃
+      document.getElementById("logout").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      });
+
+      // 최근 게임 기록 표시 함수 수정
+      async function fetchRecentGames() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/recent-games?limit=20",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (res.status === 403 || res.status === 401) {
+            showToast("권한이 없습니다.");
+            window.location.href = "index.html";
+          }
+
+          const recentGames = await res.json();
+
+          // 통계 계산
+          const stats = {
+            player: 0,
+            banker: 0,
+            tie: 0,
+            total: recentGames.length,
+          };
+
+          recentGames.forEach((game) => {
+            stats[game.result]++;
+          });
+
+          // 통계 업데이트
+          document.getElementById("playerWins").textContent = stats.player;
+          document.getElementById("bankerWins").textContent = stats.banker;
+          document.getElementById("tieWins").textContent = stats.tie;
+          document.getElementById("totalGames").textContent = stats.total;
+
+          // 승률 계산 및 표시
+          if (stats.total > 0) {
+            document.getElementById("playerWinRate").textContent = `${(
+              (stats.player / stats.total) *
+              100
+            ).toFixed(1)}%`;
+            document.getElementById("bankerWinRate").textContent = `${(
+              (stats.banker / stats.total) *
+              100
+            ).toFixed(1)}%`;
+            document.getElementById("tieWinRate").textContent = `${(
+              (stats.tie / stats.total) *
+              100
+            ).toFixed(1)}%`;
+          }
+
+          // 결과 패턴 표시
+          const recentResultsContainer =
+            document.getElementById("recentResults");
+          recentResultsContainer.innerHTML = "";
+
+          // 36개의 빈 셀 생성
+          for (let i = 0; i < 36; i++) {
+            const emptyCell = document.createElement("div");
+            emptyCell.className = "w-8 h-8 border border-gray-700 rounded-full";
+            recentResultsContainer.appendChild(emptyCell);
+          }
+
+          // 최근 게임 결과 표시
+          recentGames
+            .slice(0, 36)
+            .reverse()
+            .forEach((game, index) => {
+              const resultElement = document.createElement("div");
+
+              const resultClass =
+                game.result === "player"
+                  ? "border-2 border-blue-500 bg-transparent"
+                  : game.result === "banker"
+                  ? "border-2 border-red-500 bg-transparent"
+                  : "border-2 border-green-500 bg-transparent";
+
+              resultElement.className = `w-8 h-8 rounded-full flex items-center justify-center ${resultClass}`;
+              resultElement.textContent =
+                game.result === "player"
+                  ? "P"
+                  : game.result === "banker"
+                  ? "B"
+                  : "T";
+
+              recentResultsContainer.replaceChild(
+                resultElement,
+                recentResultsContainer.children[index]
+              );
+            });
+
+          // 상세 기록 테이블 업데이트
+          const recentGamesTable = document.getElementById("recentGamesTable");
+          recentGamesTable.innerHTML = "";
+
+          recentGames.forEach((game, index) => {
+            const tr = document.createElement("tr");
+            tr.className =
+              "border-t border-gray-800 hover:bg-gray-800 transition-colors";
+
+            const resultText =
+              game.result === "player"
+                ? "플레이어"
+                : game.result === "banker"
+                ? "뱅커"
+                : "타이";
+
+            const resultClass =
+              game.result === "player"
+                ? "text-blue-400"
+                : game.result === "banker"
+                ? "text-red-400"
+                : "text-green-400";
+
+            tr.innerHTML = `
+              <td class="py-3 px-4">${recentGames.length - index}</td>
+              <td class="py-3 px-4">
+                <span class="font-semibold ${resultClass}">${resultText}</span>
+              </td>
+              <td class="py-3 px-4">${new Date(game.date).toLocaleString()}</td>
+              <td class="py-3 px-4 text-right">${game.totalBets || 0}</td>
+              <td class="py-3 px-4 text-right">${game.playerCount || 0}명</td>
+            `;
+            recentGamesTable.appendChild(tr);
+          });
+        } catch (err) {
+          console.error("Error:", err);
+          showToast("최근 게임 기록 데터를 러오는 중 오류가 발생했습니다.");
+        }
+      }
+
+      // 초기 사용자 정보 및 리더보드 로드
+      fetchUsers();
+      fetchLeaderboard();
+      fetchRecentGames();
+
+      // 타이머 관련 코드 수정
+      socket.on("betting_end_time", (endTime) => {
+        const timerElement = document.getElementById("timer");
+        const bettingStatusElement = document.getElementById("bettingStatus");
+        const end = new Date(endTime);
+
+        // 기존 타이머가 있다면 제거
+        if (window.countdownTimer) {
+          clearInterval(window.countdownTimer);
+        }
+
+        window.countdownTimer = setInterval(() => {
+          const now = new Date();
+          const distance = end - now;
+
+          if (distance < 0) {
+            clearInterval(window.countdownTimer);
+            timerElement.textContent = "";
+            bettingStatusElement.textContent = "현재 상태: 대기중";
+            bettingStatusElement.className =
+              "text-lg font-semibold text-yellow-400";
+            return;
+          }
+
+          const seconds = Math.floor((distance / 1000) % 60);
+          bettingStatusElement.textContent = "현재 상태: 베팅중";
+          bettingStatusElement.className =
+            "text-lg font-semibold text-green-400";
+          timerElement.innerHTML = `
+            <span class="text-2xl font-bold text-blue-400">
+              ${seconds}초
+            </span>
+          `;
+        }, 1000);
+      });
+
+      // 베팅 종료 이벤트 리스너 추가
+      socket.on("betting_closed", () => {
+        const bettingStatusElement = document.getElementById("bettingStatus");
+        const timerElement = document.getElementById("timer");
+
+        bettingStatusElement.textContent = "현재 상태: 대기중";
+        bettingStatusElement.className =
+          "text-lg font-semibold text-yellow-400";
+        timerElement.textContent = "";
+
+        if (window.countdownTimer) {
+          clearInterval(window.countdownTimer);
+        }
+      });
+
+      // 사용자 관리 섹션 수정
+      async function fetchUsers() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/users-stats",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error("사용자 데이터를 불러오는데 실패했습니다.");
+          }
+
+          const users = await res.json();
+          const userTable = document.getElementById("userTable");
+          userTable.innerHTML = "";
+
+          users.forEach((user) => {
+            const tr = document.createElement("tr");
+            tr.className =
+              "border-t border-gray-800 hover:bg-gray-700/50 transition-colors";
+
+            const roleClass =
+              user.role === "admin" ? "text-purple-400" : "text-gray-300";
+            const approvedClass = user.isApproved
+              ? "text-green-400"
+              : "text-red-400";
+            const winRateClass =
+              parseFloat(user.winRate) >= 50
+                ? "text-green-400"
+                : "text-gray-400";
+
+            tr.innerHTML = `
+              <td class="py-3 px-4 font-medium">${user.username}</td>
+              <td class="py-3 px-4 text-right text-yellow-400 font-bold">${
+                user.coins
+              }</td>
+              <td class="py-3 px-4 text-center">
+                <span class="${approvedClass} font-medium">
+                  ${user.isApproved ? "승인됨" : "미승인"}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <span class="${roleClass} font-medium">
+                  ${user.role === "admin" ? "관리자" : "일반"}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right text-green-400">${user.wins}</td>
+              <td class="py-3 px-4 text-right text-red-400">${user.losses}</td>
+              <td class="py-3 px-4 text-right">${user.totalBets}</td>
+              <td class="py-3 px-4 text-right ${winRateClass}">${
+              user.winRate
+            }%</td>
+              <td class="py-3 px-4">
+                <div class="flex justify-center gap-2">
+                  <button 
+                    class="adjust-coins bg-yellow-600 hover:bg-yellow-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    data-id="${user._id}"
+                  >
+                    코인
+                  </button>
+                  ${
+                    !user.isApproved
+                      ? `
+                    <button 
+                      class="approve-user bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                      data-id="${user._id}"
+                    >
+                      승인
+                    </button>
+                  `
+                      : ""
+                  }
+                  ${
+                    user.role !== "superadmin"
+                      ? `
+                    <button 
+                      onclick="toggleAdmin('${user._id}', '${user.role}')"
+                      class="${
+                        user.role === "admin"
+                          ? "bg-gray-600 hover:bg-gray-700"
+                          : "bg-purple-600 hover:bg-purple-700"
+                      } text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      ${user.role === "admin" ? "관리자 해제" : "관리자 지정"}
+                    </button>
+                  `
+                      : ""
+                  }
+                  <button 
+                    class="reset-password bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    data-id="${user._id}"
+                  >
+                    비밀번호
+                  </button>
+                  <button 
+                    class="delete-user bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    data-id="${user._id}"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </td>
+            `;
+            userTable.appendChild(tr);
+          });
+
+          // 이벤트 리스너 설정
+          setupUserManagementListeners();
+        } catch (err) {
+          console.error("사용자 데이터 조회 에러:", err);
+          showToast("사용자 데이터를 불러오는데 실패했습니다.");
+        }
+      }
+
+      // 사용자 관리 이벤트 리스너 설정
+      function setupUserManagementListeners() {
+        document.querySelectorAll(".adjust-coins").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            adjustCoins(userId);
+          });
+        });
+
+        document.querySelectorAll(".approve-user").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            approveUser(userId);
+          });
+        });
+
+        document.querySelectorAll(".delete-user").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            deleteUser(userId);
+          });
+        });
+
+        document.querySelectorAll(".reset-password").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            resetPassword(userId);
+          });
+        });
+      }
+
+      // resetPassword 함수 수정
+      async function resetPassword(userId) {
+        const newPassword = prompt("새 비밀번호를 입력하세요:");
+        if (!newPassword) return;
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/users/${userId}/reset-password`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ newPassword }),
+            }
+          );
+
+          const data = await res.json();
+          showToast(data.message);
+          if (res.ok) {
+            fetchUsers(); // 목록 새로고침
+          }
+        } catch (err) {
+          console.error("비밀번호 초기화 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      // adjustCoins 함수 수정
+      async function adjustCoins(userId) {
+        const amount = prompt("조정할 코인 수를 입력하세요 (음수 가능):");
+        if (amount === null) return;
+
+        const adjustment = parseInt(amount);
+        if (isNaN(adjustment)) {
+          showToast("유효한 숫자를 입력해주세요.");
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/users/${userId}/adjust-coins`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ adjustment }),
+            }
+          );
+
+          const data = await res.json();
+          showToast(data.message);
+          if (res.ok) {
+            fetchUsers(); // 목록 새로고침
+          }
+        } catch (err) {
+          console.error("코인 조정 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      // 게임 기록 초기화 함수 추가
+      async function resetGameHistory() {
+        if (
+          !confirm(
+            "정말로 모든 게임 기록을 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다."
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/reset-game-history",
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (res.ok) {
+            showToast("게임 기록이 초기화되었니다.");
+            // 통계와 테이블 새로고침
+            fetchRecentGames();
+          } else {
+            showToast("게임 기록 초기화에 실패했습니다.");
+          }
+        } catch (err) {
+          console.error("게임 기록 초기화 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      // 환전 요청 목록 가져오기 함수 수정
+      async function fetchExchangeRequests() {
+        try {
+          const res = await fetch(
+            "http://127.0.0.1:5500/api/admin/exchange-requests",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          const requests = await res.json();
+          const container = document.getElementById("exchangeRequestsTable");
+          container.innerHTML = "";
+
+          requests.forEach((request) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-t border-gray-800";
+
+            const statusClass = {
+              pending: "text-yellow-400",
+              approved: "text-green-400",
+              rejected: "text-red-400",
+            }[request.status];
+
+            const statusText = {
+              pending: "대기중",
+              approved: "승인됨",
+              rejected: "거절됨",
+            }[request.status];
+
+            // 수수료 계산 로직 추가
+            const fee =
+              request.requestAmount < 10
+                ? 1
+                : Math.ceil(request.requestAmount / 5);
+            const actualAmount = request.requestAmount - fee;
+
+            tr.innerHTML = `
+              <td class="py-3 px-4">${new Date(
+                request.createdAt
+              ).toLocaleString()}</td>
+              <td class="py-3 px-4">${request.username}</td>
+              <td class="py-3 px-4 text-right text-yellow-400">${
+                request.requestAmount
+              }</td>
+              <td class="py-3 px-4 text-right">
+                <div class="text-sm">
+                  <div class="text-green-400">실수령: ${actualAmount}</div>
+                  <div class="text-red-400">수수료: ${fee}</div>
+                  <div class="text-gray-400 text-xs">
+                    (10코인 미만: 1코인, 10코인 이상: 5코인당 1코인)
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <span class="${statusClass} font-semibold">${statusText}</span>
+              </td>
+              <td class="py-3 px-4 text-center">
+                ${
+                  request.status === "pending"
+                    ? `
+                  <button 
+                    onclick="handleExchange('${request._id}', 'approved')"
+                    class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded mr-2"
+                  >
+                    승인
+                  </button>
+                  <button 
+                    onclick="handleExchange('${request._id}', 'rejected')"
+                    class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+                  >
+                    거절
+                  </button>
+                `
+                    : ""
+                }
+              </td>
+            `;
+            container.appendChild(tr);
+          });
+        } catch (err) {
+          console.error("환전 요청 조회 에러:", err);
+          showToast("환전 요청 목록을 불러오는데 실패했습니다.");
+        }
+      }
+
+      // 환전 요청 처리
+      async function handleExchange(requestId, status) {
+        if (
+          !confirm(
+            `정말로 이 환전 요청을 ${
+              status === "approved" ? "승인" : "거절"
+            }하시겠습니?`
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `http://127.0.0.1:5500/api/admin/exchange-requests/${requestId}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ status }),
+            }
+          );
+
+          const data = await res.json();
+          showToast(data.message);
+
+          if (res.ok) {
+            fetchExchangeRequests(); // 목록 새로고침
+          }
+        } catch (err) {
+          console.error("환전 요청 처리 에러:", err);
+          showToast("서버 에러가 발생했습니다.");
+        }
+      }
+
+      // 초기 환전 요청 목록 로드
+      fetchExchangeRequests();
+
+      // 주기적으로 환전 요청 목록 업데이트
+      setInterval(fetchExchangeRequests, 30000); // 30초마다 업데이트
+
+      // Socket.IO 이벤트 리스너 추가
+      socket.on("game_result", (data) => {
+        const { result, playerScore, bankerScore, timestamp } = data;
+
+        // 결과 상세 정보 표시
+        document.getElementById("pendingResult").classList.remove("hidden");
+        document.getElementById("resultDetails").innerHTML = `
+          <div class="bg-gray-700 p-4 rounded-lg mb-4">
+            <div class="text-center text-xl font-bold mb-4">
+              <span class="text-yellow-400">새로운 게임 결과</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="bg-gray-800 p-3 rounded">
+                <div class="text-sm text-gray-400">플레이어 점수</div>
+                <div class="text-xl font-bold text-blue-400">${playerScore}</div>
+              </div>
+              <div class="bg-gray-800 p-3 rounded">
+                <div class="text-sm text-gray-400">뱅커 점수</div>
+                <div class="text-xl font-bold text-red-400">${bankerScore}</div>
+              </div>
+            </div>
+            <div class="text-center text-lg font-bold mb-4">
+              결과: <span class="text-yellow-400">${
+                result === "player"
+                  ? "플레이어 승"
+                  : result === "banker"
+                  ? "뱅커 승"
+                  : "타이"
+              }</span>
+            </div>
+            <div class="text-sm text-gray-400 text-right">
+              ${new Date(timestamp).toLocaleString()}
+            </div>
+          </div>
+          <div class="text-center text-red-400 text-sm animate-pulse">
+            * 결과를 승인하거나 거절해주세요 *
+          </div>
+        `;
+
+        // 결과 승인/거절 버튼 활화
+        document.getElementById("approveResult").disabled = false;
+        document.getElementById("rejectResult").disabled = false;
+      });
+
+      // 승인/거절 버튼 이벤트 핸들러 수정
+      document.getElementById("approveResult").addEventListener("click", () => {
+        socket.emit("approve_result");
+        document.getElementById("pendingResult").classList.add("hidden");
+        showToast("게임 결과가 승인되었습니다.");
+
+        // 2초 후 페이지 새로고침
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      });
+
+      document.getElementById("rejectResult").addEventListener("click", () => {
+        socket.emit("reject_result");
+        document.getElementById("pendingResult").classList.add("hidden");
+        showToast("게임 결과가 거절되었습니다.");
+      });
+
+      // 페이지 로드 시 결과 관리 섹션 숨기기
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("pendingResult").classList.add("hidden");
+      });
+
+      // Socket.IO 이벤트 리스너 수정
+      socket.on("recent_games_updated", (data) => {
+        const { recentGames, stats } = data;
+        updateGameStats(recentGames, stats);
+      });
+
+      // 게임 통계 업데이트 함수
+      function updateGameStats(recentGames, stats) {
+        // 통계 계산
+        const totalGames = stats.totalGames;
+        const playerWinRate = ((stats.playerWins / totalGames) * 100).toFixed(
+          1
+        );
+        const bankerWinRate = ((stats.bankerWins / totalGames) * 100).toFixed(
+          1
+        );
+        const tieRate = ((stats.ties / totalGames) * 100).toFixed(1);
+
+        // 통계 표시 업데이트
+        document.getElementById(
+          "playerWinRate"
+        ).textContent = `${playerWinRate}%`;
+        document.getElementById(
+          "bankerWinRate"
+        ).textContent = `${bankerWinRate}%`;
+        document.getElementById("tieRate").textContent = `${tieRate}%`;
+
+        // 최근 게임 기록 테이블 업데이트
+        const recentGamesTable = document.getElementById("recentGamesTable");
+        if (recentGamesTable) {
+          recentGamesTable.innerHTML = "";
+
+          recentGames.forEach((game, index) => {
+            const tr = document.createElement("tr");
+            tr.className = "border-t border-gray-800";
+
+            const resultClass = {
+              player: "text-blue-400",
+              banker: "text-red-400",
+              tie: "text-green-400",
+            }[game.result];
+
+            tr.innerHTML = `
+              <td class="py-3 px-4">${new Date(game.date).toLocaleString()}</td>
+              <td class="py-3 px-4 ${resultClass} font-bold">${game.result.toUpperCase()}</td>
+              <td class="py-3 px-4">${game.playerCount}명</td>
+              <td class="py-3 px-4">${game.totalBets}코인</td>
+            `;
+            recentGamesTable.appendChild(tr);
+          });
+        }
+      }
+
+      // 실시간 베팅 현황 업데이트
+      socket.on("new_bet", (data) => {
+        const { stats } = data;
+
+        // 베팅 카운트 업데이트
+        document.getElementById(
+          "playerBetsCount"
+        ).textContent = `${stats.player.count}명`;
+        document.getElementById(
+          "bankerBetsCount"
+        ).textContent = `${stats.banker.count}명`;
+        document.getElementById(
+          "tieBetsCount"
+        ).textContent = `${stats.tie.count}명`;
+
+        // 베팅 금액 업데이트
+        document.getElementById("playerBets").textContent = stats.player.total;
+        document.getElementById("bankerBets").textContent = stats.banker.total;
+        document.getElementById("tieBets").textContent = stats.tie.total;
+      });
+    </script>
+  </body>
+</html>
