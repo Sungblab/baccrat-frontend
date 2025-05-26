@@ -118,6 +118,59 @@
         top: 0;
         z-index: 10;
       }
+
+      /* 최근 게임 결과 (Big Road) 스타일 추가 */
+      #recentResults {
+        display: flex;
+        flex-direction: row; /* 가로로 열 배치 */
+        overflow-x: auto; /* 가로 스크롤 */
+        padding: 8px;
+        min-height: 130px; /* 최소 높이 (6개 아이템 + 패딩 고려) */
+        align-items: flex-start; /* 열 상단 정렬 */
+        gap: 4px; /* 열 간 간격 */
+        -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+        background-color: rgba(0, 0, 0, 0.2); /* 배경색 약간 추가 */
+        border-radius: 6px;
+      }
+
+      .result-column {
+        display: flex;
+        flex-direction: column; /* 세로로 아이템 배치 */
+        gap: 4px; /* 아이템 간 간격 */
+      }
+
+      .result-cell {
+        width: 18px; /* 셀 너비 */
+        height: 18px; /* 셀 높이 */
+        border-radius: 50%; /* 원형 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0; /* 줄어들지 않도록 */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .result-cell.player {
+        background-color: #3b82f6; /* 파란색 */
+      }
+      .result-cell.banker {
+        background-color: #ef4444; /* 빨간색 */
+      }
+      .result-cell.tie {
+        background-color: #10b981; /* 녹색 */
+      }
+      .result-cell.player-pair {
+        border: 2px solid #60a5fa; /* 플레이어 페어 표시 (밝은 파랑 테두리) */
+        box-shadow: 0 0 3px #60a5fa;
+      }
+      .result-cell.banker-pair {
+        border: 2px solid #f87171; /* 뱅커 페어 표시 (밝은 빨강 테두리) */
+        box-shadow: 0 0 3px #f87171;
+      }
     </style>
   </head>
   <body class="bg-gray-900 text-white">
@@ -165,40 +218,101 @@
           <h3 class="text-lg font-semibold mb-3 text-gray-300">
             실시간 베팅 현황
           </h3>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- 플레이어 베팅 -->
             <div
               class="bg-gradient-to-br from-blue-900 to-blue-800 p-4 rounded-lg"
             >
-              <div class="text-sm text-gray-300 mb-1">플레이어 베팅</div>
+              <div class="text-sm text-gray-300 mb-1">플레이어</div>
               <div class="flex justify-between items-center">
-                <div id="playerBets" class="text-xl font-bold text-white">
-                  0
-                </div>
-                <div id="playerBetsCount" class="text-sm text-gray-300">
-                  0명
-                </div>
+                <span
+                  id="adminPlayerBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminPlayerBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
               </div>
             </div>
+            <!-- 뱅커 베팅 -->
             <div
               class="bg-gradient-to-br from-red-900 to-red-800 p-4 rounded-lg"
             >
-              <div class="text-sm text-gray-300 mb-1">뱅커 베팅</div>
+              <div class="text-sm text-gray-300 mb-1">뱅커</div>
               <div class="flex justify-between items-center">
-                <div id="bankerBets" class="text-xl font-bold text-white">
-                  0
-                </div>
-                <div id="bankerBetsCount" class="text-sm text-gray-300">
-                  0명
-                </div>
+                <span
+                  id="adminBankerBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminBankerBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
               </div>
             </div>
+            <!-- 타이 베팅 -->
             <div
               class="bg-gradient-to-br from-purple-900 to-purple-800 p-4 rounded-lg"
             >
-              <div class="text-sm text-gray-300 mb-1">타이 베팅</div>
+              <div class="text-sm text-gray-300 mb-1">타이</div>
               <div class="flex justify-between items-center">
-                <div id="tieBets" class="text-xl font-bold text-white">0</div>
-                <div id="tieBetsCount" class="text-sm text-gray-300">0명</div>
+                <span
+                  id="adminTieBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminTieBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
+              </div>
+            </div>
+            <!-- 플레이어 페어 베팅 -->
+            <div
+              class="bg-gradient-to-br from-sky-800 to-sky-700 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">P 페어</div>
+              <div class="flex justify-between items-center">
+                <span
+                  id="adminPlayerPairBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminPlayerPairBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
+              </div>
+            </div>
+            <!-- 뱅커 페어 베팅 -->
+            <div
+              class="bg-gradient-to-br from-pink-800 to-pink-700 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">B 페어</div>
+              <div class="flex justify-between items-center">
+                <span
+                  id="adminBankerPairBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminBankerPairBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
+              </div>
+            </div>
+            <!-- 총 베팅 현황 -->
+            <div
+              class="bg-gradient-to-br from-gray-700 to-gray-600 p-4 rounded-lg"
+            >
+              <div class="text-sm text-gray-300 mb-1">총계</div>
+              <div class="flex justify-between items-center">
+                <span
+                  id="adminTotalBetAmount"
+                  class="text-xl font-bold text-white"
+                  >0 원</span
+                >
+                <span id="adminTotalBetCount" class="text-sm text-gray-300"
+                  >0명</span
+                >
               </div>
             </div>
           </div>
@@ -237,7 +351,7 @@
             <thead class="bg-gray-800 sticky top-0">
               <tr>
                 <th class="py-3 px-4 text-left">사용자</th>
-                <th class="py-3 px-4 text-right">코인</th>
+                <th class="py-3 px-4 text-right">잔액(원)</th>
                 <th class="py-3 px-4 text-center">상태</th>
                 <th class="py-3 px-4 text-center">권한</th>
                 <th class="py-3 px-4 text-right">승리</th>
@@ -331,8 +445,10 @@
                 <th class="py-3 px-4 text-left">번호</th>
                 <th class="py-3 px-4 text-left">결과</th>
                 <th class="py-3 px-4 text-left">시간</th>
-                <th class="py-3 px-4 text-right">총 베팅액</th>
+                <th class="py-3 px-4 text-right">총 베팅액(원)</th>
                 <th class="py-3 px-4 text-right">베팅 인원</th>
+                <th class="py-3 px-4 text-center">P페어</th>
+                <th class="py-3 px-4 text-center">B페어</th>
               </tr>
             </thead>
             <tbody id="recentGamesTable">
@@ -351,7 +467,7 @@
               <tr>
                 <th class="py-3 px-4 text-left">순위</th>
                 <th class="py-3 px-4 text-left">사용자</th>
-                <th class="py-3 px-4 text-right">보유 코인</th>
+                <th class="py-3 px-4 text-right">보유액(원)</th>
                 <th class="py-3 px-4 text-right">승률</th>
                 <th class="py-3 px-4 text-right">총 베팅</th>
               </tr>
@@ -374,8 +490,8 @@
               <tr>
                 <th class="py-3 px-4 text-left">시간</th>
                 <th class="py-3 px-4 text-left">사용자</th>
-                <th class="py-3 px-4 text-center">선</th>
-                <th class="py-3 px-4 text-right">베팅액</th>
+                <th class="py-3 px-4 text-center">선택</th>
+                <th class="py-3 px-4 text-right">베팅액(원)</th>
                 <th class="py-3 px-4 text-center">결과</th>
               </tr>
             </thead>
@@ -405,8 +521,8 @@
               <tr>
                 <th class="py-3 px-4 text-left">신청시간</th>
                 <th class="py-3 px-4 text-left">사용자</th>
-                <th class="py-3 px-4 text-right">신청코인</th>
-                <th class="py-3 px-4 text-right">실수령액</th>
+                <th class="py-3 px-4 text-right">신청금액(원)</th>
+                <th class="py-3 px-4 text-right">실수령액(원)</th>
                 <th class="py-3 px-4 text-center">상태</th>
                 <th class="py-3 px-4 text-center">관리</th>
               </tr>
@@ -425,7 +541,7 @@
         window.location.href = "index.html";
       }
 
-      let socket = io("http://127.0.0.1:5500");
+      let socket = io("http://127.0.0.1:5000");
 
       // 토스트 메시지 표시 함수
       function showToast(message) {
@@ -441,7 +557,7 @@
       async function fetchUsers() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/users-stats",
+            "http://127.0.0.1:5000/api/admin/users-stats",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -461,7 +577,7 @@
             tr.classList.add("text-center");
             tr.innerHTML = `
                 <td class="py-2">${user.username}</td>
-                <td class="py-2">${user.coins}</td>
+                <td class="py-2">${user.balance} 원</td>
                 <td class="py-2">${user.role}</td>
                 <td class="py-2">${user.isApproved ? "승인됨" : "대기 중"}</td>
                 <td class="py-2">${user.wins}</td>
@@ -498,7 +614,10 @@
                     }
                     <button data-id="${
                       user.id
-                    }" class="adjust-coins bg-blue-500 text-white px-2 py-1 rounded mr-2">코인 조절</button>
+                    }" class="adjust-coins bg-yellow-600 hover:bg-yellow-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      잔액 조절
+                    </button>
                     
             `;
             userTable.appendChild(tr);
@@ -549,7 +668,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/users/${userId}/approve`,
+            `http://127.0.0.1:5000/api/admin/users/${userId}/approve`,
             {
               method: "PUT",
               headers: {
@@ -578,7 +697,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/users/${userId}`,
+            `http://127.0.0.1:5000/api/admin/users/${userId}`,
             {
               method: "DELETE",
               headers: {
@@ -608,7 +727,7 @@
         if (newPassword) {
           try {
             const res = await fetch(
-              `http://127.0.0.1:5500/api/admin/users/${userId}/reset-password`,
+              `http://127.0.0.1:5000/api/admin/users/${userId}/reset-password`,
               {
                 method: "PUT",
                 headers: {
@@ -634,7 +753,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/users/${userId}/toggle-admin`,
+            `http://127.0.0.1:5000/api/admin/users/${userId}/toggle-admin`,
             {
               method: "PUT",
               headers: {
@@ -659,21 +778,59 @@
 
       // 실시간 베팅 현황 업데이트 함수
       function updateBettingStats(stats) {
-        // 코인 총액 표시
-        document.getElementById("playerBets").textContent = stats.player.total;
-        document.getElementById("bankerBets").textContent = stats.banker.total;
-        document.getElementById("tieBets").textContent = stats.tie.total;
+        // console.log("[admin.html] updateBettingStats with stats:", stats); // 디버깅 로그
 
-        // 베팅 인원 표시
-        document.getElementById(
-          "playerBetsCount"
-        ).textContent = `${stats.player.count}명`;
-        document.getElementById(
-          "bankerBetsCount"
-        ).textContent = `${stats.banker.count}명`;
-        document.getElementById(
-          "tieBetsCount"
-        ).textContent = `${stats.tie.count}명`;
+        // 각 베팅 옵션에 대한 금액 및 인원수 업데이트
+        document.getElementById("adminPlayerBetAmount").textContent =
+          formatAdminAmount(stats.player?.total_bet_amount);
+        document.getElementById("adminPlayerBetCount").textContent =
+          (stats.player?.bettor_count || 0) + "명";
+
+        document.getElementById("adminBankerBetAmount").textContent =
+          formatAdminAmount(stats.banker?.total_bet_amount);
+        document.getElementById("adminBankerBetCount").textContent =
+          (stats.banker?.bettor_count || 0) + "명";
+
+        document.getElementById("adminTieBetAmount").textContent =
+          formatAdminAmount(stats.tie?.total_bet_amount);
+        document.getElementById("adminTieBetCount").textContent =
+          (stats.tie?.bettor_count || 0) + "명";
+
+        document.getElementById("adminPlayerPairBetAmount").textContent =
+          formatAdminAmount(stats.player_pair?.total_bet_amount);
+        document.getElementById("adminPlayerPairBetCount").textContent =
+          (stats.player_pair?.bettor_count || 0) + "명";
+
+        document.getElementById("adminBankerPairBetAmount").textContent =
+          formatAdminAmount(stats.banker_pair?.total_bet_amount);
+        document.getElementById("adminBankerPairBetCount").textContent =
+          (stats.banker_pair?.bettor_count || 0) + "명";
+
+        // 총계 계산 및 업데이트
+        const totalBetAmount =
+          (stats.player?.total_bet_amount || 0) +
+          (stats.banker?.total_bet_amount || 0) +
+          (stats.tie?.total_bet_amount || 0) +
+          (stats.player_pair?.total_bet_amount || 0) +
+          (stats.banker_pair?.total_bet_amount || 0);
+
+        const totalBetCount =
+          (stats.player?.bettor_count || 0) +
+          (stats.banker?.bettor_count || 0) +
+          (stats.tie?.bettor_count || 0) +
+          (stats.player_pair?.bettor_count || 0) +
+          (stats.banker_pair?.bettor_count || 0);
+
+        document.getElementById("adminTotalBetAmount").textContent =
+          formatAdminAmount(totalBetAmount);
+        document.getElementById("adminTotalBetCount").textContent =
+          totalBetCount + "명";
+      }
+
+      // admin.html용 금액 포맷팅 함수
+      function formatAdminAmount(amount) {
+        if (typeof amount !== "number") amount = 0;
+        return amount.toLocaleString() + " 원";
       }
 
       // 게임 상태 관리 수정
@@ -699,16 +856,14 @@
       document
         .getElementById("startBetting")
         .addEventListener("click", async () => {
-          if (confirm("베팅을 시작하시겠습니까?")) {
-            socket.emit("start_betting");
-            gameState.isBetting = true;
-            updateGameControls();
+          socket.emit("start_betting");
+          gameState.isBetting = true;
+          updateGameControls();
 
-            // 베팅 시작 소리 재생
-            const bettingStartSound =
-              document.getElementById("bettingStartSound");
-            bettingStartSound.play();
-          }
+          // 베팅 시작 소리 재생
+          const bettingStartSound =
+            document.getElementById("bettingStartSound");
+          bettingStartSound.play();
         });
 
       // Socket.io 이벤트 리스너들
@@ -749,7 +904,7 @@
       async function fetchLeaderboard() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/leaderboard",
+            "http://127.0.0.1:5000/api/admin/leaderboard",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -777,8 +932,8 @@
               </td>
               <td class="py-3 px-4">${user.username}</td>
               <td class="py-3 px-4 text-right text-yellow-400 font-bold">${
-                user.coins
-              }</td>
+                user.balance
+              } 원</td>
               <td class="py-3 px-4 text-right">${user.winRate}%</td>
               <td class="py-3 px-4 text-right">${user.totalBets}</td>
             `;
@@ -794,7 +949,7 @@
       async function fetchAllBettingHistory() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/all-betting-history",
+            "http://127.0.0.1:5000/api/admin/all-betting-history",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -856,10 +1011,10 @@
                 ${choiceKorean[bet.choice]} → ${choiceKorean[bet.gameResult]}
               </td>
               <td class="py-3 px-4 text-right">
-                <span class="text-yellow-400">${bet.coins}</span>
+                <span class="text-yellow-400">${bet.amount} 원</span>
                 <span class="${profitClass} ml-2">(${profitPrefix}${
               bet.profit
-            })</span>
+            } 원)</span>
               </td>
               <td class="py-3 px-4 text-center">
                 <span class="${resultClass} font-semibold">${resultText}</span>
@@ -883,7 +1038,7 @@
       async function fetchRecentGames() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/recent-games?limit=20",
+            "http://127.0.0.1:5000/api/admin/recent-games?limit=20",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -935,40 +1090,43 @@
             document.getElementById("recentResults");
           recentResultsContainer.innerHTML = "";
 
-          // 36개의 빈 셀 생성
-          for (let i = 0; i < 36; i++) {
-            const emptyCell = document.createElement("div");
-            emptyCell.className = "w-8 h-8 border border-gray-700 rounded-full";
-            recentResultsContainer.appendChild(emptyCell);
-          }
+          if (recentGames.length === 0) {
+            recentResultsContainer.innerHTML = `<div class="text-center text-gray-500 py-4">최근 게임 결과가 없습니다.</div>`;
+          } else {
+            let currentColumn = null;
+            let lastResultType = null;
+            // API에서 최근 36개 제한을 걸 수 있지만, 클라이언트에서도 한 번 더 슬라이스하여 최대 표시 개수 관리 (예: 최근 72개로 빅로드 구성)
+            const gamesToDisplay = recentGames.slice(-72).reverse(); // 최근 72개로 빅로드 구성, 역순으로 처리해야 올바른 순서로 표시
 
-          // 최근 게임 결과 표시
-          recentGames
-            .slice(0, 36)
-            .reverse()
-            .forEach((game, index) => {
+            gamesToDisplay.forEach((game) => {
+              const resultType = game.result;
+              let cellText = resultType.charAt(0).toUpperCase();
+
+              if (
+                resultType !== lastResultType ||
+                !currentColumn ||
+                currentColumn.children.length >= 6
+              ) {
+                currentColumn = document.createElement("div");
+                currentColumn.className = "result-column";
+                recentResultsContainer.appendChild(currentColumn);
+                lastResultType = resultType;
+              }
+
               const resultElement = document.createElement("div");
-
-              const resultClass =
-                game.result === "player"
-                  ? "border-2 border-blue-500 bg-transparent"
-                  : game.result === "banker"
-                  ? "border-2 border-red-500 bg-transparent"
-                  : "border-2 border-green-500 bg-transparent";
-
-              resultElement.className = `w-8 h-8 rounded-full flex items-center justify-center ${resultClass}`;
-              resultElement.textContent =
-                game.result === "player"
-                  ? "P"
-                  : game.result === "banker"
-                  ? "B"
-                  : "T";
-
-              recentResultsContainer.replaceChild(
-                resultElement,
-                recentResultsContainer.children[index]
-              );
+              resultElement.className = `result-cell ${resultType}`;
+              if (game.playerPairOccurred) {
+                resultElement.classList.add("player-pair");
+              }
+              if (game.bankerPairOccurred) {
+                resultElement.classList.add("banker-pair");
+              }
+              resultElement.textContent = cellText;
+              currentColumn.appendChild(resultElement);
             });
+            recentResultsContainer.scrollLeft =
+              recentResultsContainer.scrollWidth; // 항상 가장 최근 결과가 보이도록 스크롤
+          }
 
           // 상세 기록 테이블 업데이트
           const recentGamesTable = document.getElementById("recentGamesTable");
@@ -999,8 +1157,18 @@
                 <span class="font-semibold ${resultClass}">${resultText}</span>
               </td>
               <td class="py-3 px-4">${new Date(game.date).toLocaleString()}</td>
-              <td class="py-3 px-4 text-right">${game.totalBets || 0}</td>
-              <td class="py-3 px-4 text-right">${game.playerCount || 0}명</td>
+              <td class="py-3 px-4 text-right">${game.totalBets} 원</td>
+              <td class="py-3 px-4 text-right">${game.playerCount}명</td>
+              <td class="py-3 px-4 text-center">${
+                game.playerPairOccurred
+                  ? '<span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-blue-500 text-white">P</span>'
+                  : "-"
+              }</td>
+              <td class="py-3 px-4 text-center">${
+                game.bankerPairOccurred
+                  ? '<span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-red-500 text-white">B</span>'
+                  : "-"
+              }</td>
             `;
             recentGamesTable.appendChild(tr);
           });
@@ -1070,7 +1238,7 @@
       async function fetchUsers() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/users-stats",
+            "http://127.0.0.1:5000/api/admin/users-stats",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1102,8 +1270,8 @@
             tr.innerHTML = `
               <td class="py-3 px-4 font-medium">${user.username}</td>
               <td class="py-3 px-4 text-right text-yellow-400 font-bold">${
-                user.coins
-              }</td>
+                user.balance
+              } 원</td>
               <td class="py-3 px-4 text-center">
                 <span class="${approvedClass} font-medium">
                   ${user.isApproved ? "승인됨" : "미승인"}
@@ -1126,7 +1294,7 @@
                     class="adjust-coins bg-yellow-600 hover:bg-yellow-700 text-white px-2.5 py-1.5 rounded text-sm font-medium transition-colors"
                     data-id="${user._id}"
                   >
-                    코인
+                    잔액 조절
                   </button>
                   ${
                     !user.isApproved
@@ -1220,7 +1388,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/users/${userId}/reset-password`,
+            `http://127.0.0.1:5000/api/admin/users/${userId}/reset-password`,
             {
               method: "PUT",
               headers: {
@@ -1244,7 +1412,7 @@
 
       // adjustCoins 함수 수정
       async function adjustCoins(userId) {
-        const amount = prompt("조정할 코인 수를 입력하세요 (음수 가능):");
+        const amount = prompt("조정할 금액(원)을 입력하세요 (음수 가능):");
         if (amount === null) return;
 
         const adjustment = parseInt(amount);
@@ -1255,7 +1423,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/users/${userId}/adjust-coins`,
+            `http://127.0.0.1:5000/api/admin/users/${userId}/adjust-coins`,
             {
               method: "PUT",
               headers: {
@@ -1289,7 +1457,7 @@
 
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/reset-game-history",
+            "http://127.0.0.1:5000/api/admin/reset-game-history",
             {
               method: "DELETE",
               headers: {
@@ -1315,7 +1483,7 @@
       async function fetchExchangeRequests() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5500/api/admin/exchange-requests",
+            "http://127.0.0.1:5000/api/admin/exchange-requests",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1355,13 +1523,13 @@
               <td class="py-3 px-4">${request.username}</td>
               <td class="py-3 px-4 text-right text-yellow-400">${
                 request.requestAmount
-              }</td>
+              } 원</td>
               <td class="py-3 px-4 text-right">
                 <div class="text-sm">
-                  <div class="text-green-400">실수령: ${actualAmount}</div>
-                  <div class="text-red-400">수수료: ${fee}</div>
+                  <div class="text-green-400">실수령: ${actualAmount} 원</div>
+                  <div class="text-red-400">수수료: ${fee} 원</div>
                   <div class="text-gray-400 text-xs">
-                    (10코인 미만: 1코인, 10코인 이상: 5코인당 1코인)
+                    (10원 미만: 1원, 10원 이상: 5원당 1원)
                   </div>
                 </div>
               </td>
@@ -1411,7 +1579,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5500/api/admin/exchange-requests/${requestId}`,
+            `http://127.0.0.1:5000/api/admin/exchange-requests/${requestId}`,
             {
               method: "PUT",
               headers: {
@@ -1441,10 +1609,35 @@
       setInterval(fetchExchangeRequests, 30000); // 30초마다 업데이트
 
       // Socket.IO 이벤트 리스너 추가
-      socket.on("game_result", (data) => {
-        const { result, playerScore, bankerScore, timestamp } = data;
+      let currentPendingGameDetails = null; // 대기중인 게임 상세 정보 저장
+      let autoApproveTimerId = null; // 자동 승인 타이머 ID
 
-        // 결과 상세 정보 표시
+      socket.on("game_result", (data) => {
+        const {
+          result,
+          playerScore,
+          bankerScore,
+          timestamp,
+          playerPairOccurred,
+          bankerPairOccurred,
+        } = data;
+
+        // 기존 자동 승인 타이머가 있다면 취소
+        if (autoApproveTimerId) {
+          clearTimeout(autoApproveTimerId);
+          autoApproveTimerId = null;
+          console.log("[Admin] Previous auto-approve timer cleared.");
+        }
+
+        currentPendingGameDetails = {
+          result,
+          playerScore,
+          bankerScore,
+          timestamp,
+          playerPairOccurred: playerPairOccurred || false,
+          bankerPairOccurred: bankerPairOccurred || false,
+        };
+
         document.getElementById("pendingResult").classList.remove("hidden");
         document.getElementById("resultDetails").innerHTML = `
           <div class="bg-gray-700 p-4 rounded-lg mb-4">
@@ -1482,21 +1675,67 @@
         // 결과 승인/거절 버튼 활화
         document.getElementById("approveResult").disabled = false;
         document.getElementById("rejectResult").disabled = false;
+
+        // 2초 후 자동 승인 타이머 설정
+        autoApproveTimerId = setTimeout(() => {
+          console.log("[Admin] 2 seconds passed, attempting auto-approval.");
+          const approveButton = document.getElementById("approveResult");
+          // 버튼이 여전히 활성화되어 있고 (즉, 수동으로 클릭되지 않았고), pendingResult 섹션이 보이는 경우
+          if (
+            approveButton &&
+            !approveButton.disabled &&
+            !document
+              .getElementById("pendingResult")
+              .classList.contains("hidden")
+          ) {
+            showToast("2초 경과, 게임 결과를 자동으로 승인합니다.");
+            approveButton.click();
+          }
+          autoApproveTimerId = null; // 타이머 실행 후 ID 초기화
+        }, 2000); // 2000ms = 2초
+        console.log(
+          `[Admin] Auto-approve timer set for 2 seconds (ID: ${autoApproveTimerId}).`
+        );
       });
 
       // 승인/거절 버튼 이벤트 핸들러 수정
       document.getElementById("approveResult").addEventListener("click", () => {
-        socket.emit("approve_result");
-        document.getElementById("pendingResult").classList.add("hidden");
-        showToast("게임 결과가 승인되었습니다.");
+        if (autoApproveTimerId) {
+          clearTimeout(autoApproveTimerId);
+          autoApproveTimerId = null;
+          console.log("[Admin] Auto-approve timer cleared by manual approval.");
+        }
 
-        // 2초 후 페이지 새로고침
+        if (currentPendingGameDetails) {
+          socket.emit("approve_result", currentPendingGameDetails);
+          currentPendingGameDetails = null;
+        } else {
+          // Fallback 또는 오류 처리: currentPendingGameDetails가 없는 경우
+          // 기본 approve_result 이벤트를 발생시키거나, 오류 메시지를 표시할 수 있습니다.
+          // 여기서는 이전처럼 페어 정보 없이 approve_result를 보내도록 합니다.
+          // 하지만 이 경우는 발생하지 않도록 game_result 수신 시 항상 currentPendingGameDetails가 설정되어야 합니다.
+          socket.emit("approve_result");
+          console.warn(
+            "currentPendingGameDetails가 없어 페어 정보 없이 결과를 승인합니다."
+          );
+        }
+        document.getElementById("pendingResult").classList.add("hidden");
+        showToast("게임 결과가 승인 요청되었습니다."); // 메시지 변경: 요청됨
+
+        // 2초 후 페이지 새로고침 (이 부분은 서버에서 최종 승인 완료 후 처리하는 것이 더 적합할 수 있음)
         setTimeout(() => {
           window.location.reload();
         }, 2000);
       });
 
       document.getElementById("rejectResult").addEventListener("click", () => {
+        if (autoApproveTimerId) {
+          clearTimeout(autoApproveTimerId);
+          autoApproveTimerId = null;
+          console.log(
+            "[Admin] Auto-approve timer cleared by manual rejection."
+          );
+        }
         socket.emit("reject_result");
         document.getElementById("pendingResult").classList.add("hidden");
         showToast("게임 결과가 거절되었습니다.");
@@ -1509,30 +1748,10 @@
 
       // Socket.IO 이벤트 리스너 수정
       socket.on("recent_games_updated", (data) => {
-        const { recentGames, stats } = data;
-        updateGameStats(recentGames, stats);
-      });
-
-      // 게임 통계 업데이트 함수
-      function updateGameStats(recentGames, stats) {
-        // 통계 계산
-        const totalGames = stats.totalGames;
-        const playerWinRate = ((stats.playerWins / totalGames) * 100).toFixed(
-          1
-        );
-        const bankerWinRate = ((stats.bankerWins / totalGames) * 100).toFixed(
-          1
-        );
-        const tieRate = ((stats.ties / totalGames) * 100).toFixed(1);
-
-        // 통계 표시 업데이트
-        document.getElementById(
-          "playerWinRate"
-        ).textContent = `${playerWinRate}%`;
-        document.getElementById(
-          "bankerWinRate"
-        ).textContent = `${bankerWinRate}%`;
-        document.getElementById("tieRate").textContent = `${tieRate}%`;
+        const { recentGames, stats: gameStats } = data; // 서버에서 오는 stats는 게임 승리 통계이므로 gameStats로 변경
+        // updateGameStats(recentGames, gameStats); // 이 함수는 이제 최근 게임 '목록' 통계를 다룸. 베팅 통계와는 다름.
+        // fetchRecentGames 함수 내부에서 통계 업데이트가 이미 처리되고 있음.
+        // 만약 여기서도 최근 게임 목록에 대한 통계를 표시해야 한다면, 해당 로직을 여기에 유지.
 
         // 최근 게임 기록 테이블 업데이트
         const recentGamesTable = document.getElementById("recentGamesTable");
@@ -1549,36 +1768,77 @@
               tie: "text-green-400",
             }[game.result];
 
+            const resultText =
+              game.result === "player"
+                ? "플레이어"
+                : game.result === "banker"
+                ? "뱅커"
+                : "타이";
+
             tr.innerHTML = `
+              <td class="py-3 px-4">${recentGames.length - index}</td>
+              <td class="py-3 px-4">
+                 <span class="font-semibold ${resultClass}">${resultText}</span>
+              </td>
               <td class="py-3 px-4">${new Date(game.date).toLocaleString()}</td>
-              <td class="py-3 px-4 ${resultClass} font-bold">${game.result.toUpperCase()}</td>
-              <td class="py-3 px-4">${game.playerCount}명</td>
-              <td class="py-3 px-4">${game.totalBets}코인</td>
+              <td class="py-3 px-4 text-right">${formatAdminAmount(
+                game.totalBets
+              )}</td>
+              <td class="py-3 px-4 text-right">${game.playerCount}명</td>
+              <td class="py-3 px-4 text-center">${
+                game.playerPairOccurred
+                  ? '<span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-blue-500 text-white">P</span>'
+                  : "-"
+              }</td>
+              <td class="py-3 px-4 text-center">${
+                game.bankerPairOccurred
+                  ? '<span class="text-xs font-semibold px-1.5 py-0.5 rounded bg-red-500 text-white">B</span>'
+                  : "-"
+              }</td>
             `;
             recentGamesTable.appendChild(tr);
           });
         }
-      }
 
-      // 실시간 베팅 현황 업데이트
+        // "최근 게임 기록" 섹션의 전체 통계 업데이트 (P/B/T 승리 횟수 등)
+        if (gameStats) {
+          document.getElementById("playerWins").textContent =
+            gameStats.playerWins || 0;
+          document.getElementById("bankerWins").textContent =
+            gameStats.bankerWins || 0;
+          document.getElementById("tieWins").textContent = gameStats.ties || 0;
+          document.getElementById("totalGames").textContent =
+            gameStats.totalGames || 0;
+
+          if (gameStats.totalGames > 0) {
+            document.getElementById("playerWinRate").textContent = `${(
+              (gameStats.playerWins / gameStats.totalGames) *
+              100
+            ).toFixed(1)}%`;
+            document.getElementById("bankerWinRate").textContent = `${(
+              (gameStats.bankerWins / gameStats.totalGames) *
+              100
+            ).toFixed(1)}%`;
+            document.getElementById("tieWinRate").textContent = `${(
+              (gameStats.ties / gameStats.totalGames) *
+              100
+            ).toFixed(1)}%`;
+          } else {
+            document.getElementById("playerWinRate").textContent = "0%";
+            document.getElementById("bankerWinRate").textContent = "0%";
+            document.getElementById("tieWinRate").textContent = "0%";
+          }
+        }
+      });
+
+      // 실시간 베팅 현황 업데이트 (new_bet 이벤트 핸들러)
       socket.on("new_bet", (data) => {
         const { stats } = data;
-
-        // 베팅 카운트 업데이트
-        document.getElementById(
-          "playerBetsCount"
-        ).textContent = `${stats.player.count}명`;
-        document.getElementById(
-          "bankerBetsCount"
-        ).textContent = `${stats.banker.count}명`;
-        document.getElementById(
-          "tieBetsCount"
-        ).textContent = `${stats.tie.count}명`;
-
-        // 베팅 금액 업데이트
-        document.getElementById("playerBets").textContent = stats.player.total;
-        document.getElementById("bankerBets").textContent = stats.banker.total;
-        document.getElementById("tieBets").textContent = stats.tie.total;
+        // console.log("[admin.html] Received new_bet with stats:", stats); // 디버깅 로그
+        if (stats) {
+          // stats 객체가 존재하는지 확인
+          updateBettingStats(stats); // 실시간 베팅 현황 업데이트 함수 호출
+        }
       });
     </script>
   </body>

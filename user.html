@@ -9,9 +9,15 @@
     <title>골든 카지노</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <!-- Phaser 라이브러리 추가 -->
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
     />
     <style>
       body {
@@ -107,23 +113,348 @@
         }
       }
 
-      /* 그리드 스타일 추가 */
+      /* 최근 게임 결과 스타일 - Big Road */
       #recentResults {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 4px;
-        width: fit-content;
-        margin: 0 auto;
+        display: flex;
+        flex-direction: row; /* 가로로 열 배치 */
+        overflow-x: auto; /* 가로 스크롤 */
+        padding: 8px;
+        min-height: 120px; /* 최소 높이 (6개 아이템 기준) */
+        align-items: flex-start; /* 열 상단 정렬 */
+        gap: 4px; /* 열 간 간격 */
+        -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
       }
 
-      #recentResults > div {
-        width: 2rem;
-        height: 2rem;
+      .result-column {
+        display: flex;
+        flex-direction: column; /* 세로로 아이템 배치 */
+        gap: 4px; /* 아이템 간 간격 */
+      }
+
+      .result-cell {
+        width: 18px; /* 셀 너비 */
+        height: 18px; /* 셀 높이 */
+        border-radius: 50%; /* 원형 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0; /* 줄어들지 않도록 */
+        border: 1px solid rgba(0, 0, 0, 0.2);
+      }
+
+      .result-cell.player {
+        background-color: #3b82f6; /* 파란색 */
+      }
+      .result-cell.banker {
+        background-color: #ef4444; /* 빨간색 */
+      }
+      .result-cell.tie {
+        background-color: #10b981; /* 녹색 */
+      }
+      .result-cell.player-pair {
+        border: 2px solid #3b82f6; /* 플레이어 페어 표시 (예: 테두리) */
+      }
+      .result-cell.banker-pair {
+        border: 2px solid #ef4444; /* 뱅커 페어 표시 */
+      }
+
+      /* 에볼루션 스타일 베팅 영역 */
+      .betting-area {
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        gap: 4px; /* 버튼 간 간격 */
+        margin-bottom: 1rem;
+        padding: 0 4px;
+        height: 160px; /* 베팅 영역 높이 증가 */
+      }
+
+      .bet-option {
+        position: relative;
+        padding: 8px 4px; /* 패딩 조정 */
+        border-radius: 10px; /* 모서리 둥글기 */
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 1;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      /* P/B/T 타이틀과 카드 표시 영역 간의 간섭을 피하기 위해 타이틀 마진 조정 */
+      .bet-option .title {
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+        line-height: 1.1;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        /* margin-top: 25px; */ /* 이전 스타일 제거 */
+        position: relative; /* z-index 적용을 위해 */
+        z-index: 10; /* 카드보다 위에 오도록 */
+      }
+
+      .bet-option .odds {
+        font-size: 0.75rem; /* 배당률 폰트 크기 */
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* P/B/T 공통 내부 스타일 */
+      .bet-option.player .title,
+      .bet-option.banker .title,
+      .bet-option.tie .title {
+        font-size: 1.2rem;
+        font-family: "Noto Serif KR", serif;
+        font-weight: 700;
+        margin-top: 4px; /* 원래 스타일 복원 또는 유지 */
+      }
+
+      .bet-option.player {
+        background: linear-gradient(
+          160deg,
+          rgba(0, 60, 180, 0.8),
+          /* 진한 파란색 계열 */ rgba(0, 40, 120, 0.9)
+        );
+        border: 2px solid rgba(59, 130, 246, 0.6); /* Blue */
+        flex-grow: 3; /* 플레이어 영역을 더 넓게 */
+      }
+      .bet-option.player.active {
+        transform: scale(1.03);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+        border-color: rgba(96, 165, 250, 0.9);
+      }
+
+      .bet-option.banker {
+        background: linear-gradient(
+          160deg,
+          rgba(180, 0, 0, 0.8),
+          /* 진한 빨간색 계열 */ rgba(130, 0, 0, 0.9)
+        );
+        border: 2px solid rgba(239, 68, 68, 0.6); /* Red */
+        flex-grow: 3; /* 뱅커 영역을 더 넓게 */
+      }
+      .bet-option.banker.active {
+        transform: scale(1.03);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        border-color: rgba(248, 113, 113, 0.9);
+      }
+
+      .bet-option.tie {
+        background: linear-gradient(
+          160deg,
+          rgba(0, 110, 60, 0.8),
+          /* 진한 녹색 계열 */ rgba(0, 80, 30, 0.9)
+        );
+        border: 2px solid rgba(16, 185, 129, 0.6); /* Green */
+        flex-grow: 1.5; /* 타이는 중간 크기 */
+      }
+      .bet-option.tie.active {
+        transform: scale(1.03);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+        border-color: rgba(52, 211, 153, 0.9);
+      }
+
+      .bet-option.player-pair,
+      .bet-option.banker-pair {
+        background: linear-gradient(
+          /* P PAIR, B PAIR 배경 수정 */ 160deg,
+          rgba(40, 40, 90, 0.7),
+          /* 약간 푸른/붉은 기운이 도는 어두운 배경 */ rgba(20, 20, 50, 0.8)
+        );
+        border: 1px solid rgba(107, 114, 128, 0.5);
+        flex-grow: 1; /* 페어는 가장 작게 */
+        justify-content: center;
+        padding-top: 12px; /* P PAIR, B PAIR 텍스트 위치 조정 */
+        padding-bottom: 12px;
+      }
+      .bet-option.player-pair {
+        border-left-color: rgba(
+          59,
+          130,
+          246,
+          0.6
+        ); /* 플레이어쪽 페어는 파란색 테두리 힌트 */
+      }
+      .bet-option.banker-pair {
+        border-right-color: rgba(
+          239,
+          68,
+          68,
+          0.6
+        ); /* 뱅커쪽 페어는 빨간색 테두리 힌트 */
+      }
+
+      .bet-option.player-pair .title,
+      .bet-option.banker-pair .title {
+        font-size: 0.9rem; /* PAIR 타이틀 크기 유지 또는 약간 조정 */
+        margin-bottom: 2px;
+      }
+      .bet-option.player-pair .odds,
+      .bet-option.banker-pair .odds {
+        font-size: 0.75rem;
+      }
+
+      .bet-option.player-pair.active,
+      .bet-option.banker-pair.active {
+        transform: scale(1.03);
+        box-shadow: 0 0 15px rgba(107, 114, 128, 0.7);
+        border: 1px solid rgba(156, 163, 175, 0.8);
+      }
+
+      /* P/B/T 버튼 내 통계 표시 스타일 수정 */
+      .bet-stats-container {
+        display: flex;
+        flex-direction: column; /* 세로로 배치 */
+        align-items: center; /* 중앙 정렬 */
+        justify-content: center; /* 중앙 정렬 */
+        gap: 4px; /* 요소 간 간격 */
+        width: 100%;
+        padding: 0 5px;
+        margin-top: auto; /* 타이틀과 배당률 아래로 밀기 */
+        margin-bottom: 5px; /* 하단 여백 추가 */
+        position: relative; /* z-index 적용을 위해 */
+        z-index: 10; /* 카드보다 위에 오도록 */
+      }
+
+      .bet-stats-container .percentage-circle {
+        width: 32px; /* 원 크기 조정 */
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.4); /* 배경 약간 더 어둡게 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 0.8rem; /* 폰트 크기 조정 */
+        font-weight: bold;
+        color: #ffd700;
+        border: 2px solid; /* 테두리 두께 유지 */
+        flex-shrink: 0;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5); /* 약간의 그림자 */
+      }
+
+      .bet-option.player .percentage-circle {
+        border-color: #60a5fa; /* 밝은 파랑 */
+      }
+      .bet-option.banker .percentage-circle {
+        border-color: #f87171; /* 밝은 빨강 */
+      }
+      .bet-option.tie .percentage-circle {
+        border-color: #34d399; /* 밝은 초록 */
+      }
+
+      .bet-stats-container .stats-details {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* 중앙 정렬 */
+        font-size: 0.65rem; /* 폰트 크기 조정 */
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.1;
+      }
+      .bet-stats-container .stats-details .total-bet {
+        font-weight: bold;
+        color: white;
+        font-size: 0.7rem; /* 금액 폰트 약간 키움 */
+      }
+      .bet-stats-container .stats-details .bettor-count {
+        font-size: 0.6rem; /* 아이콘과 숫자 크기 미세 조정 */
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* 금액 선택 영역 동그라미 버튼 스타일 유지 */
+      .amount-button {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #374151, #4b5563);
+        border: 2px solid #6b7280;
+        color: #fbbf24;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+      }
+      .amount-button.active {
+        background: linear-gradient(145deg, #b8860b, #daa520);
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 0 20px #daa520, 0 4px 15px rgba(0, 0, 0, 0.3);
+        border: 2px solid #fbbf24;
+      }
+      .amount-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      /* P PAIR, B PAIR 내부 통계 표시를 위한 스타일 추가 */
+      .bet-option.player-pair .bet-stats-container,
+      .bet-option.banker-pair .bet-stats-container {
+        margin-top: 2px; /* odds와 간격 */
+        margin-bottom: 2px; /* 하단 간격 */
+        /* 기존 .bet-stats-container 스타일이 적용되지만, 필요시 여기서 P/B PAIR에 특화된 스타일 추가 가능 */
+      }
+      .bet-option.player-pair .percentage-circle, /* 페어 베팅에는 퍼센트 원 미표시 */
+      .bet-option.banker-pair .percentage-circle {
+        display: none;
+      }
+      /* P PAIR, B PAIR는 인원수와 금액만 표시하므로 stats-details 정렬 조정 */
+      .bet-option.player-pair .stats-details,
+      .bet-option.banker-pair .stats-details {
+        justify-content: center; /* 수직 중앙 정렬 */
+        gap: 2px; /* 금액과 인원수 간격 */
+      }
+
+      /* 카드 표시 영역 스타일 */
+      .card-display-area {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2px; /* 카드 간 간격 */
+        position: absolute;
+        left: 50%;
+        top: 50%; /* 세로 중앙 기준으로 설정 */
+        transform: translate(
+          -50%,
+          -100%
+        ); /* 가로 중앙, 세로 약간 위로(-50%에서 -55%로) 조정 */
+        height: 25px;
+        z-index: 5; /* 타이틀과 통계 사이에 오도록 z-index 조정 */
+        /* 버튼 내부 다른 요소들과의 간격을 위해 필요시 margin 추가 */
+      }
+
+      .card-slot {
+        width: 18px; /* 카드 너비 (기존 15px에서 증가) */
+        height: 25px; /* 카드 높이 (사용자 요청 반영) */
+        border-radius: 3px; /* 모서리 둥글기 약간 증가 */
+        background-color: rgba(255, 255, 255, 0.8);
+        color: black;
+        font-size: 0.8rem; /* 카드 텍스트 크기 (기존 0.7rem에서 증가) */
         font-weight: bold;
-        font-size: 0.875rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .player-cards .card-slot {
+        border: 1px solid #3b82f6; /* 플레이어 카드 테두리 */
+      }
+
+      .banker-cards .card-slot {
+        border: 1px solid #ef4444; /* 뱅커 카드 테두리 */
       }
     </style>
   </head>
@@ -147,7 +478,7 @@
         </div>
         <div class="flex justify-between items-center">
           <span id="coinBalance" class="text-base text-yellow-500"
-            >잔여코인: 2</span
+            >보유금액: 0원</span
           >
           <span id="winRate" class="text-xs text-yellow-400">승률: 0%</span>
         </div>
@@ -155,6 +486,17 @@
     </header>
 
     <main class="pt-16 pb-14 px-2">
+      <!-- 미니게임 컨테이너 추가 -->
+      <div id="miniGameContainerWrapper" class="my-3 px-2 sm:px-0">
+        <div
+          id="miniGameContainer"
+          class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-green-700 bg-opacity-80 rounded-lg shadow-xl overflow-hidden mx-auto"
+          style="max-width: 600px; border: 2px solid #b8860b"
+        >
+          <!-- Phaser 게임이 여기에 렌더링됩니다. -->
+        </div>
+      </div>
+
       <!-- 게임 상태 표시 -->
       <div class="mt-4 text-center">
         <div
@@ -170,147 +512,130 @@
         ></div>
       </div>
 
+      <!-- 최근 게임 결과 섹션 (이동된 위치) -->
+      <div class="mb-4">
+        <div
+          class="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-lg border border-[#b8860b]"
+        >
+          <div id="recentResults" class="custom-scrollbar">
+            <!-- 최근 결과가 여기에 추가됩니다 -->
+          </div>
+        </div>
+      </div>
+
       <!-- 베팅 선택 영역 -->
       <div class="mt-3 mb-3">
         <div
           class="text-center mb-3 text-lg font-bold text-yellow-500"
           style="text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5)"
         >
-          베팅
+          <!-- 베팅 타이틀 제거 또는 변경 -->
         </div>
-        <div class="grid grid-cols-3 gap-1.5">
+        <div class="betting-area">
           <button
-            data-choice="player"
-            class="choice-button py-3 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #1a472a, #2d8a4e);
-              border: 1px solid #b8860b;
-            "
+            data-choice="player_pair"
+            class="bet-option player-pair choice-button"
           >
-            플레이어
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            <span class="title">P PAIR</span>
+            <span class="odds">11:1</span>
+            <div class="bet-stats-container" id="player_pairStats">
+              <!-- 페어 베팅 통계 (금액, 인원) -->
+              <div class="stats-details">
+                <span class="total-bet">₩0</span>
+                <span class="bettor-count"><i class="fas fa-users"></i> 0</span>
+              </div>
+            </div>
           </button>
-          <button
-            data-choice="banker"
-            class="choice-button py-3 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #1a365d, #2563eb);
-              border: 1px solid #b8860b;
-            "
-          >
-            뱅커
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+
+          <button data-choice="player" class="bet-option player choice-button">
+            <span class="title">PLAYER</span>
+            <div class="bet-stats-container" id="playerStats">
+              <div class="percentage-circle">0%</div>
+              <div class="stats-details">
+                <span class="total-bet">₩0</span>
+                <span class="bettor-count"><i class="fas fa-users"></i> 0</span>
+              </div>
+            </div>
           </button>
+
+          <button data-choice="tie" class="bet-option tie choice-button">
+            <span class="title">TIE</span>
+            <span class="odds">8:1</span>
+            <div class="bet-stats-container" id="tieStats">
+              <div class="percentage-circle">0%</div>
+              <div class="stats-details">
+                <span class="total-bet">₩0</span>
+                <span class="bettor-count"><i class="fas fa-users"></i> 0</span>
+              </div>
+            </div>
+          </button>
+
+          <button data-choice="banker" class="bet-option banker choice-button">
+            <span class="title">BANKER</span>
+            <div class="bet-stats-container" id="bankerStats">
+              <div class="percentage-circle">0%</div>
+              <div class="stats-details">
+                <span class="total-bet">₩0</span>
+                <span class="bettor-count"><i class="fas fa-users"></i> 0</span>
+              </div>
+            </div>
+          </button>
+
           <button
-            data-choice="tie"
-            class="choice-button py-3 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #4c1d95, #7c3aed);
-              border: 1px solid #b8860b;
-            "
+            data-choice="banker_pair"
+            class="bet-option banker-pair choice-button"
           >
-            타이
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            <span class="title">B PAIR</span>
+            <span class="odds">11:1</span>
+            <div class="bet-stats-container" id="banker_pairStats">
+              <!-- 페어 베팅 통계 (금액, 인원) -->
+              <div class="stats-details">
+                <span class="total-bet">₩0</span>
+                <span class="bettor-count"><i class="fas fa-users"></i> 0</span>
+              </div>
+            </div>
           </button>
         </div>
       </div>
 
-      <!-- 코인 선택 영역 수정 -->
+      <!-- 금액 선택 영역 - 동그라미 스타일 -->
       <div class="mb-4">
-        <div
-          class="text-center mb-4 text-xl font-bold text-yellow-500"
-          style="text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5)"
-        ></div>
-        <div class="grid grid-cols-5 gap-1.5">
-          <button
-            data-coins="1"
-            class="coin-button h-12 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-              border: 1px solid #b8860b;
-              color: #ffd700;
-            "
-          >
-            1
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+        <div class="flex justify-center items-center gap-3 px-4">
+          <button data-amount="1000" class="amount-button coin-button relative">
+            1K
+          </button>
+          <button data-amount="5000" class="amount-button coin-button relative">
+            5K
           </button>
           <button
-            data-coins="2"
-            class="coin-button h-12 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-              border: 1px solid #b8860b;
-              color: #ffd700;
-            "
+            data-amount="10000"
+            class="amount-button coin-button relative"
           >
-            2
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            10K
           </button>
           <button
-            data-coins="3"
-            class="coin-button h-12 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-              border: 1px solid #b8860b;
-              color: #ffd700;
-            "
+            data-amount="25000"
+            class="amount-button coin-button relative"
           >
-            3
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            25K
           </button>
           <button
-            data-coins="4"
-            class="coin-button h-12 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-              border: 1px solid #b8860b;
-              color: #ffd700;
-            "
+            data-amount="50000"
+            class="amount-button coin-button relative"
           >
-            4
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            50K
           </button>
           <button
-            data-coins="5"
-            class="coin-button h-12 rounded-lg text-base font-bold relative overflow-hidden transition-all duration-200 hover:scale-105"
-            style="
-              background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-              border: 1px solid #b8860b;
-              color: #ffd700;
-            "
+            id="undoBetButton"
+            class="golden-btn px-4 py-2 rounded-lg text-sm font-semibold ml-2"
           >
-            5
-            <div
-              class="selected-indicator hidden absolute inset-0 border-2 border-yellow-500 rounded-lg shadow-lg"
-            ></div>
+            <i class="fas fa-undo"></i>
           </button>
         </div>
       </div>
 
-      <!-- 베팅 버튼 -->
-      <button
-        id="betButton"
-        class="w-full golden-btn py-3 rounded-lg text-lg font-bold mb-3 shadow-lg"
-      >
-        베팅하기
-      </button>
-
-      <!-- 하단 버튼 레이아웃 수정 -->
-      <div class="fixed bottom-16 left-0 right-0 px-2 grid grid-cols-3 gap-1.5">
+      <!-- 하단 버튼 레이아웃 복원 -->
+      <div class="fixed bottom-4 left-0 right-0 grid grid-cols-3 gap-1.5 z-40">
         <button
           id="showExchange"
           class="golden-btn py-2 rounded-lg text-xs font-bold shadow-lg"
@@ -331,24 +656,7 @@
         </button>
       </div>
 
-      <!-- 최근 게임 결과 섹션 수정 -->
-      <div class="mb-4">
-        <h2
-          class="text-lg font-bold mb-2 text-yellow-500"
-          style="text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5)"
-        >
-          최근 게임 결과
-        </h2>
-        <div
-          class="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] p-4 rounded-lg border border-[#b8860b]"
-        >
-          <div class="grid grid-cols-6 gap-1" id="recentResults">
-            <!-- 최근 결과가 여기에 추가됩니다 -->
-          </div>
-        </div>
-      </div>
-
-      <!-- 베팅 기록 모달 가 -->
+      <!-- 베팅 기록 모달 (최근 게임 결과 섹션이 이 앞으로 이동되었으므로, 여기서는 삭제됨) -->
       <div
         id="historyModal"
         class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden backdrop-blur-sm"
@@ -432,36 +740,41 @@
             <div
               class="flex justify-between items-center p-3 bg-black bg-opacity-50 rounded-lg border border-[#b8860b]"
             >
-              <span>현재 보유 코인:</span>
+              <span>현재 보유 금액:</span>
               <span
                 class="text-yellow-500 font-bold text-lg"
                 id="modalCoinBalance"
-                >0</span
+                >0원</span
               >
             </div>
-            <div>* 수수료: 10코인 미만은 1코인, 10코인 이상은 5코인</div>
-            <div>* 최소 환전 가능 코인: 5코인</div>
-            <div>* 롤링 포인트: 총 베팅액의 100%만 환전 가능</div>
+            <div>
+              * 수수료: 5만원 미만: 1천원 | 5만원 이상 ~ 20만원 미만: 2천원 |
+              20만원 이상: 1%
+            </div>
+            <div>* 최소 환전 가능 금액: 5,000원</div>
+            <div>* 롤링 포인트: 사용 가능한 롤링 포인트 내에서만 환전 가능</div>
             <div
               id="rollingInfo"
               class="mt-2 p-3 bg-black bg-opacity-50 rounded-lg border border-[#b8860b] space-y-1"
             >
-              <div>총 베팅액: <span class="text-yellow-500">0</span> 인</div>
               <div>
-                현재 환전 가능 코인: <span class="text-yellow-500">0</span> 코인
+                사용 가능 롤링: <span class="text-yellow-500">0원</span>
+              </div>
+              <div class="hidden">
+                총 베팅액: <span class="text-yellow-500">0원</span>
               </div>
             </div>
           </div>
           <div class="space-y-4 mt-4">
             <div>
               <label class="block text-sm font-medium text-yellow-500 mb-2"
-                >환전 신청 코인</label
+                >환전 신청 금액</label
               >
               <div class="flex gap-2">
                 <input
                   type="number"
                   id="exchangeAmount"
-                  min="5"
+                  min="5000"
                   class="w-full bg-black bg-opacity-50 border border-[#b8860b] rounded-lg px-4 py-3 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500"
                 />
                 <button
@@ -478,14 +791,14 @@
             >
               <div>
                 신청 금액:
-                <span id="requestAmount" class="text-yellow-500">0</span> 코인
+                <span id="requestAmount" class="text-yellow-500">0원</span>
               </div>
               <div>
-                수수료: <span id="feeAmount" class="text-red-400">0</span> 코인
+                수수료: <span id="feeAmount" class="text-red-400">0원</span>
               </div>
               <div>
                 실수령액:
-                <span id="actualAmount" class="text-yellow-500">0</span> 코인
+                <span id="actualAmount" class="text-yellow-500">0원</span>
               </div>
             </div>
             <button
@@ -570,22 +883,22 @@
                     <div class="bg-black bg-opacity-30 p-2 rounded-lg">
                       신청 금액: <span class="text-yellow-500 font-bold">${
                         exchange.requestAmount
-                      }</span> 코인
+                      }원</span>
                     </div>
                     <div class="bg-black bg-opacity-30 p-2 rounded-lg">
                       수수료: <span class="text-red-400 font-bold">${
                         exchange.fee
-                      }</span> 코인
+                      }원</span>
                     </div>
                     <div class="bg-black bg-opacity-30 p-2 rounded-lg">
                       실수령액: <span class="text-yellow-500 font-bold">${
                         exchange.actualAmount
-                      }</span> 코인
+                      }원</span>
                     </div>
                     <div class="bg-black bg-opacity-30 p-2 rounded-lg">
                       롤링 포인트: <span class="text-blue-400 font-bold">${
                         exchange.rollingPoint
-                      }</span> 코인
+                      }원</span>
                     </div>
                   </div>
                 `;
@@ -596,22 +909,6 @@
         </div>
       </div>
     </main>
-
-    <!-- 하단 상태 표시줄 수정 -->
-    <footer
-      class="fixed bottom-0 left-0 right-0 bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] p-2 text-center shadow-lg border-t border-[#b8860b]"
-    >
-      <div
-        id="currentBet"
-        class="text-sm font-bold bg-black bg-opacity-50 rounded-lg p-1.5 border border-[#b8860b]"
-      >
-        <span class="text-yellow-500">현재 선택:</span>
-        <span class="choice-text text-white">없음</span>
-        <span class="mx-2 text-gray-400">|</span>
-        <span class="text-yellow-500">코인:</span>
-        <span class="coins-text text-white">0</span>
-      </div>
-    </footer>
 
     <!-- 알림  -->
     <div
@@ -629,813 +926,1472 @@
     <audio id="tieSound" src="tie.mp3" preload="auto"></audio>
 
     <script>
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "index.html";
-      }
+      window.addEventListener("DOMContentLoaded", () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          window.location.href = "index.html";
+          return; // token 없으면 이후 코드 실행 안 함
+        }
 
-      let socket = io("http://127.0.0.1:5500");
+        let socket = io("http://127.0.0.1:5000");
 
-      let selectedChoice = null;
-      let selectedCoins = null;
+        let selectedChoice = null;
+        let selectedChipAmount = 0;
+        let bettingActive = false;
+        let miniGame = null; // Phaser 게임 인스턴스 변수
+        let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
 
-      // 알림 표시 함수
-      function showNotification(message, duration = 3000) {
-        const notification = document.getElementById("notification");
-        const notificationMessage = document.getElementById(
-          "notificationMessage"
+        // DOM 요소 가져오기
+        const exchangeModal = document.getElementById("exchangeModal");
+        const historyModal = document.getElementById("historyModal");
+        const exchangeHistoryModal = document.getElementById(
+          "exchangeHistoryModal"
         );
-        notificationMessage.textContent = message;
-        notification.classList.remove("hidden");
-        setTimeout(() => {
-          notification.classList.add("hidden");
-        }, duration);
-      }
 
-      // 사용자 정보 가져오기
-      async function fetchUserInfo() {
-        try {
-          const res = await fetch("http://127.0.0.1:5500/api/auth/user-info", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const user = await res.json();
-            document.getElementById(
-              "coinBalance"
-            ).innerText = `잔여코인: ${user.coins}`;
-            displayBettingHistory(user.bettingHistory);
-          } else {
-            showNotification("사용자 정보를 가져오는 데 실패했습니다.");
-          }
-        } catch (err) {
-          console.error(err);
-          showNotification("서버 연결 오류가 발생했습니다.");
-        }
-      }
-
-      // 베팅 기록 표시 함수 수정 (스크롤 위치 초기화 추가)
-      function displayBettingHistory(history) {
-        const container = document.getElementById("bettingHistory");
-        container.innerHTML = "";
-        container.scrollTop = 0; // 스크롤 위치 초기화
-
-        if (history.length === 0) {
-          container.innerHTML = `
-            <div class="text-center text-gray-400 py-4">
-              베팅 기록이 없습니다.
-            </div>
-          `;
-          return;
-        }
-
-        // 승률 계산
-        const totalBets = history.length;
-        const wins = history.filter((record) => record.result === "win").length;
-        const winRate = ((wins / totalBets) * 100).toFixed(1);
-        document.getElementById("winRate").textContent = `승률: ${winRate}%`;
-
-        history
-          .slice(-10)
-          .reverse()
-          .forEach((record) => {
-            const card = document.createElement("div");
-            card.className = "betting-history-card";
-
-            const resultClass =
-              record.result === "win"
-                ? "text-green-400"
-                : record.result === "lose"
-                ? "text-red-400"
-                : "text-yellow-400";
-
-            const resultText =
-              record.result === "win"
-                ? "승리"
-                : record.result === "lose"
-                ? "패배"
-                : "환급";
-
-            const choiceKorean = {
-              player: "플레이어",
-              banker: "뱅커",
-              tie: "타이",
-            };
-
-            card.innerHTML = `
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-sm text-gray-400">
-                  ${new Date(record.date).toLocaleString()}
-                </span>
-                <span class="font-bold ${resultClass}">
-                  ${resultText}
-                </span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>
-                  ${choiceKorean[record.choice]} → ${
-              choiceKorean[record.gameResult]
-            }
-                </span>
-                <span class="text-yellow-400 font-bold">
-                  ${record.coins} 코인
-                </span>
-              </div>
-            `;
-            container.appendChild(card);
-          });
-      }
-
-      // 초기 사용자 정보 로드
-      fetchUserInfo();
-
-      // 로그아웃 기능
-      document.getElementById("logout").addEventListener("click", () => {
-        localStorage.removeItem("token");
-        window.location.href = "index.html";
-      });
-
-      // 선택 상태 업데이트 함수 수정
-      function updateCurrentBet() {
-        const choiceKorean = {
-          player: "플레이어",
-          banker: "뱅커",
-          tie: "타이",
-          null: "없음",
-        };
-
-        const choiceText = document.querySelector("#currentBet .choice-text");
-        const coinsText = document.querySelector("#currentBet .coins-text");
-
-        choiceText.textContent = choiceKorean[selectedChoice] || "없음";
-        coinsText.textContent = selectedCoins || "0";
-
-        // 선택된 항목 강조 표시
-        document.querySelectorAll(".choice-button").forEach((btn) => {
-          const indicator = btn.querySelector(".selected-indicator");
-          if (btn.getAttribute("data-choice") === selectedChoice) {
-            indicator.classList.remove("hidden");
-            btn.classList.add("ring-4", "ring-yellow-400", "scale-105");
-          } else {
-            indicator.classList.add("hidden");
-            btn.classList.remove("ring-4", "ring-yellow-400", "scale-105");
-          }
-        });
-
-        document.querySelectorAll(".coin-button").forEach((btn) => {
-          const indicator = btn.querySelector(".selected-indicator");
-          if (parseInt(btn.getAttribute("data-coins")) === selectedCoins) {
-            indicator.classList.remove("hidden");
-            btn.classList.add("ring-4", "ring-red-400", "scale-105");
-          } else {
-            indicator.classList.add("hidden");
-            btn.classList.remove("ring-4", "ring-red-400", "scale-105");
-          }
-        });
-      }
-
-      // 튼 클릭 이벤트 수정
-      document.querySelectorAll(".choice-button").forEach((button) => {
-        button.addEventListener("click", () => {
-          selectedChoice = button.getAttribute("data-choice");
-          updateCurrentBet();
-        });
-      });
-
-      document.querySelectorAll(".coin-button").forEach((button) => {
-        button.addEventListener("click", () => {
-          selectedCoins = parseInt(button.getAttribute("data-coins"));
-          updateCurrentBet();
-        });
-      });
-
-      // 최근 게임 결과 표시 함수 수정
-      function addRecentResult(result) {
-        const container = document.getElementById("recentResults");
-        const resultElement = document.createElement("div");
-
-        const resultClass =
-          result === "player"
-            ? "border-2 border-blue-500 bg-transparent"
-            : result === "banker"
-            ? "border-2 border-red-500 bg-transparent"
-            : "border-2 border-green-500 bg-transparent";
-
-        resultElement.className = `w-6 h-6 rounded-full flex items-center justify-center ${resultClass}`;
-        resultElement.textContent =
-          result === "player" ? "P" : result === "banker" ? "B" : "T";
-
-        if (container.children.length >= 36) {
-          // 6x6 그리드
-          container.removeChild(container.lastChild);
-        }
-
-        container.insertBefore(resultElement, container.firstChild);
-      }
-
-      // 베팅 버튼 클릭 이벤트
-      document.getElementById("betButton").addEventListener("click", () => {
-        if (!selectedChoice || !selectedCoins) {
-          showNotification("베팅 선택과 코인을 선택해주세요.");
-          return;
-        }
-
-        // 베팅 버튼 비활성화 (중복 베팅 방지)
-        const betButton = document.getElementById("betButton");
-        betButton.disabled = true;
-        betButton.textContent = "베팅 처리중...";
-
-        // Socket.io를 통해 베팅 데이터 전송
-        socket.emit("place_bet", {
-          choice: selectedChoice,
-          coins: selectedCoins,
-          token: token,
-        });
-      });
-
-      // 베팅 성공/실패 처리 수정
-      socket.on("bet_success", (message) => {
-        showNotification(message);
-        // 베팅 후 코인 잔액 업데이트
-        fetchUserInfo();
-        // 선택 초기화
-        selectedChoice = null;
-        selectedCoins = null;
-        updateCurrentBet();
-        // 베팅 버튼 상태 업데이트
-        const betButton = document.getElementById("betButton");
-        betButton.disabled = true;
-        betButton.textContent = "베팅완료";
-      });
-
-      socket.on("error", (message) => {
-        showNotification(message);
-        // 베팅 버튼 다시 활성화
-        const betButton = document.getElementById("betButton");
-        betButton.disabled = false;
-        betButton.textContent = "베팅하기";
-      });
-
-      // 베팅 시작 이벤트 리스너 수정
-      socket.on("betting_started", (data) => {
-        const betButton = document.getElementById("betButton");
-        betButton.disabled = false;
-        betButton.textContent = "베팅하기";
-
-        document.getElementById("timer").innerText =
-          "베팅이 시작되었습니다. 20초 내에 베팅해주세요.";
-
-        // 베팅 시작 소리 재생
-        const bettingStartSound = document.getElementById("bettingStartSound");
-        bettingStartSound
-          ?.play()
-          .catch((err) => console.log("소리 재생 실패:", err));
-
-        // 타이머 시작
-        startTimer(new Date(Date.now() + 20000)); // 20초 타이머
-      });
-
-      // 타이머 함수 수정
-      function startTimer(endTime) {
-        const timerElement = document.getElementById("timer");
-        const interval = setInterval(() => {
-          const now = new Date();
-          const distance = endTime - now;
-
-          if (distance < 0) {
-            clearInterval(interval);
-            timerElement.innerText =
-              "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
-            timerElement.className = "text-red-500 font-bold";
-            // 베팅 버튼 비활성화
-            document.getElementById("betButton").disabled = true;
-            return;
-          }
-
-          const seconds = Math.floor((distance / 1000) % 60);
-          timerElement.innerText = `베팅 종료까지: ${seconds}초`;
-          // 10초 이하일 때 빨간색으로 변경
-          if (seconds <= 10) {
-            timerElement.className = "text-red-500 font-bold animate-pulse";
-          }
-        }, 1000);
-      }
-
-      socket.on("betting_closed", () => {
-        document.getElementById("timer").innerText =
-          "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
-        // 베팅 버튼 비활성화
-        document.getElementById("betButton").disabled = true;
-
-        // 베팅 마감 소리 재생
-        const bettingEndSound = document.getElementById("bettingEndSound");
-        bettingEndSound
-          ?.play()
-          .catch((err) => console.log("소리 재생 실패:", err));
-      });
-
-      // 게임 결과 수신 시 통계 업데이트 (수정)
-      socket.on("game_result", (data) => {
-        const { result, playerScore, bankerScore } = data;
-
-        // 게임 상태 텍스트 업데이트
-        const gameStatus = document.getElementById("gameStatus");
-
-        if (result === "player") {
-          gameStatus.textContent = `플레이어 승! (${playerScore} vs ${bankerScore})`;
-          gameStatus.className = "text-xl font-bold text-blue-500 mb-2";
-          // 플레이어 승리 사운드 재생
-          document
-            .getElementById("playerWinSound")
-            ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
-        } else if (result === "banker") {
-          gameStatus.textContent = `뱅커 승! (${playerScore} vs ${bankerScore})`;
-          gameStatus.className = "text-xl font-bold text-red-500 mb-2";
-          // 뱅커 승리 사운드 재생
-          document
-            .getElementById("bankerWinSound")
-            ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
-        } else {
-          gameStatus.textContent = `타이! (${playerScore} vs ${bankerScore})`;
-          gameStatus.className = "text-xl font-bold text-green-500 mb-2";
-          // 타이 사운드 재생
-          document
-            .getElementById("tieSound")
-            ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
-        }
-
-        // 타이머 텍스트 업데이트
-        document.getElementById("timer").innerText = "결과 확인 중...";
-        document.getElementById("timer").className =
-          "text-base font-semibold text-yellow-400";
-
-        // 최근 결과에 추가
-        addRecentResult(result);
-      });
-
-      // 결과 승인 시 처리 (수정)
-      socket.on("result_approved", () => {
-        showNotification("게임 결과가 승인되었습니다");
-
-        // 1초 후에 페이지 새로고침
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      });
-
-      // 새로운 게임 시작 시 처리
-      socket.on("betting_started", () => {
-        // 게임 상태 초기화
-        document.getElementById("gameStatus").innerText = "베팅 진행중";
-        document.getElementById("gameStatus").className =
-          "text-xl font-bold text-yellow-500 mb-2";
-
-        // 베팅 버튼 활성화
-        const betButton = document.getElementById("betButton");
-        betButton.disabled = false;
-        betButton.textContent = "베팅하기";
-
-        // 선택 초기화
-        selectedChoice = null;
-        selectedCoins = null;
-        updateCurrentBet();
-      });
-
-      // 코인 업데이트 이벤트
-      socket.on("update_coins", () => {
-        fetchUserInfo();
-      });
-
-      // 결과 승인/거절 처리
-      socket.on("result_approved", () => {
-        showNotification("게임 결과가 승인되었습니다.");
-        fetchUserInfo(); // 코인 잔액 업이트
-      });
-
-      socket.on("result_rejected", () => {
-        showNotification(
-          "게임 결과가 거절되었습니다. 다음 게임을 기다려주세요."
+        const showExchangeButton = document.getElementById("showExchange");
+        const closeExchangeButton = document.getElementById("closeExchange");
+        const showHistoryButton = document.getElementById("showHistory");
+        const closeHistoryButton = document.getElementById("closeHistory");
+        const showExchangeHistoryButton = document.getElementById(
+          "showExchangeHistory"
         );
-      });
-
-      // 베팅 기록 모달 제어
-      const historyModal = document.getElementById("historyModal");
-      const showHistoryBtn = document.getElementById("showHistory");
-      const closeHistoryBtn = document.getElementById("closeHistory");
-
-      showHistoryBtn.addEventListener("click", () => {
-        historyModal.classList.remove("hidden");
-        // 최신 베팅 기록 다시 불러오기
-        fetchUserInfo();
-      });
-
-      closeHistoryBtn.addEventListener("click", () => {
-        historyModal.classList.add("hidden");
-      });
-
-      // 모달 외부 클릭 시 닫기
-      historyModal.addEventListener("click", (e) => {
-        if (e.target === historyModal) {
-          historyModal.classList.add("hidden");
-        }
-      });
-
-      // 최근 게임 결과 가져오기 함수 수정
-      async function fetchRecentGames() {
-        try {
-          const res = await fetch("http://127.0.0.1:5500/api/recent-games");
-          const games = await res.json();
-
-          const container = document.getElementById("recentResults");
-          container.innerHTML = "";
-
-          // 36개의 빈 셀 생성
-          for (let i = 0; i < 36; i++) {
-            const emptyCell = document.createElement("div");
-            emptyCell.className =
-              "w-6 h-6 border border-[#b8860b] bg-black bg-opacity-50 rounded-full";
-            container.appendChild(emptyCell);
-          }
-
-          // 최근 게임 과 표시
-          games.reverse().forEach((game, index) => {
-            if (index < 36) {
-              const resultElement = document.createElement("div");
-
-              const resultClass =
-                game.result === "player"
-                  ? "border-2 border-blue-500 bg-black bg-opacity-50 text-blue-500"
-                  : game.result === "banker"
-                  ? "border-2 border-red-500 bg-black bg-opacity-50 text-red-500"
-                  : "border-2 border-green-500 bg-black bg-opacity-50 text-green-500";
-
-              resultElement.className = `w-6 h-6 rounded-full flex items-center justify-center ${resultClass} font-bold shadow-lg`;
-              resultElement.textContent =
-                game.result === "player"
-                  ? "P"
-                  : game.result === "banker"
-                  ? "B"
-                  : "T";
-
-              container.replaceChild(resultElement, container.children[index]);
-            }
-          });
-        } catch (err) {
-          console.error("최근 게임 결과 조회 에러:", err);
-        }
-      }
-
-      // 페이지 로드 시 최근 게임 결과 가져오기
-      fetchRecentGames();
-
-      // 주기적으로 최근 게임 결과 업데이트
-      setInterval(fetchRecentGames, 30000); // 30초마다 업데이트
-
-      // 환전 모달 제어
-      const exchangeModal = document.getElementById("exchangeModal");
-      const showExchangeBtn = document.getElementById("showExchange");
-      const closeExchangeBtn = document.getElementById("closeExchange");
-      const exchangeAmount = document.getElementById("exchangeAmount");
-      const exchangePreview = document.getElementById("exchangePreview");
-
-      showExchangeBtn.addEventListener("click", () => {
-        exchangeModal.classList.remove("hidden");
-        updateModalCoinBalance();
-        updateRollingInfo();
-      });
-
-      closeExchangeBtn.addEventListener("click", () => {
-        exchangeModal.classList.add("hidden");
-      });
-
-      // 환전 금액 입력 필드에 최소값과 최대값 설정
-      exchangeAmount.min = "10";
-      exchangeAmount?.addEventListener("input", () => {
-        const amount = parseInt(exchangeAmount.value) || 0;
-        const currentCoins = parseInt(
-          document.getElementById("modalCoinBalance")?.textContent || "0"
+        const closeExchangeHistoryButton = document.getElementById(
+          "closeExchangeHistory"
         );
-        const rollingLimit = parseInt(
-          document.querySelector("#rollingInfo .text-yellow-500:last-child")
-            ?.textContent || "0"
-        );
-        const submitButton = document.getElementById("submitExchange");
 
-        // 수수료 계산 수정 (10코인 이하는 1코인, 10코인 이상은 5코인당 1코인)
-        const fee = amount < 10 ? 1 : Math.ceil(amount / 5);
-        const actual = amount - fee;
-
-        const requestAmount = document.getElementById("requestAmount");
-        const feeAmount = document.getElementById("feeAmount");
-        const actualAmount = document.getElementById("actualAmount");
-
-        if (requestAmount) requestAmount.textContent = amount;
-        if (feeAmount) feeAmount.textContent = fee;
-        if (actualAmount) actualAmount.textContent = actual;
-
-        if (exchangePreview) {
-          exchangePreview.classList.remove("hidden");
-        }
-
-        // 버튼 활성화 조건 체크
-        if (submitButton) {
-          submitButton.disabled =
-            amount < 5 || amount > currentCoins || amount > rollingLimit;
-        }
-
-        // 에러 메시지 표시
-        if (amount < 5) {
-          showNotification("최소 5코인부터 환전 가능합니다.");
-        } else if (amount > currentCoins) {
-          showNotification("보유 코인이 부족합니다.");
-        } else if (amount > rollingLimit) {
-          showNotification("롤링 요구사항이 부족합니다.");
-        }
-      });
-
-      // 롤링 정보 텍스트 수정
-      const rollingInfo = document.querySelector("#rollingInfo");
-      rollingInfo.innerHTML = `
-        <div>총 베팅액: <span class="text-yellow-500">0</span> 코인</div>
-        <div>현재 환전 가능 코인: <span class="text-yellow-500">0</span> 코인</div>
-      `;
-
-      // 롤링 정보 업데이트 함수 수정
-      async function updateRollingInfo() {
-        try {
-          const res = await fetch("http://127.0.0.1:5500/api/auth/user-info", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const user = await res.json();
-
-          const rollingInfo = document.querySelector("#rollingInfo");
-          // 선택자 수정
-          const spans = rollingInfo.querySelectorAll(".text-yellow-500");
-          const totalBetsSpan = spans[0]; // 첫 번째 span (총 베팅액)
-          const availableRollingSpan = spans[1]; // 두 번째 span (환전 가능 코인)
-
-          if (totalBetsSpan) totalBetsSpan.textContent = user.totalBets || 0;
-          if (availableRollingSpan)
-            availableRollingSpan.textContent = user.availableRollingPoint || 0;
-
-          // 기존의 사용된 베팅액 정보 요소가 있다면 제거
-          const existingUsedBetsInfo =
-            rollingInfo.querySelector(".used-bets-info");
-          if (existingUsedBetsInfo) {
-            existingUsedBetsInfo.remove();
-          }
-
-          // 새로운 사용된 베팅 정보 추가
-          const usedBetsInfo = document.createElement("div");
-          usedBetsInfo.className = "text-gray-400 used-bets-info";
-          usedBetsInfo.textContent = `(사용된 베팅액: ${
-            user.usedBetsForExchange || 0
-          } 코인)`;
-          rollingInfo.appendChild(usedBetsInfo);
-        } catch (err) {
-          console.error("롤링 정보 업데이 실패:", err);
-        }
-      }
-
-      // 환전 모달 열 때 롤링 보 업데이트
-      showExchangeBtn.addEventListener("click", updateRollingInfo);
-
-      // 환전 모달 관련 코드 수정
-      function updateModalCoinBalance() {
-        const coinBalance = document
-          .getElementById("coinBalance")
-          .innerText.split(": ")[1];
+        const exchangeAmountInput = document.getElementById("exchangeAmount");
         const modalCoinBalance = document.getElementById("modalCoinBalance");
-        if (modalCoinBalance) {
-          modalCoinBalance.textContent = coinBalance;
-        }
-      }
+        const rollingInfoDiv = document.getElementById("rollingInfo");
+        const exchangePreview = document.getElementById("exchangePreview");
+        const requestAmountSpan = document.getElementById("requestAmount");
+        const feeAmountSpan = document.getElementById("feeAmount");
+        const actualAmountSpan = document.getElementById("actualAmount");
+        const maxAmountButton = document.getElementById("maxAmount");
+        const submitExchangeButton = document.getElementById("submitExchange");
 
-      // 최대 금액 버튼 이벤트
-      document.getElementById("maxAmount")?.addEventListener("click", () => {
-        const currentCoins = parseInt(
-          document.getElementById("modalCoinBalance")?.textContent || "0"
-        );
-        const rollingLimit = parseInt(
-          document.querySelector("#rollingInfo .text-yellow-500:last-child")
-            ?.textContent || "0"
-        );
-        const maxAmount = Math.min(currentCoins, rollingLimit);
-        if (exchangeAmount) {
-          exchangeAmount.value = maxAmount;
-          exchangeAmount.dispatchEvent(new Event("input"));
-        }
-      });
-
-      // 환전 금액 입력 시 유효성 검사 추가
-      exchangeAmount?.addEventListener("input", () => {
-        const amount = parseInt(exchangeAmount.value) || 0;
-        const currentCoins = parseInt(
-          document.getElementById("modalCoinBalance")?.textContent || "0"
-        );
-        const rollingLimit = parseInt(
-          document.querySelector("#rollingInfo .text-yellow-500:last-child")
-            ?.textContent || "0"
-        );
-        const submitButton = document.getElementById("submitExchange");
-
-        const fee = amount < 10 ? 1 : Math.ceil(amount / 5);
-        const actual = amount - fee;
-
-        const requestAmount = document.getElementById("requestAmount");
-        const feeAmount = document.getElementById("feeAmount");
-        const actualAmount = document.getElementById("actualAmount");
-
-        if (requestAmount) requestAmount.textContent = amount;
-        if (feeAmount) feeAmount.textContent = fee;
-        if (actualAmount) actualAmount.textContent = actual;
-
-        if (exchangePreview) {
-          exchangePreview.classList.remove("hidden");
-        }
-
-        // 버튼 활성화 조건 체크
-        if (submitButton) {
-          submitButton.disabled =
-            amount < 5 || amount > currentCoins || amount > rollingLimit;
-        }
-
-        // 에러 메시지 표시
-        if (amount < 5) {
-          showNotification("최소 5코인부터 환전 가능합니다.");
-        } else if (amount > currentCoins) {
-          showNotification("보유 코인이 부족합니다.");
-        } else if (amount > rollingLimit) {
-          showNotification("롤링 요구사항이 부족합니다.");
-        }
-      });
-
-      // 환전 내역 관련 함수 추가
-      async function fetchExchangeHistory() {
-        try {
-          const res = await fetch(
-            "http://127.0.0.1:5500/api/exchange/history",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+        // 알림 표시 함수
+        function showNotification(message, duration = 3000) {
+          const notification = document.getElementById("notification");
+          const notificationMessage = document.getElementById(
+            "notificationMessage"
           );
-          const history = await res.json();
-          const container = document.getElementById("exchangeHistoryList");
-          container.innerHTML = "";
-
-          if (history.length === 0) {
-            container.innerHTML = `
-              <div class="text-center text-gray-400 py-4">
-                환전 내역이 없습니다.
-              </div>
-            `;
-            return;
-          }
-
-          history.forEach((exchange) => {
-            const card = document.createElement("div");
-            card.className =
-              "bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] p-4 rounded-lg border border-[#b8860b] shadow-lg mb-3";
-
-            const statusClass = {
-              pending: "text-yellow-500 font-bold",
-              approved: "text-green-500 font-bold",
-              rejected: "text-red-500 font-bold",
-            }[exchange.status];
-
-            const statusText = {
-              pending: "대기중",
-              approved: "승인됨",
-              rejected: "거절됨",
-            }[exchange.status];
-
-            card.innerHTML = `
-              <div class="flex justify-between items-center mb-3">
-                <span class="text-sm text-gray-400">${new Date(
-                  exchange.createdAt
-                ).toLocaleString()}</span>
-                <span class="${statusClass} px-3 py-1 rounded-full bg-black bg-opacity-50 border border-[#b8860b]">
-                  ${statusText}
-                </span>
-              </div>
-              <div class="grid grid-cols-2 gap-3 text-sm">
-                <div class="bg-black bg-opacity-30 p-2 rounded-lg">
-                  신청 금액: <span class="text-yellow-500 font-bold">${
-                    exchange.requestAmount
-                  }</span> 코인
-                </div>
-                <div class="bg-black bg-opacity-30 p-2 rounded-lg">
-                  수수료: <span class="text-red-400 font-bold">${
-                    exchange.fee
-                  }</span> 코인
-                </div>
-                <div class="bg-black bg-opacity-30 p-2 rounded-lg">
-                  실수령액: <span class="text-yellow-500 font-bold">${
-                    exchange.actualAmount
-                  }</span> 코인
-                </div>
-                <div class="bg-black bg-opacity-30 p-2 rounded-lg">
-                  롤링 포인트: <span class="text-blue-400 font-bold">${
-                    exchange.rollingPoint
-                  }</span> 코인
-                </div>
-              </div>
-            `;
-            container.appendChild(card);
-          });
-        } catch (err) {
-          console.error(err);
-          showNotification("환전 내역을 불러오는데 실패했습니다.");
+          if (!notification || !notificationMessage) return;
+          notificationMessage.textContent = message;
+          notification.classList.remove("hidden");
+          setTimeout(() => {
+            notification.classList.add("hidden");
+          }, duration);
         }
-      }
 
-      // 환전 내역 모달 제어
-      const exchangeHistoryModal = document.getElementById(
-        "exchangeHistoryModal"
-      );
-      const showExchangeHistoryBtn = document.getElementById(
-        "showExchangeHistory"
-      );
-      const closeExchangeHistoryBtn = document.getElementById(
-        "closeExchangeHistory"
-      );
-
-      showExchangeHistoryBtn.addEventListener("click", () => {
-        exchangeHistoryModal.classList.remove("hidden");
-        fetchExchangeHistory();
-      });
-
-      closeExchangeHistoryBtn.addEventListener("click", () => {
-        exchangeHistoryModal.classList.add("hidden");
-      });
-
-      // 환전 신청 처리
-      document
-        .getElementById("submitExchange")
-        ?.addEventListener("click", async () => {
-          const submitButton = document.getElementById("submitExchange");
-          const amount = parseInt(exchangeAmount?.value || "0");
-
-          // 입력값 검증
-          if (!amount || isNaN(amount) || amount < 5) {
-            showNotification("올바른 환전 금액을 입력해주세요. (최소 5코인)");
-            return;
-          }
-
-          // 버튼 비활성화 및 로딩 상태 표시
-          if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = "처리중...";
-          }
-
+        // 사용자 정보 가져오기
+        async function fetchUserInfo() {
           try {
-            const response = await fetch(
-              "http://127.0.0.1:5500/api/exchange/request",
+            const res = await fetch(
+              "http://127.0.0.1:5000/api/auth/user-info",
               {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ amount }),
+                headers: { Authorization: `Bearer ${token}` },
               }
             );
+            if (res.ok) {
+              const user = await res.json();
+              const coinBalanceEl = document.getElementById("coinBalance");
 
-            const data = await response.json();
+              const balance =
+                typeof user.balance === "number" && !isNaN(user.balance)
+                  ? user.balance
+                  : 0;
+              const totalBets =
+                typeof user.totalBets === "number" && !isNaN(user.totalBets)
+                  ? user.totalBets
+                  : 0;
+              const currentRollingBalance =
+                typeof user.rollingBalance === "number" &&
+                !isNaN(user.rollingBalance)
+                  ? user.rollingBalance
+                  : 0;
 
-            if (response.ok) {
-              showNotification("환전 신청이 완료되었습니다!");
-              // 모달 닫기
-              if (exchangeModal) {
-                exchangeModal.classList.add("hidden");
+              if (coinBalanceEl)
+                coinBalanceEl.innerText = `보유금액: ${balance.toLocaleString()}원`;
+
+              // 환전 모달에도 잔액 업데이트
+              if (modalCoinBalance) {
+                modalCoinBalance.textContent = `${balance.toLocaleString()}원`;
               }
-              // 입력 필드 및 미리보기 초기화
-              if (exchangeAmount) {
-                exchangeAmount.value = "";
+              // 환전 모달 롤링 정보 업데이트
+              if (rollingInfoDiv) {
+                const availableRollingEl = rollingInfoDiv.querySelector(
+                  "div:nth-child(1) span"
+                );
+                if (availableRollingEl)
+                  availableRollingEl.textContent = `${currentRollingBalance.toLocaleString()}원`;
+                // 두 번째 div(총 베팅액)는 이미 HTML에서 hidden 처리했거나, 여기서 JS로 숨길 수 있습니다.
+                const totalBetsDiv =
+                  rollingInfoDiv.querySelector("div:nth-child(2)");
+                if (
+                  totalBetsDiv &&
+                  !totalBetsDiv.classList.contains("hidden")
+                ) {
+                  totalBetsDiv.classList.add("hidden");
+                }
               }
-              if (exchangePreview) {
-                exchangePreview.classList.add("hidden");
-              }
-              // 사용자 정보 새로고침
-              await fetchUserInfo();
-              // 환전 내역 새로고침
-              await fetchExchangeHistory();
+
+              displayBettingHistory(user.bettingHistory);
             } else {
-              showNotification(data.message || "환전 신청에 실패했습니다.");
+              showNotification("사용자 정보를 가져오는 데 실패했습니다.");
             }
-          } catch (error) {
-            console.error("환전 신청 에러:", error);
+          } catch (err) {
+            console.error(err);
             showNotification("서버 연결 오류가 발생했습니다.");
-          } finally {
-            // 버튼 상태 복구
+          }
+        }
+
+        // 베팅 기록 표시 함수 수정
+        function displayBettingHistory(history) {
+          const container = document.getElementById("bettingHistory");
+          if (!container) return;
+          container.innerHTML = "";
+          container.scrollTop = 0;
+
+          if (!history || history.length === 0) {
+            container.innerHTML = `<div class="text-center text-gray-400 py-4">베팅 기록이 없습니다.</div>`;
+            const winRateEl = document.getElementById("winRate");
+            if (winRateEl) winRateEl.textContent = `승률: 0%`;
+            return;
+          }
+
+          const totalBets = history.length;
+          const wins = history.filter(
+            (record) => record.result === "win"
+          ).length;
+          const winRateValue =
+            totalBets > 0 ? ((wins / totalBets) * 100).toFixed(1) : 0;
+          const winRateEl = document.getElementById("winRate");
+          if (winRateEl) winRateEl.textContent = `승률: ${winRateValue}%`;
+
+          history
+            .slice(-10)
+            .reverse()
+            .forEach((record) => {
+              const card = document.createElement("div");
+              card.className = "betting-history-card";
+              const resultClass =
+                record.result === "win"
+                  ? "text-green-400"
+                  : record.result === "lose"
+                  ? "text-red-400"
+                  : "text-yellow-400";
+              const resultText =
+                record.result === "win"
+                  ? "승리"
+                  : record.result === "lose"
+                  ? "패배"
+                  : "환급";
+              const choiceKorean = {
+                player: "플레이어",
+                banker: "뱅커",
+                tie: "타이",
+                player_pair: "P 페어",
+                banker_pair: "B 페어",
+                null: "없음",
+              };
+
+              const displayAmount = (
+                typeof record.amount === "number" ? record.amount : 0
+              ).toLocaleString();
+              let displayDate = "날짜 정보 없음";
+              if (record.date) {
+                try {
+                  displayDate = new Date(record.date).toLocaleString();
+                } catch (e) {
+                  console.error(
+                    "Invalid date format in betting history:",
+                    record.date,
+                    e
+                  );
+                  displayDate = "잘못된 날짜 형식";
+                }
+              } else {
+                console.warn("Missing date in betting history record:", record);
+              }
+
+              card.innerHTML = `
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-sm text-gray-400">${displayDate}</span>
+                <span class="font-bold ${resultClass}">${resultText}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span>${
+                  choiceKorean[record.choice] || record.choice || "선택 없음"
+                } → ${
+                choiceKorean[record.gameResult] ||
+                record.gameResult ||
+                "결과 없음"
+              }</span>
+                <span class="text-yellow-400 font-bold">${displayAmount} 원</span>
+              </div>`;
+              container.appendChild(card);
+            });
+        }
+
+        // 선택 상태 업데이트 함수 수정
+        function updateCurrentBet() {
+          const choiceKorean = {
+            player: "플레이어",
+            banker: "뱅커",
+            tie: "타이",
+            player_pair: "P 페어",
+            banker_pair: "B 페어",
+            null: "없음",
+          };
+          const choiceText = document.querySelector("#currentBet .choice-text");
+          const coinsText = document.querySelector("#currentBet .coins-text");
+
+          if (choiceText)
+            choiceText.textContent = choiceKorean[selectedChoice] || "없음";
+          if (coinsText)
+            coinsText.textContent = `${selectedChipAmount.toLocaleString()}원`;
+
+          document.querySelectorAll(".choice-button").forEach((btn) => {
+            if (btn.getAttribute("data-choice") === selectedChoice)
+              btn.classList.add("active");
+            else btn.classList.remove("active");
+          });
+
+          document.querySelectorAll(".amount-button").forEach((btn) => {
+            if (
+              parseInt(btn.getAttribute("data-amount")) === selectedChipAmount
+            ) {
+              btn.classList.add("active");
+            } else {
+              btn.classList.remove("active");
+            }
+          });
+        }
+
+        // 로그아웃 기능
+        document.getElementById("logout")?.addEventListener("click", () => {
+          localStorage.removeItem("token");
+          window.location.href = "index.html";
+        });
+
+        // 베팅 종류 버튼 클릭 이벤트 수정: 선택 및 즉시 베팅
+        document.querySelectorAll(".choice-button").forEach((button) => {
+          button.addEventListener("click", () => {
+            selectedChoice = button.getAttribute("data-choice");
+            if (!selectedChoice) {
+              showNotification("베팅 종류를 선택해주세요.");
+              return;
+            }
+            if (selectedChipAmount <= 0) {
+              showNotification("베팅할 금액을 먼저 선택해주세요.");
+              updateCurrentBet();
+              return;
+            }
+
+            socket.emit("place_bet", {
+              choice: selectedChoice,
+              amount: selectedChipAmount,
+              token: token,
+            });
+            updateCurrentBet();
+          });
+        });
+
+        // 금액 버튼 클릭 이벤트 수정: 단일 칩 금액 선택
+        document.querySelectorAll(".amount-button").forEach((button) => {
+          button.addEventListener("click", () => {
+            const chipValue = parseInt(button.getAttribute("data-amount"));
+            if (selectedChipAmount === chipValue) {
+              selectedChipAmount = 0;
+            } else {
+              selectedChipAmount = chipValue;
+            }
+            updateCurrentBet();
+          });
+        });
+
+        // 되돌리기 버튼 이벤트 수정: 마지막 베팅 취소 요청
+        document
+          .getElementById("undoBetButton")
+          ?.addEventListener("click", () => {
+            if (!bettingActive) {
+              showNotification("베팅 시간이 아니므로 되돌릴 수 없습니다."); // 중요 알림 유지 및 문구 수정
+              return;
+            }
+            // 서버에 마지막 베팅 취소 요청
+            socket.emit("cancel_bet", { token: token });
+          });
+
+        // 최근 게임 결과 가져오기 함수 수정 (Big Road 스타일)
+        async function fetchRecentGames() {
+          try {
+            const res = await fetch("http://127.0.0.1:5000/api/recent-games");
+            const games = await res.json();
+            const container = document.getElementById("recentResults");
+            if (!container) return;
+            container.innerHTML = "";
+            if (games.length === 0) return;
+
+            let currentColumn = null;
+            let lastResultType = null;
+            const reversedGames = [...games].reverse();
+            reversedGames.forEach((game) => {
+              const resultType = game.result;
+              let cellText = resultType.charAt(0).toUpperCase();
+              if (
+                resultType !== lastResultType ||
+                !currentColumn ||
+                currentColumn.children.length >= 6
+              ) {
+                currentColumn = document.createElement("div");
+                currentColumn.className = "result-column";
+                container.appendChild(currentColumn);
+                lastResultType = resultType;
+              }
+              const resultElement = document.createElement("div");
+              resultElement.className = `result-cell ${resultType}`;
+              if (game.playerPairOccurred)
+                resultElement.classList.add("player-pair");
+              if (game.bankerPairOccurred)
+                resultElement.classList.add("banker-pair");
+              resultElement.textContent = cellText;
+              currentColumn.appendChild(resultElement);
+            });
+            container.scrollLeft = container.scrollWidth;
+          } catch (err) {
+            console.error("최근 게임 결과 조회 에러:", err);
+          }
+        }
+
+        // Socket.IO 이벤트 핸들러들
+        socket.on("bet_success", (message) => {
+          // showNotification(message); // "베팅이 완료되었습니다." 알림 제거됨
+          fetchUserInfo(); // 잔액 업데이트
+        });
+
+        socket.on("bet_cancelled_success", (data) => {
+          // showNotification(data.message); // "베팅(선택: X, 금액: Y)이 취소되었습니다." 알림 제거
+          fetchUserInfo(); // 잔액 즉시 업데이트
+          // 현재 선택된 칩/종류는 그대로 두거나, 취소된 베팅에 맞춰 UI를 조정할 수도 있습니다.
+          // 예를 들어, 취소된 베팅과 동일한 선택이었다면 UI 선택도 해제하는 것을 고려할 수 있습니다.
+          // 지금은 단순히 잔액만 업데이트합니다.
+          updateCurrentBet(); // 현재 선택 상태(selectedChipAmount, selectedChoice)에 따른 UI 업데이트
+        });
+
+        socket.on("error", (message) => {
+          showNotification(message);
+        });
+
+        socket.on("betting_started", () => {
+          bettingActive = true;
+          const timerEl = document.getElementById("timer");
+          if (timerEl)
+            timerEl.innerText =
+              "베팅이 시작되었습니다. 20초 내에 베팅해주세요.";
+          const bettingStartSound =
+            document.getElementById("bettingStartSound");
+          bettingStartSound
+            ?.play()
+            .catch((err) => console.log("소리 재생 실패:", err));
+          startTimer(new Date(Date.now() + 20000));
+
+          // 게임 상태 및 선택 초기화
+          const gameStatusEl = document.getElementById("gameStatus");
+          if (gameStatusEl) {
+            gameStatusEl.innerText = "베팅 진행중";
+            gameStatusEl.className = "text-xl font-bold text-yellow-500 mb-2";
+          }
+          selectedChoice = null;
+          selectedChipAmount = 0;
+          updateCurrentBet();
+        });
+
+        function startTimer(endTime) {
+          const timerElement = document.getElementById("timer");
+          if (!timerElement) return;
+          if (window.bettingTimerInterval)
+            clearInterval(window.bettingTimerInterval);
+
+          window.bettingTimerInterval = setInterval(() => {
+            const now = new Date();
+            const distance = endTime - now;
+            if (distance < 0) {
+              clearInterval(window.bettingTimerInterval);
+              timerElement.innerText =
+                "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
+              timerElement.className = "text-red-500 font-bold";
+              selectedChoice = null;
+              selectedChipAmount = 0;
+              updateCurrentBet();
+              return;
+            }
+            const seconds = Math.floor((distance / 1000) % 60);
+            timerElement.innerText = `베팅 종료까지: ${seconds}초`;
+            if (seconds <= 10)
+              timerElement.className = "text-red-500 font-bold animate-pulse";
+            else
+              timerElement.className =
+                "text-base font-semibold text-yellow-400";
+          }, 1000);
+        }
+
+        socket.on("betting_closed", () => {
+          bettingActive = false;
+          const timerEl = document.getElementById("timer");
+          if (timerEl)
+            timerEl.innerText =
+              "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
+          const bettingEndSound = document.getElementById("bettingEndSound");
+          bettingEndSound
+            ?.play()
+            .catch((err) => console.log("소리 재생 실패:", err));
+          selectedChoice = null;
+          selectedChipAmount = 0;
+          updateCurrentBet();
+        });
+
+        socket.on("game_result", (data) => {
+          const {
+            result,
+            playerScore,
+            bankerScore,
+            // playerPairOccurred, // 미니게임에서는 페어 직접 표시 안함 (recentResults에서 확인)
+            // bankerPairOccurred,
+          } = data;
+          const gameStatusEl = document.getElementById("gameStatus");
+          let statusText = "";
+          let soundId = "";
+
+          if (result === "player") {
+            statusText = `플레이어 승! (${playerScore} vs ${bankerScore})`;
+            if (gameStatusEl)
+              gameStatusEl.className = "text-xl font-bold text-blue-500 mb-2";
+            soundId = "playerWinSound";
+          } else if (result === "banker") {
+            statusText = `뱅커 승! (${playerScore} vs ${bankerScore})`;
+            if (gameStatusEl)
+              gameStatusEl.className = "text-xl font-bold text-red-500 mb-2";
+            soundId = "bankerWinSound";
+          } else {
+            statusText = `타이! (${playerScore} vs ${bankerScore})`;
+            if (gameStatusEl)
+              gameStatusEl.className = "text-xl font-bold text-green-500 mb-2";
+            soundId = "tieSound";
+          }
+          if (gameStatusEl) gameStatusEl.textContent = statusText;
+          document
+            .getElementById(soundId)
+            ?.play()
+            .catch((err) => console.log("소리 재생 실패:", err));
+
+          // 미니게임에도 결과 표시
+          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+            baccaratSceneMini.setGameResult(result, playerScore, bankerScore);
+          }
+
+          const timerEl = document.getElementById("timer");
+          if (timerEl) {
+            timerEl.innerText = "결과 발표 중...";
+            timerEl.className = "text-base font-semibold text-yellow-400";
+          }
+          // 최근 결과 업데이트는 result_approved에서 처리하므로 여기서는 중복 호출 방지
+          // fetchRecentGames(); // 이 부분은 result_approved로 이동 또는 거기서만 호출
+        });
+
+        socket.on("result_approved", () => {
+          fetchUserInfo();
+          fetchRecentGames(); // 결과 승인 후 최근 게임 목록 업데이트
+          const gameStatusEl = document.getElementById("gameStatus");
+          if (gameStatusEl) {
+            gameStatusEl.textContent = "게임 대기중";
+            gameStatusEl.className = "text-xl font-bold text-yellow-500 mb-2";
+          }
+          const timerEl = document.getElementById("timer");
+          if (timerEl) {
+            timerEl.textContent = "";
+            timerEl.className = "text-base font-semibold text-yellow-400";
+          }
+          selectedChipAmount = 0;
+          selectedChoice = null;
+          updateCurrentBet();
+
+          // 미니게임 클리어
+          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+            baccaratSceneMini.clearAllCardsAndText();
+          }
+
+          updateBettingStatsDisplay({
+            player: {
+              count: 0,
+              total: 0,
+              bettor_count: 0,
+              total_bet_amount: 0,
+            },
+            banker: {
+              count: 0,
+              total: 0,
+              bettor_count: 0,
+              total_bet_amount: 0,
+            },
+            tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+            player_pair: {
+              count: 0,
+              total: 0,
+              bettor_count: 0,
+              total_bet_amount: 0,
+            },
+            banker_pair: {
+              count: 0,
+              total: 0,
+              bettor_count: 0,
+              total_bet_amount: 0,
+            },
+          });
+        });
+
+        socket.on("result_rejected", () => {
+          const gameStatusEl = document.getElementById("gameStatus");
+          if (gameStatusEl) {
+            gameStatusEl.textContent =
+              "결과 승인이 거부되었습니다. 게임 대기중";
+            gameStatusEl.className = "text-xl font-bold text-yellow-500 mb-2";
+          }
+          const timerEl = document.getElementById("timer");
+          if (timerEl) {
+            timerEl.textContent = "";
+            timerEl.className = "text-base font-semibold text-yellow-400";
+          }
+          // 미니게임 클리어 (선택사항: 이전 상태로 복원할 수도 있음)
+          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+            // baccaratSceneMini.clearAllCardsAndText(); // 거절 시에는 유지하거나, 특정 메시지 표시 가능
+          }
+        });
+
+        socket.on("update_coins", () => {
+          fetchUserInfo();
+        });
+
+        // 베팅 통계 표시 업데이트 함수
+        function updateBettingStatsDisplay(stats) {
+          const totalMainBetsCount =
+            (stats.player?.count || 0) +
+            (stats.banker?.count || 0) +
+            (stats.tie?.count || 0);
+
+          function formatAmount(amount) {
+            if (amount >= 1000000) {
+              // 1,000,000 이상은 M 단위
+              return (amount / 1000000).toFixed(1).replace(".0", "") + "M";
+            }
+            if (amount >= 1000) {
+              // 1,000 이상은 K 단위
+              return (amount / 1000).toFixed(1).replace(".0", "") + "K";
+            }
+            return amount.toString();
+          }
+
+          function updateSection(sectionKey, statsData) {
+            const sectionElement = document.getElementById(
+              `${sectionKey}Stats`
+            );
+            if (!sectionElement) return;
+            const percentageElement =
+              sectionElement.querySelector(".percentage-circle");
+            const totalBetElement = sectionElement.querySelector(
+              ".stats-details .total-bet"
+            );
+            const bettorCountElement = sectionElement.querySelector(
+              ".stats-details .bettor-count"
+            );
+
+            const count = statsData?.count || 0;
+            const totalAmount =
+              statsData?.total_bet_amount || statsData?.total || 0;
+            const bettorCount = statsData?.bettor_count || 0;
+            let percentage = 0;
+
+            if (percentageElement) {
+              // P PAIR, B PAIR는 percentageElement가 없을 수 있음 (display: none)
+              if (
+                totalMainBetsCount > 0 &&
+                (sectionKey === "player" ||
+                  sectionKey === "banker" ||
+                  sectionKey === "tie")
+              ) {
+                percentage = ((count / totalMainBetsCount) * 100).toFixed(0);
+              }
+              percentageElement.textContent = `${percentage}%`;
+            }
+
+            if (totalBetElement)
+              totalBetElement.textContent = `₩${formatAmount(totalAmount)}`; // K 단위 적용
+            if (bettorCountElement) {
+              // 모든 베팅 타입에 대해 인원수 표시 (P/B/T 외 페어에도 적용)
+              bettorCountElement.innerHTML = `<i class="fas fa-users"></i> ${bettorCount}`;
+              bettorCountElement.classList.remove("hidden");
+            }
+          }
+          if (stats.player) updateSection("player", stats.player);
+          if (stats.banker) updateSection("banker", stats.banker);
+          if (stats.tie) updateSection("tie", stats.tie);
+          if (stats.player_pair)
+            updateSection("player_pair", stats.player_pair);
+          if (stats.banker_pair)
+            updateSection("banker_pair", stats.banker_pair);
+        }
+
+        socket.on("betting_status", (status) => {
+          bettingActive = status.active;
+          if (status.stats) {
+            updateBettingStatsDisplay(status.stats);
+          }
+        });
+
+        socket.on("new_bet", (data) => {
+          if (data.stats) {
+            updateBettingStatsDisplay(data.stats);
+          }
+        });
+
+        // 초기화 호출들
+        updateBettingStatsDisplay({
+          player: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          banker: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          player_pair: {
+            count: 0,
+            total: 0,
+            bettor_count: 0,
+            total_bet_amount: 0,
+          },
+          banker_pair: {
+            count: 0,
+            total: 0,
+            bettor_count: 0,
+            total_bet_amount: 0,
+          },
+        });
+        fetchUserInfo();
+        fetchRecentGames();
+        // 페이지 로드 시 카드 표시 초기화 (서버에 요청하는 대신 직접 클리어 또는 서버가 연결시 보내주는 이벤트 활용)
+        // socket.emit("clear_cards_on_user_ui"); // 이 부분은 서버 로직으로 대체됨
+        document
+          .querySelectorAll(".player-cards .card-slot")
+          .forEach((slot) => (slot.textContent = ""));
+        document
+          .querySelectorAll(".banker-cards .card-slot")
+          .forEach((slot) => (slot.textContent = ""));
+
+        setInterval(fetchRecentGames, 30000);
+
+        document
+          .getElementById("submitExchange")
+          ?.addEventListener("click", async () => {
+            const submitButton = document.getElementById("submitExchange");
+            const amountValue = parseInt(exchangeAmountInput?.value || "0");
+
+            if (!amountValue || isNaN(amountValue) || amountValue < 5000) {
+              showNotification(
+                "올바른 환전 금액을 입력해주세요. (최소 5,000원)"
+              );
+              return;
+            }
             if (submitButton) {
-              submitButton.disabled = false;
-              submitButton.textContent = "환전 신청하기";
+              submitButton.disabled = true;
+              submitButton.textContent = "처리중...";
+            }
+            try {
+              const response = await fetch(
+                "http://127.0.0.1:5000/api/exchange/request",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ amount: amountValue }),
+                }
+              );
+              const data = await response.json();
+              if (response.ok) {
+                if (exchangeModal) exchangeModal.classList.add("hidden");
+                if (exchangeAmountInput) exchangeAmountInput.value = "";
+                if (exchangePreview) exchangePreview.classList.add("hidden");
+                await fetchUserInfo();
+                await fetchExchangeHistory();
+              } else {
+                showNotification(data.message || "환전 신청에 실패했습니다.");
+              }
+            } catch (error) {
+              console.error("환전 신청 에러:", error);
+              showNotification("서버 연결 오류가 발생했습니다.");
+            } finally {
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "환전 신청하기";
+              }
+            }
+          });
+
+        // user.html에서 카드 표시 업데이트 로직 (서버에서 변환된 값 사용)
+        // 이 부분은 Phaser Scene으로 이동하거나 수정될 예정입니다.
+        /*
+        socket.on("display_card_on_user_html", (data) => {
+          // console.log('[user.html] Received display_card_on_user_html from server:', data); // 디버깅 로그
+          const { target, cardValue, cardIndex, isNewHand } = data;
+          const targetSelector =
+            target === "player" ? ".player-cards" : ".banker-cards";
+          const cardArea = document.querySelector(targetSelector);
+
+          if (cardArea) {
+            if (isNewHand && cardIndex === 0) {
+              const allSlots = cardArea.querySelectorAll(".card-slot");
+              allSlots.forEach((slot) => (slot.textContent = ""));
+            }
+            const cardSlot = cardArea.querySelector(
+              `.card-slot[data-index="${cardIndex}"]`
+            );
+            if (cardSlot) {
+              cardSlot.textContent = cardValue; // 서버에서 이미 변환된 값을 사용
+            }
+          } else {
+            // console.error('[user.html] Card area not found for selector:', targetSelector); // 디버깅 로그
+          }
+        });
+
+        socket.on("clear_cards_display_on_user_html", () => {
+          // console.log('[user.html] Received clear_cards_display_on_user_html from server'); // 디버깅 로그
+          const playerCardArea = document.querySelector(".player-cards");
+          const bankerCardArea = document.querySelector(".banker-cards");
+          if (playerCardArea) {
+            playerCardArea
+              .querySelectorAll(".card-slot")
+              .forEach((slot) => (slot.textContent = ""));
+          }
+          if (bankerCardArea) {
+            bankerCardArea
+              .querySelectorAll(".card-slot")
+              .forEach((slot) => (slot.textContent = ""));
+          }
+        });
+        */
+
+        // 모달 열기/닫기 이벤트 리스너
+        if (showExchangeButton && exchangeModal && closeExchangeButton) {
+          showExchangeButton.addEventListener("click", () => {
+            fetchUserInfo(); // 환전 모달 열기 전 최신 정보 로드
+            exchangeModal.classList.remove("hidden");
+          });
+          closeExchangeButton.addEventListener("click", () => {
+            exchangeModal.classList.add("hidden");
+          });
+        }
+
+        if (showHistoryButton && historyModal && closeHistoryButton) {
+          showHistoryButton.addEventListener("click", () => {
+            historyModal.classList.remove("hidden");
+            fetchUserInfo(); // 베팅 기록은 fetchUserInfo에서 displayBettingHistory를 호출
+          });
+          closeHistoryButton.addEventListener("click", () => {
+            historyModal.classList.add("hidden");
+          });
+        }
+
+        if (
+          showExchangeHistoryButton &&
+          exchangeHistoryModal &&
+          closeExchangeHistoryButton
+        ) {
+          showExchangeHistoryButton.addEventListener("click", () => {
+            exchangeHistoryModal.classList.remove("hidden");
+            fetchExchangeHistory(); // 환전 내역 불러오기
+          });
+          closeExchangeHistoryButton.addEventListener("click", () => {
+            exchangeHistoryModal.classList.add("hidden");
+          });
+        }
+
+        // 환전 내역 가져오기 함수
+        async function fetchExchangeHistory() {
+          try {
+            const res = await fetch(
+              "http://127.0.0.1:5000/api/exchange/history",
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            if (res.ok) {
+              const exchanges = await res.json();
+              const exchangeHistoryList = document.getElementById(
+                "exchangeHistoryList"
+              );
+              if (exchangeHistoryList) {
+                exchangeHistoryList.innerHTML = ""; // 기존 내용 초기화
+                if (exchanges.length === 0) {
+                  exchangeHistoryList.innerHTML = `<div class="text-center text-gray-400 py-4">환전 내역이 없습니다.</div>`;
+                  return;
+                }
+                exchanges.forEach((exchange) => {
+                  const card = createExchangeHistoryCard(exchange); // 이미 정의된 함수 사용
+                  exchangeHistoryList.appendChild(card);
+                });
+              }
+            } else {
+              showNotification("환전 내역을 가져오는 데 실패했습니다.");
+            }
+          } catch (err) {
+            console.error("환전 내역 조회 에러:", err);
+            showNotification("서버 연결 오류가 발생했습니다.");
+          }
+        }
+
+        // 환전 금액 입력 및 미리보기 로직
+        if (
+          exchangeAmountInput &&
+          requestAmountSpan &&
+          feeAmountSpan &&
+          actualAmountSpan &&
+          exchangePreview &&
+          modalCoinBalance &&
+          rollingInfoDiv &&
+          submitExchangeButton
+        ) {
+          exchangeAmountInput.addEventListener("input", () => {
+            const amount = parseInt(exchangeAmountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+              exchangePreview.classList.add("hidden");
+              submitExchangeButton.disabled = true;
+              return;
+            }
+
+            // 새로운 수수료 정책
+            let fee = 0;
+            if (amount < 50000) {
+              fee = 1000;
+            } else if (amount < 200000) {
+              fee = 2000;
+            } else {
+              fee = Math.floor(amount * 0.01);
+            }
+            const actual = amount - fee;
+
+            requestAmountSpan.textContent = `${amount.toLocaleString()}원`;
+            feeAmountSpan.textContent = `${fee.toLocaleString()}원`;
+            actualAmountSpan.textContent = `${actual.toLocaleString()}원`;
+            exchangePreview.classList.remove("hidden");
+
+            // 현재 보유 금액과 롤링 포인트 가져오기
+            const currentBalanceText = modalCoinBalance.textContent.replace(
+              /[^0-9]/g,
+              ""
+            );
+            const currentBalance = parseInt(currentBalanceText) || 0;
+
+            // fetchUserInfo에서 직접 rollingBalance를 가져와서 사용
+            const availableRollingText = rollingInfoDiv
+              .querySelector("div:nth-child(1) span")
+              .textContent.replace(/[^0-9]/g, "");
+            const availableRolling = parseInt(availableRollingText) || 0;
+
+            if (
+              amount < 5000 ||
+              amount > currentBalance ||
+              amount > availableRolling
+            ) {
+              submitExchangeButton.disabled = true;
+            } else {
+              submitExchangeButton.disabled = false;
+            }
+          });
+        }
+
+        // 환전 모달 '최대' 버튼 클릭 리스너
+        if (
+          maxAmountButton &&
+          exchangeAmountInput &&
+          modalCoinBalance &&
+          rollingInfoDiv
+        ) {
+          maxAmountButton.addEventListener("click", () => {
+            const currentBalanceText = modalCoinBalance.textContent.replace(
+              /[^0-9]/g,
+              ""
+            );
+            const currentBalance = parseInt(currentBalanceText) || 0;
+
+            const availableRollingText = rollingInfoDiv
+              .querySelector("div:nth-child(1) span")
+              .textContent.replace(/[^0-9]/g, "");
+            const availableRolling = parseInt(availableRollingText) || 0;
+
+            // 환전 가능 금액 중 더 작은 값으로 설정 (잔액 vs 롤링포인트)
+            const maxExchangeAmount = Math.min(
+              currentBalance,
+              availableRolling
+            );
+
+            exchangeAmountInput.value =
+              maxExchangeAmount > 0 ? maxExchangeAmount : 0;
+            // 수동으로 input 이벤트 트리거하여 미리보기 업데이트
+            exchangeAmountInput.dispatchEvent(new Event("input"));
+          });
+        }
+
+        // Phaser 미니게임 Scene 정의
+        class BaccaratSceneMini extends Phaser.Scene {
+          constructor() {
+            super({ key: "BaccaratSceneMini" });
+            this.cardSprites = { player: [], banker: [] }; // Phaser Image 객체 저장
+            this.handsData = { player: [], banker: [] }; // 카드 값(문자열) 저장
+            this.socket = socket;
+            this.cardScale = 0.35; // 미니게임 카드 크기
+            this.cardSpacing = 60; // 미니게임 카드 간격
+          }
+
+          preload() {
+            // 카드 이미지 프리로드 (모든 숫자와 무늬 조합)
+            const suits = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades (deckofcardsapi.com 형식)
+            const values = [
+              "A",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "0", // 0은 10을 의미
+              "J",
+              "Q",
+              "K",
+            ];
+
+            suits.forEach((suit) => {
+              values.forEach((value) => {
+                // deckofcardsapi.com에서 사용하는 카드 코드 생성 (예: AH, 2S, 0D 등)
+                // 10은 0으로 표현되므로, 만약 카드 값이 '0'이면 '10'으로 바꿔야 할 수도 있지만,
+                // 여기서는 API가 '0H', '0D' 등을 사용하는 것으로 가정합니다. (deckofcardsapi는 10 대신 0을 사용)
+                // API 문서: Value 0 for 10.
+                const cardCode = `${value}${suit}`;
+                const imageUrl = `https://deckofcardsapi.com/static/img/${cardCode}.png`;
+                // console.log(`[MiniGame] Preloading: ${cardCode} from ${imageUrl}`);
+                this.load.image(cardCode, imageUrl);
+              });
+            });
+            // 예비용 또는 기본 카드 이미지 (선택 사항)
+            this.load.image(
+              "card_back",
+              "https://deckofcardsapi.com/static/img/back.png"
+            );
+          }
+
+          create() {
+            // 테이블 배경 (연한 초록색 또는 user.html 테마에 맞는 색)
+            this.cameras.main.setBackgroundColor("rgba(0, 100, 0, 0.7)"); // 배경색 조정
+
+            const centerX = this.cameras.main.width / 2;
+            const centerY = this.cameras.main.height / 2;
+            const textStyle = {
+              fontSize: "16px",
+              fontFamily: '"Noto Serif KR", serif',
+              color: "#ffffff",
+              stroke: "#000000",
+              strokeThickness: 2,
+            };
+            const scoreTextStyle = {
+              ...textStyle,
+              fontSize: "18px",
+              color: "#ffd700",
+            };
+            const resultTextStyle = {
+              ...textStyle,
+              fontSize: "18px",
+              color: "#FFD700",
+              backgroundColor: "rgba(0,0,0,0.6)",
+              padding: { x: 8, y: 4 },
+              borderRadius: 5,
+            }; // 결과 텍스트 스타일 약간 수정
+
+            this.add.text(centerX / 2, 20, "PLAYER", textStyle).setOrigin(0.5);
+            this.add
+              .text(centerX + centerX / 2, 20, "BANKER", textStyle)
+              .setOrigin(0.5);
+
+            // 중앙 구분선 추가
+            const lineGraphics = this.add.graphics();
+            lineGraphics.lineStyle(2, 0xb8860b, 0.6); // 선 스타일 (두께, 색상, 투명도)
+            lineGraphics.beginPath();
+            lineGraphics.moveTo(centerX, 35); // 선 시작점 (위쪽)
+            lineGraphics.lineTo(centerX, this.cameras.main.height - 75); // 선 끝점 (아래쪽)
+            lineGraphics.strokePath();
+
+            this.playerScoreText = this.add
+              .text(
+                centerX / 2,
+                this.cameras.main.height - 30,
+                "",
+                scoreTextStyle
+              )
+              .setOrigin(0.5);
+            this.bankerScoreText = this.add
+              .text(
+                centerX + centerX / 2,
+                this.cameras.main.height - 30,
+                "",
+                scoreTextStyle
+              )
+              .setOrigin(0.5);
+            this.gameResultText = this.add
+              .text(centerX, centerY + 20, "", resultTextStyle)
+              .setOrigin(0.5)
+              .setVisible(false)
+              .setDepth(10); // 결과 텍스트 위치 및 depth 설정
+
+            this.clearAllCardsAndText();
+          }
+
+          // 카드 값 계산 (game.html에서 가져옴)
+          calculateCardValue(cardChar) {
+            if (["J", "Q", "K", "0"].includes(cardChar)) return 0;
+            if (cardChar === "A") return 1;
+            return parseInt(cardChar);
+          }
+
+          calculateHandValue(handData) {
+            // handData는 ['A', 'K'] 와 같은 문자열 배열
+            let value = 0;
+            for (let cardChar of handData) {
+              value = (value + this.calculateCardValue(cardChar)) % 10;
+            }
+            return value;
+          }
+
+          displayCard(
+            target,
+            cardValueFromServer,
+            cardSuitFromServer,
+            cardIndex,
+            isNewHand
+          ) {
+            // console.log(`[MiniGame] displayCard: target=${target}, value=${cardValueFromServer}, suit=${cardSuitFromServer}, index=${cardIndex}, newHand=${isNewHand}`);
+            const centerX = this.cameras.main.width / 2;
+            const cardY = this.cameras.main.height / 2 - 10; // Y 좌표 조정 (예: -30 -> -10, 아래로 이동)
+
+            let actualCardValue = cardValueFromServer; // 'A', '2', ..., '9', '0', 'J', 'Q', 'K'
+            // 서버에서 이미 '0'으로 오는 10, J, Q, K는 cardKey 생성 시 그대로 사용
+            // deckofcardsapi.com은 10을 0으로 표현 (예: 0H, 0S)
+
+            const suitInitial = cardSuitFromServer.charAt(0).toUpperCase(); // 'H', 'D', 'C', 'S'
+            const cardKey = `${actualCardValue}${suitInitial}`;
+            // console.log(`[MiniGame] cardKey to load: ${cardKey}`);
+
+            let handDataRef = this.handsData[target];
+            let cardSpritesRef = this.cardSprites[target];
+            let baseStartX;
+
+            // 카드의 기본 X 위치 설정
+            if (target === "player") {
+              baseStartX = centerX * 0.4; // 왼쪽으로 이동 (0.5 -> 0.4)
+            } else {
+              // banker
+              baseStartX = centerX * 1.4; // 왼쪽으로 이동 (1.5 -> 1.4)
+            }
+
+            // 카드 인덱스에 따른 최종 X 위치 계산 (최대 3장 고려)
+            // 카드가 1장일 때: 중앙
+            // 카드가 2장일 때: 중앙에서 양옆으로
+            // 카드가 3장일 때: 중앙에서 양옆으로 + 가운데
+            const numCards = Math.min(handDataRef.length + 1, 3); // 현재 놓일 카드 포함해서 총 몇 장이 될 것인가 (최대 3)
+            let xOffset = 0;
+            if (numCards === 1) {
+              xOffset = 0;
+            } else if (numCards === 2) {
+              xOffset =
+                cardIndex === 0 ? -this.cardSpacing / 2 : this.cardSpacing / 2;
+            } else {
+              // 3장
+              if (cardIndex === 0) xOffset = -this.cardSpacing;
+              else if (cardIndex === 1) xOffset = 0;
+              else xOffset = this.cardSpacing;
+            }
+            const finalX = baseStartX + xOffset;
+
+            // 카드 데이터 저장
+            if (handDataRef.length <= cardIndex) {
+              handDataRef.push(actualCardValue);
+            } else {
+              handDataRef[cardIndex] = actualCardValue;
+            }
+
+            let cardSprite;
+            if (cardSpritesRef[cardIndex] && cardSpritesRef[cardIndex].scene) {
+              // 기존 스프라이트가 있고, 파괴되지 않았다면
+              // console.log(`[MiniGame] Reusing sprite for ${target}[${cardIndex}] with key ${cardKey}`);
+              cardSprite = cardSpritesRef[cardIndex];
+              cardSprite.setTexture(cardKey);
+              cardSprite.setPosition(finalX, cardY); // 수정된 finalX 사용
+              cardSprite.setAlpha(0).setScale(this.cardScale * 0.8);
+            } else {
+              // console.log(`[MiniGame] Creating new sprite for ${target}[${cardIndex}] with key ${cardKey}`);
+              cardSprite = this.add.image(
+                finalX, // 수정된 finalX 사용
+                cardY,
+                cardKey
+              );
+              cardSpritesRef[cardIndex] = cardSprite; // 새 스프라이트를 배열에 저장
+              cardSprite.setScale(this.cardScale * 0.8).setAlpha(0);
+            }
+
+            this.tweens.add({
+              targets: cardSprite,
+              alpha: 1,
+              scaleX: this.cardScale,
+              scaleY: this.cardScale,
+              duration: 300,
+              ease: "Power2",
+            });
+
+            this.updateScores();
+          }
+
+          clearCards(target) {
+            let cardSpritesToClear = this.cardSprites[target];
+            let handDataToClear = this.handsData[target];
+
+            // console.log(`[MiniGame] Clearing cards for ${target}: ${cardSpritesToClear.length} sprites, ${handDataToClear.length} data entries`);
+
+            cardSpritesToClear.forEach((sprite) => {
+              if (sprite && typeof sprite.destroy === "function") {
+                sprite.destroy();
+              }
+            });
+            cardSpritesToClear.length = 0;
+            handDataToClear.length = 0;
+
+            this.updateScores();
+          }
+
+          updateScores() {
+            const playerScore = this.calculateHandValue(
+              this.handsData.player // handsData 사용
+            );
+            const bankerScore = this.calculateHandValue(
+              this.handsData.banker // handsData 사용
+            );
+            this.playerScoreText.setText(`P: ${playerScore}`);
+            this.bankerScoreText.setText(`B: ${bankerScore}`);
+          }
+
+          setGameResult(result, pScore, bScore) {
+            let message = "";
+            if (result === "player")
+              message = `PLAYER WIN (${pScore} vs ${bScore})`;
+            else if (result === "banker")
+              message = `BANKER WIN (${pScore} vs ${bScore})`;
+            else if (result === "tie") message = `TIE (${pScore} vs ${bScore})`;
+
+            this.gameResultText.setText(message);
+            this.gameResultText.setVisible(true);
+            this.gameResultText.setAlpha(0).setScale(0.7);
+
+            // 결과 텍스트 애니메이션
+            this.tweens.add({
+              targets: this.gameResultText,
+              alpha: 1,
+              scaleX: 1,
+              scaleY: 1,
+              duration: 400, // 0.4초 동안 애니메이션
+              ease: "Elastic.Out", // 탄성 있는 효과
+              onComplete: () => {
+                // 사라지는 애니메이션 (선택사항)
+                // this.time.delayedCall(2000, () => {
+                //     this.tweens.add({
+                //         targets: this.gameResultText,
+                //         alpha: 0,
+                //         duration: 500,
+                //         onComplete: () => this.gameResultText.setVisible(false)
+                //     });
+                // });
+              },
+            });
+          }
+
+          clearAllCardsAndText() {
+            // console.log("[MiniGame] clearAllCardsAndText called");
+            this.clearCards("player");
+            this.clearCards("banker");
+            this.playerScoreText.setText("P: 0");
+            this.bankerScoreText.setText("B: 0");
+            if (this.gameResultText) {
+              this.gameResultText.setVisible(false);
+            }
+          }
+        }
+
+        // Phaser 게임 시작 함수
+        function startMiniGame() {
+          const container = document.getElementById("miniGameContainer");
+          if (!container) {
+            console.error("miniGameContainer not found!");
+            return;
+          }
+
+          const config = {
+            type: Phaser.AUTO, // AUTO는 WebGL 우선, 안되면 Canvas 사용
+            parent: "miniGameContainer",
+            width: container.clientWidth, // 컨테이너 너비에 맞춤
+            height: container.clientHeight, // 컨테이너 높이에 맞춤
+            transparent: true, // 배경 투명하게
+            scene: BaccaratSceneMini,
+            scale: {
+              mode: Phaser.Scale.FIT, // 컨테이너에 맞게 스케일 조정
+              autoCenter: Phaser.Scale.CENTER_BOTH,
+            },
+          };
+          if (miniGame) {
+            // 기존 게임 인스턴스가 있다면 파괴
+            miniGame.destroy(true);
+          }
+          miniGame = new Phaser.Game(config);
+
+          // Scene 인스턴스를 게임의 'ready' 이벤트 발생 시점에 가져옵니다.
+          // 이렇게 하면 Scene Manager가 Scene을 처리할 충분한 시간을 갖게 됩니다.
+          miniGame.events.on("ready", () => {
+            // console.log("Phaser Game is READY.");
+            if (miniGame && miniGame.scene) {
+              baccaratSceneMini = miniGame.scene.getScene("BaccaratSceneMini");
+              if (!baccaratSceneMini) {
+                console.error(
+                  "BaccaratSceneMini 인스턴스를 game READY 이벤트 후에도 가져올 수 없습니다. 소켓 이벤트 연동에 문제가 있을 수 있습니다."
+                );
+              } else {
+                // console.log("BaccaratSceneMini instance obtained after game READY event.");
+                // BaccaratSceneMini의 create() 메소드에서 필요한 초기화 (예: clearAllCardsAndText)를 수행합니다.
+              }
+            } else {
+              console.error(
+                "Phaser Game 또는 Scene Manager가 game READY 이벤트 시점에 유효하지 않습니다."
+              );
+            }
+          });
+
+          // 즉시 baccaratSceneMini를 확인하는 로직은 제거합니다.
+          // if (!baccaratSceneMini) {
+          //      console.error("BaccaratSceneMini 인스턴스를 가져올 수 없습니다. 소켓 이벤트가 미니게임과 정상적으로 연동되지 않을 수 있습니다.");
+          // }
+          // 참고: BaccaratSceneMini의 create() 메소드에서 이미 clearAllCardsAndText()를 호출합니다.
+        }
+
+        // 창 크기 변경 시 게임 리사이즈
+        window.addEventListener("resize", () => {
+          if (miniGame) {
+            const container = document.getElementById("miniGameContainer");
+            if (container) {
+              // 게임 내부적으로 리사이즈 처리 (FIT 모드 사용 시 Phaser가 알아서 처리)
+              // 필요하다면 scene의 layout을 재구성하는 함수 호출
+              // miniGame.scale.resize(container.clientWidth, container.clientHeight);
+              // if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+              //    baccaratSceneMini.cameras.main.setViewport(0,0, container.clientWidth, container.clientHeight);
+              //    baccaratSceneMini.create(); // 레이아웃 재구성 (create를 다시 호출하는 것은 비효율적일 수 있음)
+              // }
             }
           }
         });
+
+        // DOMContentLoaded 이후 게임 시작 및 Socket 이벤트 핸들러 수정/추가
+        startMiniGame(); // 페이지 로드 시 미니게임 시작
+
+        socket.on("display_card_on_user_html", (data) => {
+          // console.log("[user.html] Received display_card_on_user_html from server:", data);
+          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+            const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
+            if (isNewHand && cardIndex === 0) {
+              // console.log(`[MiniGame] New hand for ${target}, clearing previous cards.`);
+              baccaratSceneMini.clearCards(
+                target === "player" ? "player" : "banker"
+              ); // 해당 타겟의 카드만 클리어
+            }
+            baccaratSceneMini.displayCard(
+              target,
+              cardValue,
+              cardSuit,
+              cardIndex,
+              isNewHand
+            );
+          } else {
+            // console.warn("[user.html] BaccaratSceneMini not active or not available when receiving card data.");
+          }
+        });
+
+        socket.on("clear_cards_display_on_user_html", () => {
+          // console.log("[user.html] Received clear_cards_display_on_user_html from server");
+          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+            baccaratSceneMini.clearAllCardsAndText();
+          }
+        });
+
+        // 모달 열기/닫기 이벤트 리스너
+        if (showExchangeButton && exchangeModal && closeExchangeButton) {
+          showExchangeButton.addEventListener("click", () => {
+            fetchUserInfo(); // 환전 모달 열기 전 최신 정보 로드
+            exchangeModal.classList.remove("hidden");
+          });
+          closeExchangeButton.addEventListener("click", () => {
+            exchangeModal.classList.add("hidden");
+          });
+        }
+
+        if (showHistoryButton && historyModal && closeHistoryButton) {
+          showHistoryButton.addEventListener("click", () => {
+            historyModal.classList.remove("hidden");
+            fetchUserInfo(); // 베팅 기록은 fetchUserInfo에서 displayBettingHistory를 호출
+          });
+          closeHistoryButton.addEventListener("click", () => {
+            historyModal.classList.add("hidden");
+          });
+        }
+
+        if (
+          showExchangeHistoryButton &&
+          exchangeHistoryModal &&
+          closeExchangeHistoryButton
+        ) {
+          showExchangeHistoryButton.addEventListener("click", () => {
+            exchangeHistoryModal.classList.remove("hidden");
+            fetchExchangeHistory(); // 환전 내역 불러오기
+          });
+          closeExchangeHistoryButton.addEventListener("click", () => {
+            exchangeHistoryModal.classList.add("hidden");
+          });
+        }
+
+        // 환전 내역 가져오기 함수
+        async function fetchExchangeHistory() {
+          try {
+            const res = await fetch(
+              "http://127.0.0.1:5000/api/exchange/history",
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            if (res.ok) {
+              const exchanges = await res.json();
+              const exchangeHistoryList = document.getElementById(
+                "exchangeHistoryList"
+              );
+              if (exchangeHistoryList) {
+                exchangeHistoryList.innerHTML = ""; // 기존 내용 초기화
+                if (exchanges.length === 0) {
+                  exchangeHistoryList.innerHTML = `<div class="text-center text-gray-400 py-4">환전 내역이 없습니다.</div>`;
+                  return;
+                }
+                exchanges.forEach((exchange) => {
+                  const card = createExchangeHistoryCard(exchange); // 이미 정의된 함수 사용
+                  exchangeHistoryList.appendChild(card);
+                });
+              }
+            } else {
+              showNotification("환전 내역을 가져오는 데 실패했습니다.");
+            }
+          } catch (err) {
+            console.error("환전 내역 조회 에러:", err);
+            showNotification("서버 연결 오류가 발생했습니다.");
+          }
+        }
+
+        // 환전 금액 입력 및 미리보기 로직
+        if (
+          exchangeAmountInput &&
+          requestAmountSpan &&
+          feeAmountSpan &&
+          actualAmountSpan &&
+          exchangePreview &&
+          modalCoinBalance &&
+          rollingInfoDiv &&
+          submitExchangeButton
+        ) {
+          exchangeAmountInput.addEventListener("input", () => {
+            const amount = parseInt(exchangeAmountInput.value);
+            if (isNaN(amount) || amount <= 0) {
+              exchangePreview.classList.add("hidden");
+              submitExchangeButton.disabled = true;
+              return;
+            }
+
+            // 새로운 수수료 정책
+            let fee = 0;
+            if (amount < 50000) {
+              fee = 1000;
+            } else if (amount < 200000) {
+              fee = 2000;
+            } else {
+              fee = Math.floor(amount * 0.01);
+            }
+            const actual = amount - fee;
+
+            requestAmountSpan.textContent = `${amount.toLocaleString()}원`;
+            feeAmountSpan.textContent = `${fee.toLocaleString()}원`;
+            actualAmountSpan.textContent = `${actual.toLocaleString()}원`;
+            exchangePreview.classList.remove("hidden");
+
+            // 현재 보유 금액과 롤링 포인트 가져오기
+            const currentBalanceText = modalCoinBalance.textContent.replace(
+              /[^0-9]/g,
+              ""
+            );
+            const currentBalance = parseInt(currentBalanceText) || 0;
+
+            // fetchUserInfo에서 직접 rollingBalance를 가져와서 사용
+            const availableRollingText = rollingInfoDiv
+              .querySelector("div:nth-child(1) span")
+              .textContent.replace(/[^0-9]/g, "");
+            const availableRolling = parseInt(availableRollingText) || 0;
+
+            if (
+              amount < 5000 ||
+              amount > currentBalance ||
+              amount > availableRolling
+            ) {
+              submitExchangeButton.disabled = true;
+            } else {
+              submitExchangeButton.disabled = false;
+            }
+          });
+        }
+
+        // 환전 모달 '최대' 버튼 클릭 리스너
+        if (
+          maxAmountButton &&
+          exchangeAmountInput &&
+          modalCoinBalance &&
+          rollingInfoDiv
+        ) {
+          maxAmountButton.addEventListener("click", () => {
+            const currentBalanceText = modalCoinBalance.textContent.replace(
+              /[^0-9]/g,
+              ""
+            );
+            const currentBalance = parseInt(currentBalanceText) || 0;
+
+            const availableRollingText = rollingInfoDiv
+              .querySelector("div:nth-child(1) span")
+              .textContent.replace(/[^0-9]/g, "");
+            const availableRolling = parseInt(availableRollingText) || 0;
+
+            // 환전 가능 금액 중 더 작은 값으로 설정 (잔액 vs 롤링포인트)
+            const maxExchangeAmount = Math.min(
+              currentBalance,
+              availableRolling
+            );
+
+            exchangeAmountInput.value =
+              maxExchangeAmount > 0 ? maxExchangeAmount : 0;
+            // 수동으로 input 이벤트 트리거하여 미리보기 업데이트
+            exchangeAmountInput.dispatchEvent(new Event("input"));
+          });
+        }
+      }); // DOMContentLoaded event listener 닫기
     </script>
   </body>
 </html>

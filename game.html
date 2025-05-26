@@ -321,8 +321,7 @@
                 <div>
                   <span id="playerBetCount" class="text-blue-400">0</span>명
                   <span class="mx-1">|</span>
-                  <span id="playerBetAmount" class="text-yellow-400">0</span
-                  >코인
+                  <span id="playerBetAmount" class="text-yellow-400">0</span>원
                 </div>
               </div>
               <div class="flex justify-between items-center">
@@ -330,8 +329,7 @@
                 <div>
                   <span id="bankerBetCount" class="text-blue-400">0</span>명
                   <span class="mx-1">|</span>
-                  <span id="bankerBetAmount" class="text-yellow-400">0</span
-                  >코인
+                  <span id="bankerBetAmount" class="text-yellow-400">0</span>원
                 </div>
               </div>
               <div class="flex justify-between items-center">
@@ -339,7 +337,25 @@
                 <div>
                   <span id="tieBetCount" class="text-blue-400">0</span>명
                   <span class="mx-1">|</span>
-                  <span id="tieBetAmount" class="text-yellow-400">0</span>코인
+                  <span id="tieBetAmount" class="text-yellow-400">0</span>원
+                </div>
+              </div>
+              <div class="flex justify-between items-center mt-1">
+                <span>P페어:</span>
+                <div>
+                  <span id="playerPairBetCount" class="text-blue-400">0</span>명
+                  <span class="mx-1">|</span>
+                  <span id="playerPairBetAmount" class="text-yellow-400">0</span
+                  >원
+                </div>
+              </div>
+              <div class="flex justify-between items-center mt-1">
+                <span>B페어:</span>
+                <div>
+                  <span id="bankerPairBetCount" class="text-blue-400">0</span>명
+                  <span class="mx-1">|</span>
+                  <span id="bankerPairBetAmount" class="text-yellow-400">0</span
+                  >원
                 </div>
               </div>
               <div class="mt-2 pt-2 border-t border-[#b8860b]">
@@ -348,8 +364,7 @@
                   <div>
                     <span id="totalBetCount" class="text-blue-400">0</span>명
                     <span class="mx-1">|</span>
-                    <span id="totalBetAmount" class="text-yellow-400">0</span
-                    >코인
+                    <span id="totalBetAmount" class="text-yellow-400">0</span>원
                   </div>
                 </div>
               </div>
@@ -397,7 +412,7 @@
 
     <script>
       // Socket.IO 연결 설정
-      const socket = io("http://127.0.0.1:5500");
+      const socket = io("http://127.0.0.1:5000");
 
       // 게임 상태 관리
       let gameState = {
@@ -564,7 +579,7 @@
           centerLine.strokePath();
 
           // 플이어/뱅커 영역 표시 - 간격을 더 넓게 조정
-          this.addTableArea(300, 200, "PLAYER"); // x 위치를 350에서 300으로 수���
+          this.addTableArea(300, 200, "PLAYER"); // x 위치를 350에서 300으로 수정
           this.addTableArea(700, 200, "BANKER"); // x 위치를 650에서 700으로 수정
 
           // 텍스트 스타일
@@ -612,6 +627,7 @@
 
           // 초기화
           this.initializeDeck();
+          this.shuffleDeck();
           this.updateDeckCount();
 
           // 사운드 볼륨 설정
@@ -649,9 +665,6 @@
               }
             }
           }
-
-          this.shuffleDeck();
-          this.showShuffleAnimation();
         }
 
         shuffleDeck() {
@@ -689,11 +702,6 @@
           const remainingCards = this.deck.length;
           const remainingDecks = (remainingCards / 52).toFixed(1);
           this.deckCountText.setText(`남은 덱: ${remainingDecks}`);
-
-          // 리셔플 포인트에 도달하면 자동으로 리셔플
-          if (remainingCards <= this.reshufflePoint) {
-            this.initializeDeck();
-          }
         }
 
         drawNextCard() {
@@ -710,6 +718,15 @@
           const hand =
             recipient === "player" ? this.playerHand : this.bankerHand;
           hand.push(card);
+
+          // user.html로 카드 정보 전송
+          this.socket.emit("card_dealt_to_user_ui", {
+            target: recipient, // 'player' 또는 'banker'
+            cardValue: card.value, // 예: 'A', 'K', '7'
+            cardSuit: card.suit, // 예: 'hearts', 'diamonds', 'clubs', 'spades' 추가
+            cardIndex: index, // 0, 1, 2 (몇 번째 카드인지)
+            isNewHand: hand.length === 1, // 해당 핸드의 첫번째 카드인지 여부 (첫 카드일때 이전 카드들 클리어용)
+          });
 
           // 드 시작 위치를 중앙으로 조정
           const cardSprite = this.add.image(
@@ -850,6 +867,16 @@
         async dealCards() {
           if (!gameState.canPlay) return;
 
+          // 남은 카드가 reshufflePoint보다 적으면 덱을 다시 만들고 셔플
+          if (this.deck.length < this.reshufflePoint) {
+            console.log("카드가 부족하여 덱을 다시 셔플합니다.");
+            this.initializeDeck();
+            this.shuffleDeck();
+            this.updateDeckCount();
+            // 셔플 애니메이션 (선택 사항, 필요시 추가)
+            // await this.showShuffleAnimation();
+          }
+
           // 이전 카드와 결과 초기화
           this.children.list
             .filter((child) => child.type === "Image")
@@ -860,6 +887,7 @@
           this.resultText.setText("");
           this.playerScoreText.setText("");
           this.bankerScoreText.setText("");
+          this.socket.emit("clear_cards_on_user_ui"); // 새 게임(카드딜링) 시작 시 user.html 카드 클리어 요청
 
           // 카드 배 로직...
           await this.dealInitialCards();
@@ -867,6 +895,9 @@
           // 결과 계산
           const finalPlayerScore = this.calculateHandValue(this.playerHand);
           const finalBankerScore = this.calculateHandValue(this.bankerHand);
+
+          // 페어 발생 여부 확인
+          const { playerPair, bankerPair } = this.checkPairs();
 
           // 결과 표시
           this.showGameResult(finalPlayerScore.total, finalBankerScore.total);
@@ -884,6 +915,8 @@
                 : "tie",
             playerScore: finalPlayerScore.total,
             bankerScore: finalBankerScore.total,
+            playerPairOccurred: playerPair,
+            bankerPairOccurred: bankerPair,
           };
 
           // 1초 후에 자동으로 결과 전송 버튼 클릭
@@ -1009,33 +1042,86 @@
             return parseInt(card.value);
           }
         }
+
+        checkPairs() {
+          let playerPair = false;
+          let bankerPair = false;
+
+          if (this.playerHand.length >= 2) {
+            const card1Value = this.getCardValue(this.playerHand[0]);
+            const card2Value = this.getCardValue(this.playerHand[1]);
+            if (card1Value === card2Value) {
+              playerPair = true;
+            }
+          }
+
+          if (this.bankerHand.length >= 2) {
+            const card1Value = this.getCardValue(this.bankerHand[0]);
+            const card2Value = this.getCardValue(this.bankerHand[1]);
+            if (card1Value === card2Value) {
+              bankerPair = true;
+            }
+          }
+          return { playerPair, bankerPair };
+        }
       }
 
       // 실시간 베팅 통계 업데이트 (클래스 외부로 이동)
       socket.on("new_bet", (data) => {
         const { choice, stats } = data;
 
+        function formatGameAmount(amount) {
+          if (amount >= 1000000) {
+            return (amount / 1000000).toFixed(1).replace(".0", "") + "M";
+          }
+          if (amount >= 1000) {
+            return (amount / 1000).toFixed(1).replace(".0", "") + "K";
+          }
+          return amount.toString();
+        }
+
         // 베팅 카운트 업데이트
         document.getElementById("playerBetCount").textContent =
-          stats.player.count;
+          stats.player.bettor_count;
         document.getElementById("bankerBetCount").textContent =
-          stats.banker.count;
-        document.getElementById("tieBetCount").textContent = stats.tie.count;
+          stats.banker.bettor_count;
+        document.getElementById("tieBetCount").textContent =
+          stats.tie.bettor_count;
+        document.getElementById("playerPairBetCount").textContent =
+          stats.player_pair?.bettor_count || 0;
+        document.getElementById("bankerPairBetCount").textContent =
+          stats.banker_pair?.bettor_count || 0;
 
-        // 베팅 금액 업데이트
+        // 베팅 금액 업데이트 (K, M 단위 적용)
         document.getElementById("playerBetAmount").textContent =
-          stats.player.total;
+          formatGameAmount(stats.player.total_bet_amount);
         document.getElementById("bankerBetAmount").textContent =
-          stats.banker.total;
-        document.getElementById("tieBetAmount").textContent = stats.tie.total;
+          formatGameAmount(stats.banker.total_bet_amount);
+        document.getElementById("tieBetAmount").textContent = formatGameAmount(
+          stats.tie.total_bet_amount
+        );
+        document.getElementById("playerPairBetAmount").textContent =
+          formatGameAmount(stats.player_pair?.total_bet_amount || 0);
+        document.getElementById("bankerPairBetAmount").textContent =
+          formatGameAmount(stats.banker_pair?.total_bet_amount || 0);
 
-        // 총 베팅 업데이트
-        const totalCount =
-          stats.player.count + stats.banker.count + stats.tie.count;
-        const totalAmount =
-          stats.player.total + stats.banker.total + stats.tie.total;
-        document.getElementById("totalBetCount").textContent = totalCount;
-        document.getElementById("totalBetAmount").textContent = totalAmount;
+        // 총 베팅 업데이트 (모든 베팅 타입의 bettor_count와 total_bet_amount 합산)
+        const totalBettorCount =
+          (stats.player?.bettor_count || 0) +
+          (stats.banker?.bettor_count || 0) +
+          (stats.tie?.bettor_count || 0) +
+          (stats.player_pair?.bettor_count || 0) +
+          (stats.banker_pair?.bettor_count || 0);
+        const totalBetAmountValue =
+          (stats.player?.total_bet_amount || 0) +
+          (stats.banker?.total_bet_amount || 0) +
+          (stats.tie?.total_bet_amount || 0) +
+          (stats.player_pair?.total_bet_amount || 0) +
+          (stats.banker_pair?.total_bet_amount || 0);
+
+        document.getElementById("totalBetCount").textContent = totalBettorCount;
+        document.getElementById("totalBetAmount").textContent =
+          formatGameAmount(totalBetAmountValue);
       });
 
       // 최근 게임 결과 업데이트를 위한 Socket.IO 이벤트 리스너
@@ -1173,6 +1259,8 @@
       document.getElementById("shuffleButton").addEventListener("click", () => {
         if (game.scene && game.scene.scenes[0]) {
           game.scene.scenes[0].initializeDeck();
+          game.scene.scenes[0].shuffleDeck();
+          game.scene.scenes[0].updateDeckCount();
         }
       });
 
@@ -1200,6 +1288,8 @@
               result: scene.gameResult.result,
               playerScore: scene.gameResult.playerScore,
               bankerScore: scene.gameResult.bankerScore,
+              playerPairOccurred: scene.gameResult.playerPairOccurred,
+              bankerPairOccurred: scene.gameResult.bankerPairOccurred,
               timestamp: new Date().toISOString(),
             });
 
@@ -1214,6 +1304,7 @@
 
         // 페이지 새로고침 대신 필요한 부분만 업데이트
         updateRecentResults(); // 최근 결과 업데이트
+        socket.emit("clear_cards_on_user_ui"); // 결과 승인 시 user.html 카드 클리어
 
         // 게임 상태 초기화
         const scene = game.scene.scenes[0];
@@ -1249,6 +1340,7 @@
         // 결과 전송 버튼 다시 활성화
         document.getElementById("sendResultButton").disabled = false;
         document.getElementById("playButton").disabled = false;
+        socket.emit("clear_cards_on_user_ui"); // 결과 거절 시 user.html 카드 클리어
       });
 
       // 토스트 메시지 표시 함수 추가
