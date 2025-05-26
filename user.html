@@ -170,12 +170,12 @@
         gap: 4px; /* 버튼 간 간격 */
         margin-bottom: 1rem;
         padding: 0 4px;
-        height: 160px; /* 베팅 영역 높이 증가 */
+        height: 120px; /* 베팅 영역 높이 감소 (160px -> 120px) */
       }
 
       .bet-option {
         position: relative;
-        padding: 8px 4px; /* 패딩 조정 */
+        padding: 4px 4px; /* 패딩 조정 (8px 4px -> 4px 4px) */
         border-radius: 10px; /* 모서리 둥글기 */
         text-align: center;
         cursor: pointer;
@@ -372,14 +372,14 @@
 
       /* 금액 선택 영역 동그라미 버튼 스타일 유지 */
       .amount-button {
-        width: 60px;
-        height: 60px;
+        width: 50px; /* 60px -> 50px */
+        height: 50px; /* 60px -> 50px */
         border-radius: 50%;
         background: linear-gradient(145deg, #374151, #4b5563);
         border: 2px solid #6b7280;
         color: #fbbf24;
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.75rem; /* 0.8rem -> 0.75rem */
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
@@ -428,8 +428,8 @@
         top: 50%; /* 세로 중앙 기준으로 설정 */
         transform: translate(
           -50%,
-          -100%
-        ); /* 가로 중앙, 세로 약간 위로(-50%에서 -55%로) 조정 */
+          -85%
+        ); /* 가로 중앙, 세로 약간 위로(-100%에서 -85%로) 조정 */
         height: 25px;
         z-index: 5; /* 타이틀과 통계 사이에 오도록 z-index 조정 */
         /* 버튼 내부 다른 요소들과의 간격을 위해 필요시 margin 추가 */
@@ -490,7 +490,7 @@
       <div id="miniGameContainerWrapper" class="my-3 px-2 sm:px-0">
         <div
           id="miniGameContainer"
-          class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-green-700 bg-opacity-80 rounded-lg shadow-xl overflow-hidden mx-auto"
+          class="w-full h-48 sm:h-56 md:h-64 lg:h-72 bg-green-700 bg-opacity-80 rounded-lg shadow-xl overflow-hidden mx-auto"
           style="max-width: 600px; border: 2px solid #b8860b"
         >
           <!-- Phaser 게임이 여기에 렌더링됩니다. -->
@@ -600,7 +600,8 @@
 
       <!-- 금액 선택 영역 - 동그라미 스타일 -->
       <div class="mb-4">
-        <div class="flex justify-center items-center gap-3 px-4">
+        <div class="flex justify-center items-center gap-2 px-4">
+          {/* gap-3 -> gap-2 */}
           <button data-amount="1000" class="amount-button coin-button relative">
             1K
           </button>
