@@ -1191,6 +1191,7 @@
 
         // 결과 표시
         const resultText = document.createElement("div");
+        resultText.id = "gameResultMessage"; // 고유 ID 부여
         resultText.className = "text-2xl font-bold text-center mb-4";
 
         if (result === "player") {
@@ -1241,22 +1242,22 @@
       const game = new Phaser.Game(config);
 
       // DPR 조정 코드를 수정
-      const canvas = document.querySelector("canvas");
-      if (canvas) {
-        const dpr = window.devicePixelRatio;
-        canvas.style.width = `${1200}px`;
-        canvas.style.height = `${600}px`;
-        canvas.width = Math.floor(1200 * dpr);
-        canvas.height = Math.floor(600 * dpr);
-        const context = canvas.getContext("2d", {
-          alpha: false,
-          antialias: true,
-          desynchronized: true,
-        });
-        context.scale(dpr, dpr);
-        context.imageSmoothingEnabled = true;
-        context.imageSmoothingQuality = "high";
-      }
+      // const canvas = document.querySelector("canvas");
+      // if (canvas) {
+      //   const dpr = window.devicePixelRatio;
+      //   canvas.style.width = `${1200}px`;
+      //   canvas.style.height = `${600}px`;
+      //   canvas.width = Math.floor(1200 * dpr);
+      //   canvas.height = Math.floor(600 * dpr);
+      //   const context = canvas.getContext("2d", {
+      //     alpha: false,
+      //     antialias: true,
+      //     desynchronized: true,
+      //   });
+      //   context.scale(dpr, dpr);
+      //   context.imageSmoothingEnabled = true;
+      //   context.imageSmoothingQuality = "high";
+      // }
 
       document.getElementById("shuffleButton").addEventListener("click", () => {
         if (game.scene && game.scene.scenes[0]) {
@@ -1329,9 +1330,7 @@
         document.getElementById("sendResultButton").disabled = true;
 
         // 결과 표시 텍스트 제거
-        const oldResultText = document.querySelector(
-          ".game-container > div:first-child"
-        );
+        const oldResultText = document.getElementById("gameResultMessage"); // ID로 요소를 선택
         if (oldResultText) {
           oldResultText.remove();
         }
