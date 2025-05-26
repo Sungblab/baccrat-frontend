@@ -358,6 +358,8 @@
                 <th class="py-3 px-4 text-right">패배</th>
                 <th class="py-3 px-4 text-right">총 베팅</th>
                 <th class="py-3 px-4 text-right">승률</th>
+                <th class="py-3 px-4 text-right">손익(원)</th>
+                <!-- 손익 열 추가 -->
                 <th class="py-3 px-4 text-center">관리</th>
               </tr>
             </thead>
@@ -586,6 +588,7 @@
                 <td class="py-2">${user.losses}</td>
                 <td class="py-2">${user.totalBets}</td>
                 <td class="py-2">${user.winRate}</td>
+                <td class="py-2">${user.profit} 원</td>
                 <td class="py-2">
                     ${
                       !user.isApproved
@@ -1268,6 +1271,14 @@
               parseFloat(user.winRate) >= 50
                 ? "text-green-400"
                 : "text-gray-400";
+            // 손익 값에 따른 클래스 추가
+            const netProfit = user.netProfit || 0;
+            const netProfitClass =
+              netProfit > 0
+                ? "text-green-400"
+                : netProfit < 0
+                ? "text-red-400"
+                : "text-gray-400";
 
             tr.innerHTML = `
               <td class="py-3 px-4 font-medium">${user.username}</td>
@@ -1290,6 +1301,7 @@
               <td class="py-3 px-4 text-right ${winRateClass}">${
               user.winRate
             }%</td>
+              <td class="py-3 px-4 text-right ${netProfitClass}">${user.netProfit.toLocaleString()} 원</td> <!-- 손익 표시 -->
               <td class="py-3 px-4">
                 <div class="flex justify-center gap-2">
                   <button 
