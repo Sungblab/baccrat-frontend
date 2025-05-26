@@ -551,7 +551,7 @@
           <button data-choice="player" class="bet-option player choice-button">
             <span class="title">PLAYER</span>
             <div class="bet-stats-container" id="playerStats">
-              <div class="percentage-circle">0%</div>
+              <!-- <div class="percentage-circle">0%</div> --> <!-- 퍼센티지 표시 제거 -->
               <div class="stats-details">
                 <span class="total-bet">₩0</span>
                 <span class="my-bet-amount text-xs text-amber-300"></span> <!-- 내 베팅액 표시 추가 -->
@@ -564,7 +564,7 @@
             <span class="title">TIE</span>
             <span class="odds">8:1</span>
             <div class="bet-stats-container" id="tieStats">
-              <div class="percentage-circle">0%</div>
+              <!-- <div class="percentage-circle">0%</div> --> <!-- 퍼센티지 표시 제거 -->
               <div class="stats-details">
                 <span class="total-bet">₩0</span>
                 <span class="my-bet-amount text-xs text-amber-300"></span> <!-- 내 베팅액 표시 추가 -->
@@ -576,7 +576,7 @@
           <button data-choice="banker" class="bet-option banker choice-button">
             <span class="title">BANKER</span>
             <div class="bet-stats-container" id="bankerStats">
-              <div class="percentage-circle">0%</div>
+              <!-- <div class="percentage-circle">0%</div> --> <!-- 퍼센티지 표시 제거 -->
               <div class="stats-details">
                 <span class="total-bet">₩0</span>
                 <span class="my-bet-amount text-xs text-amber-300"></span> <!-- 내 베팅액 표시 추가 -->
@@ -1579,7 +1579,7 @@
             if (myBetEl) {
               const amount = myBets && myBets[choice] ? myBets[choice] : 0;
               if (amount > 0) {
-                myBetEl.textContent = `(내 베팅: ${amount.toLocaleString()}원)`;
+                myBetEl.textContent = `(${amount.toLocaleString()}원)`; // "내 베팅:" 텍스트 제거
                 myBetEl.classList.remove("hidden");
               } else {
                 myBetEl.textContent = "";
