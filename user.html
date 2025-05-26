@@ -942,6 +942,14 @@
         let bettingActive = false;
         let miniGame = null; // Phaser 게임 인스턴스 변수
         let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
+        let myBets = {}; // 사용자 개인의 베팅 정보를 저장하는 객체
+        let currentGlobalStats = { // 가장 최근의 전체 베팅 통계를 저장하는 객체
+          player: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          banker: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          player_pair: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+          banker_pair: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+        };
 
         // DOM 요소 가져오기
         const exchangeModal = document.getElementById("exchangeModal");
@@ -1195,7 +1203,10 @@
               amount: selectedChipAmount,
               token: token,
             });
-            updateCurrentBet();
+            // 사용자의 베팅 정보를 즉시 myBets에 업데이트
+            myBets = { [selectedChoice]: selectedChipAmount };
+            updateCurrentBet(); // 선택 UI 업데이트
+            updateBettingStatsDisplay(currentGlobalStats); // 나의 베팅 금액을 포함하여 통계 UI 즉시 업데이트
           });
         });
 
@@ -1222,6 +1233,7 @@
             }
             // 서버에 마지막 베팅 취소 요청
             socket.emit("cancel_bet", { token: token });
+            // 성공 여부는 서버 응답으로 처리되지만, UI상으로는 즉시 초기화될 수 있도록 준비
           });
 
         // 최근 게임 결과 가져오기 함수 수정 (Big Road 스타일)
@@ -1271,15 +1283,16 @@
         socket.on("bet_success", (message) => {
           // showNotification(message); // "베팅이 완료되었습니다." 알림 제거됨
           fetchUserInfo(); // 잔액 업데이트
+          // myBets는 place_bet 시점에 이미 업데이트되었으므로 여기서는 변경 없음
+          // updateBettingStatsDisplay(currentGlobalStats); // betting_status 이벤트가 업데이트하므로 중복 호출 피할 수 있음
         });
 
         socket.on("bet_cancelled_success", (data) => {
           // showNotification(data.message); // "베팅(선택: X, 금액: Y)이 취소되었습니다." 알림 제거
           fetchUserInfo(); // 잔액 즉시 업데이트
-          // 현재 선택된 칩/종류는 그대로 두거나, 취소된 베팅에 맞춰 UI를 조정할 수도 있습니다.
-          // 예를 들어, 취소된 베팅과 동일한 선택이었다면 UI 선택도 해제하는 것을 고려할 수 있습니다.
-          // 지금은 단순히 잔액만 업데이트합니다.
+          myBets = {}; // 나의 모든 베팅 취소 처리
           updateCurrentBet(); // 현재 선택 상태(selectedChipAmount, selectedChoice)에 따른 UI 업데이트
+          updateBettingStatsDisplay(currentGlobalStats); // 통계 UI 즉시 업데이트
         });
 
         socket.on("error", (message) => {
@@ -1307,7 +1320,11 @@
           }
           selectedChoice = null;
           selectedChipAmount = 0;
+          myBets = {}; // 새 게임 시작 시 나의 베팅 초기화
           updateCurrentBet();
+          // updateBettingStatsDisplay(currentGlobalStats); // betting_status 이벤트가 초기 통계를 보내줄 것이므로 여기서 호출 안해도 될 수 있음
+                                                        // 또는 betting_status 전에 빈 화면을 보여주기 위해 호출
+          updateBettingStatsDisplay(currentGlobalStats); // 새 게임 시작 시 UI의 내 베팅 금액 0으로 초기화
         });
 
         function startTimer(endTime) {
@@ -1417,6 +1434,7 @@
           }
           selectedChipAmount = 0;
           selectedChoice = null;
+          myBets = {}; // 결과 승인 후 나의 베팅 초기화
           updateCurrentBet();
 
           // 미니게임 클리어
@@ -1508,10 +1526,11 @@
               ".stats-details .bettor-count"
             );
 
-            const count = statsData?.count || 0;
-            const totalAmount =
-              statsData?.total_bet_amount || statsData?.total || 0;
-            const bettorCount = statsData?.bettor_count || 0;
+            // 사용자의 베팅 금액 가져오기
+            const myBetAmountOnThisSection = myBets[sectionKey] || 0;
+
+            const count = statsData?.count || 0; // 전체 베팅 수 (퍼센트 계산용)
+            const bettorCount = statsData?.bettor_count || 0; // 전체 베팅 인원수
             let percentage = 0;
 
             if (percentageElement) {
@@ -1527,11 +1546,12 @@
               percentageElement.textContent = `${percentage}%`;
             }
 
-            if (totalBetElement)
-              totalBetElement.textContent = `₩${formatAmount(totalAmount)}`; // K 단위 적용
+            if (totalBetElement) {
+              totalBetElement.textContent = `₩${formatAmount(myBetAmountOnThisSection)}`; // 나의 베팅 금액 표시
+            }
             if (bettorCountElement) {
               // 모든 베팅 타입에 대해 인원수 표시 (P/B/T 외 페어에도 적용)
-              bettorCountElement.innerHTML = `<i class="fas fa-users"></i> ${bettorCount}`;
+              bettorCountElement.innerHTML = `<i class="fas fa-users"></i> ${bettorCount}`; // 전체 인원수 표시
               bettorCountElement.classList.remove("hidden");
             }
           }
@@ -1547,34 +1567,22 @@
         socket.on("betting_status", (status) => {
           bettingActive = status.active;
           if (status.stats) {
+            currentGlobalStats = status.stats; // 최신 전체 통계 업데이트
             updateBettingStatsDisplay(status.stats);
           }
         });
 
         socket.on("new_bet", (data) => {
           if (data.stats) {
+            currentGlobalStats = data.stats; // 최신 전체 통계 업데이트
             updateBettingStatsDisplay(data.stats);
           }
         });
 
         // 초기화 호출들
-        updateBettingStatsDisplay({
-          player: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
-          banker: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
-          tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
-          player_pair: {
-            count: 0,
-            total: 0,
-            bettor_count: 0,
-            total_bet_amount: 0,
-          },
-          banker_pair: {
-            count: 0,
-            total: 0,
-            bettor_count: 0,
-            total_bet_amount: 0,
-          },
-        });
+        // currentGlobalStats는 이미 위에서 초기화됨.
+        // 페이지 로드 시 초기 통계 UI 업데이트
+        updateBettingStatsDisplay(currentGlobalStats);
         fetchUserInfo();
         fetchRecentGames();
         // 페이지 로드 시 카드 표시 초기화 (서버에 요청하는 대신 직접 클리어 또는 서버가 연결시 보내주는 이벤트 활용)
