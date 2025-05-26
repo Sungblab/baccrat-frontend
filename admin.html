@@ -541,7 +541,9 @@
         window.location.href = "index.html";
       }
 
-      let socket = io("http://127.0.0.1:5000");
+      let socket = io(
+        "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+      );
 
       // 토스트 메시지 표시 함수
       function showToast(message) {
@@ -557,7 +559,7 @@
       async function fetchUsers() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/users-stats",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users-stats",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -668,7 +670,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/users/${userId}/approve`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/approve`,
             {
               method: "PUT",
               headers: {
@@ -697,7 +699,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/users/${userId}`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}`,
             {
               method: "DELETE",
               headers: {
@@ -727,7 +729,7 @@
         if (newPassword) {
           try {
             const res = await fetch(
-              `http://127.0.0.1:5000/api/admin/users/${userId}/reset-password`,
+              `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/reset-password`,
               {
                 method: "PUT",
                 headers: {
@@ -753,7 +755,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/users/${userId}/toggle-admin`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/toggle-admin`,
             {
               method: "PUT",
               headers: {
@@ -904,7 +906,7 @@
       async function fetchLeaderboard() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/leaderboard",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/leaderboard",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -949,7 +951,7 @@
       async function fetchAllBettingHistory() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/all-betting-history",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/all-betting-history",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1038,7 +1040,7 @@
       async function fetchRecentGames() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/recent-games?limit=20",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/recent-games?limit=20",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1238,7 +1240,7 @@
       async function fetchUsers() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/users-stats",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users-stats",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1388,7 +1390,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/users/${userId}/reset-password`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/reset-password`,
             {
               method: "PUT",
               headers: {
@@ -1423,7 +1425,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/users/${userId}/adjust-coins`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/adjust-coins`,
             {
               method: "PUT",
               headers: {
@@ -1457,7 +1459,7 @@
 
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/reset-game-history",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/reset-game-history",
             {
               method: "DELETE",
               headers: {
@@ -1483,7 +1485,7 @@
       async function fetchExchangeRequests() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/exchange-requests",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/exchange-requests",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1579,7 +1581,7 @@
 
         try {
           const res = await fetch(
-            `http://127.0.0.1:5000/api/admin/exchange-requests/${requestId}`,
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/exchange-requests/${requestId}`,
             {
               method: "PUT",
               headers: {

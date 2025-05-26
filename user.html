@@ -933,7 +933,9 @@
           return; // token 없으면 이후 코드 실행 안 함
         }
 
-        let socket = io("http://127.0.0.1:5000");
+        let socket = io(
+          "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+        );
 
         let selectedChoice = null;
         let selectedChipAmount = 0;
@@ -987,7 +989,7 @@
         async function fetchUserInfo() {
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/auth/user-info",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -1225,7 +1227,9 @@
         // 최근 게임 결과 가져오기 함수 수정 (Big Road 스타일)
         async function fetchRecentGames() {
           try {
-            const res = await fetch("http://127.0.0.1:5000/api/recent-games");
+            const res = await fetch(
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/recent-games"
+            );
             const games = await res.json();
             const container = document.getElementById("recentResults");
             if (!container) return;
@@ -1602,7 +1606,7 @@
             }
             try {
               const response = await fetch(
-                "http://127.0.0.1:5000/api/exchange/request",
+                "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/request",
                 {
                   method: "POST",
                   headers: {
@@ -1715,7 +1719,7 @@
         async function fetchExchangeHistory() {
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/exchange/history",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/history",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -2270,7 +2274,7 @@
         async function fetchExchangeHistory() {
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/exchange/history",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/history",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
