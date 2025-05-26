@@ -379,7 +379,7 @@
         border: 2px solid #6b7280;
         color: #fbbf24;
         font-weight: 600;
-        font-size: 0.75rem; /* 0.8rem -> 0.75rem */
+        font-size: 0.7rem; /* 0.8rem -> 0.7rem */
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
@@ -461,7 +461,7 @@
   <body class="bg-black text-white min-h-screen">
     <!-- 상단 헤더 수정 -->
     <header class="fixed top-0 left-0 right-0 header-container z-50">
-      <div class="flex flex-col p-2">
+      <div class="flex flex-col p-1"> <!-- p-2 -> p-1 -->
         <div class="flex justify-between items-center mb-1">
           <h1
             class="text-xl font-bold text-yellow-500"
@@ -485,12 +485,12 @@
       </div>
     </header>
 
-    <main class="pt-16 pb-14 px-2">
+    <main class="pt-16 px-2"> <!-- pb-14 제거 -->
       <!-- 미니게임 컨테이너 추가 -->
       <div id="miniGameContainerWrapper" class="my-3 px-2 sm:px-0">
         <div
           id="miniGameContainer"
-          class="w-full h-48 sm:h-56 md:h-64 lg:h-72 bg-green-700 bg-opacity-80 rounded-lg shadow-xl overflow-hidden mx-auto"
+          class="w-full h-52 sm:h-60 md:h-64 lg:h-72 bg-green-700 bg-opacity-80 rounded-lg shadow-xl overflow-hidden mx-auto" /* 높이 클래스 수정 */
           style="max-width: 600px; border: 2px solid #b8860b"
         >
           <!-- Phaser 게임이 여기에 렌더링됩니다. -->
@@ -600,8 +600,7 @@
 
       <!-- 금액 선택 영역 - 동그라미 스타일 -->
       <div class="mb-4">
-        <div class="flex justify-center items-center gap-2 px-4">
-          {/* gap-3 -> gap-2 */}
+        <div class="flex justify-center items-center gap-2 px-4"> <!-- gap-3 -> gap-2 -->
           <button data-amount="1000" class="amount-button coin-button relative">
             1K
           </button>
@@ -636,7 +635,7 @@
       </div>
 
       <!-- 하단 버튼 레이아웃 복원 -->
-      <div class="fixed bottom-4 left-0 right-0 grid grid-cols-3 gap-1.5 z-40">
+      <div class="grid grid-cols-3 gap-1.5 mt-4 mb-4"> <!-- fixed 관련 클래스 제거, mt-4 mb-4 추가 -->
         <button
           id="showExchange"
           class="golden-btn py-2 rounded-lg text-xs font-bold shadow-lg"
