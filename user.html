@@ -2948,78 +2948,75 @@
           updateCurrentBet();
         });
 
-                socket.on("game_result", (data) => {
-          const {
-            result,
-            playerScore,
-            bankerScore,
-            // playerPairOccurred, // 미니게임에서는 페어 직접 표시 안함 (recentResults에서 확인)
-            // bankerPairOccurred,
-          } = data;
-          const gameStatusEl = document.getElementById("gameStatus");
-          let statusText = "";
-          let soundId = "";
-
-          // 내가 베팅한 것과 게임 결과 비교하여 승리 모달 표시
-          if (lastBetChoice && lastBetAmount > 0) {
-            let isWin = false;
-            let winAmount = 0;
-            
-            if (lastBetChoice === "player" && result === "player") {
-              isWin = true;
-              winAmount = lastBetAmount * 2; // 1:1 배당
-            } else if (lastBetChoice === "banker" && result === "banker") {
-              isWin = true;
-              winAmount = Math.floor(lastBetAmount * 1.95); // 0.95:1 배당
-            } else if (lastBetChoice === "tie" && result === "tie") {
-              isWin = true;
-              winAmount = lastBetAmount * 9; // 8:1 배당
-            }
-            
-            if (isWin) {
-              setTimeout(() => {
-                showWinModal(winAmount); // 총 수령액 표시
-              }, 1000); // 1초 후 표시
-            }
-          }
-
-          if (result === "player") {
-            statusText = `플레이어 승! (${playerScore} vs ${bankerScore})`;
-            if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-blue-500 mb-1";
-            soundId = "playerWinSound";
-          } else if (result === "banker") {
-            statusText = `뱅커 승! (${playerScore} vs ${bankerScore})`;
-            if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-red-500 mb-1";
-            soundId = "bankerWinSound";
-          } else {
-            statusText = `타이! (${playerScore} vs ${bankerScore})`;
-            if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-green-500 mb-1";
-            soundId = "tieSound";
-          }
-          if (gameStatusEl) gameStatusEl.textContent = statusText;
-          document
-            .getElementById(soundId)
-            ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
-
-          // 미니게임에도 결과 표시
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            baccaratSceneMini.setGameResult(result, playerScore, bankerScore);
-          }
-
-          const timerEl = document.getElementById("timer");
-          if (timerEl) {
-            timerEl.innerText = "결과 발표 중...";
-            timerEl.className = "text-base font-semibold text-yellow-400";
-          }
-          // 최근 결과 업데이트는 result_approved에서 처리하므로 여기서는 중복 호출 방지
-          // fetchRecentGames(); // 이 부분은 result_approved로 이동 또는 거기서만 호출
-        });
+        // game_result 이벤트는 이제 admin.html에서만 사용됨 (승인 대기용)
+        // user.html에서는 result_approved 이벤트에서 게임 결과를 처리함
 
         socket.on("result_approved", (data) => {
+          // 게임 결과가 포함된 경우 처리
+          if (data && data.result) {
+            const {
+              result,
+              playerScore,
+              bankerScore,
+              playerPairOccurred,
+              bankerPairOccurred,
+            } = data;
+            
+            const gameStatusEl = document.getElementById("gameStatus");
+            let statusText = "";
+            let soundId = "";
+
+            // 내가 베팅한 것과 게임 결과 비교하여 승리 모달 표시
+            if (lastBetChoice && lastBetAmount > 0) {
+              let isWin = false;
+              let winAmount = 0;
+              
+              if (lastBetChoice === "player" && result === "player") {
+                isWin = true;
+                winAmount = lastBetAmount * 2; // 1:1 배당
+              } else if (lastBetChoice === "banker" && result === "banker") {
+                isWin = true;
+                winAmount = Math.floor(lastBetAmount * 1.95); // 0.95:1 배당
+              } else if (lastBetChoice === "tie" && result === "tie") {
+                isWin = true;
+                winAmount = lastBetAmount * 9; // 8:1 배당
+              }
+              
+              if (isWin) {
+                setTimeout(() => {
+                  showWinModal(winAmount); // 총 수령액 표시
+                }, 1000); // 1초 후 표시
+              }
+            }
+
+            if (result === "player") {
+              statusText = `플레이어 승! (${playerScore} vs ${bankerScore})`;
+              if (gameStatusEl)
+                gameStatusEl.className = "text-xl font-bold text-blue-500 mb-1";
+              soundId = "playerWinSound";
+            } else if (result === "banker") {
+              statusText = `뱅커 승! (${playerScore} vs ${bankerScore})`;
+              if (gameStatusEl)
+                gameStatusEl.className = "text-xl font-bold text-red-500 mb-1";
+              soundId = "bankerWinSound";
+            } else {
+              statusText = `타이! (${playerScore} vs ${bankerScore})`;
+              if (gameStatusEl)
+                gameStatusEl.className = "text-xl font-bold text-green-500 mb-1";
+              soundId = "tieSound";
+            }
+            if (gameStatusEl) gameStatusEl.textContent = statusText;
+            document
+              .getElementById(soundId)
+              ?.play()
+              .catch((err) => console.log("소리 재생 실패:", err));
+
+            // 미니게임에도 결과 표시
+            if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+              baccaratSceneMini.setGameResult(result, playerScore, bankerScore);
+            }
+          }
+          
           fetchUserInfo();
           fetchRecentGames(); // 결과 승인 후 최근 게임 목록 업데이트
           
@@ -3949,15 +3946,12 @@
             const centerX = width / 2;
             const cardY = height / 2; // 중앙 높이로 조정
 
-            let actualCardValue = cardValueFromServer; // 'A', '2', ..., '9', 'T', 'J', 'Q', 'K'
-            // 서버에서 'T'로 오는 10은 카드 이미지에서 '0'으로 표현됨
-            let displayCardValue = actualCardValue;
-            if (actualCardValue === 'T') {
-              displayCardValue = '0'; // 카드 이미지는 10을 0으로 표현
-            }
+            let actualCardValue = cardValueFromServer; // 'A', '2', ..., '9', '0', 'J', 'Q', 'K'
+            // 서버에서 이미 '0'으로 오는 10, J, Q, K는 cardKey 생성 시 그대로 사용
+            // deckofcardsapi.com은 10을 0으로 표현 (예: 0H, 0S)
 
             const suitInitial = cardSuitFromServer.charAt(0).toUpperCase(); // 'H', 'D', 'C', 'S'
-            const cardKey = `${displayCardValue}${suitInitial}`;
+            const cardKey = `${actualCardValue}${suitInitial}`;
 
             let handDataRef = this.handsData[target];
             let cardSpritesRef = this.cardSprites[target];
