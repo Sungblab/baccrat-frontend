@@ -3949,12 +3949,15 @@
             const centerX = width / 2;
             const cardY = height / 2; // 중앙 높이로 조정
 
-            let actualCardValue = cardValueFromServer; // 'A', '2', ..., '9', '0', 'J', 'Q', 'K'
-            // 서버에서 이미 '0'으로 오는 10, J, Q, K는 cardKey 생성 시 그대로 사용
-            // deckofcardsapi.com은 10을 0으로 표현 (예: 0H, 0S)
+            let actualCardValue = cardValueFromServer; // 'A', '2', ..., '9', 'T', 'J', 'Q', 'K'
+            // 서버에서 'T'로 오는 10은 카드 이미지에서 '0'으로 표현됨
+            let displayCardValue = actualCardValue;
+            if (actualCardValue === 'T') {
+              displayCardValue = '0'; // 카드 이미지는 10을 0으로 표현
+            }
 
             const suitInitial = cardSuitFromServer.charAt(0).toUpperCase(); // 'H', 'D', 'C', 'S'
-            const cardKey = `${actualCardValue}${suitInitial}`;
+            const cardKey = `${displayCardValue}${suitInitial}`;
 
             let handDataRef = this.handsData[target];
             let cardSpritesRef = this.cardSprites[target];
