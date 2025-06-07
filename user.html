@@ -1574,7 +1574,7 @@
         }
 
         let socket = io(
-          "http://127.0.0.1:5000"
+          "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
         );
         
         // 소켓 연결 후 인증
@@ -1725,7 +1725,7 @@
         // 사용자 목록 가져오기
         async function fetchUsersList() {
           try {
-            const res = await fetch("http://127.0.0.1:5000/api/users/list", {
+            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/users/list", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1735,7 +1735,7 @@
               
               // 잔액 업데이트
               const balanceEl = document.getElementById("transferBalance");
-              const userRes = await fetch("http://127.0.0.1:5000/api/auth/user-info", {
+              const userRes = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info", {
                 headers: { Authorization: `Bearer ${token}` }
               });
               if (userRes.ok) {
@@ -1853,7 +1853,7 @@
           confirmBtn.textContent = "처리중...";
           
           try {
-            const response = await fetch("http://127.0.0.1:5000/api/transfer/send", {
+            const response = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/send", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -1914,7 +1914,7 @@
           confirmBtn.textContent = "처리중...";
           
           try {
-            const response = await fetch("http://127.0.0.1:5000/api/transfer/request", {
+            const response = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -1949,7 +1949,7 @@
         // 받은 요청 목록 가져오기
         async function fetchReceivedRequests() {
           try {
-            const res = await fetch("http://127.0.0.1:5000/api/transfer/requests/received", {
+            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/requests/received", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -2012,7 +2012,7 @@
           }
           
           try {
-            const response = await fetch(`http://127.0.0.1:5000/api/transfer/request/${requestId}/accept`, {
+            const response = await fetch(`https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request/${requestId}/accept`, {
               method: "POST",
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -2033,7 +2033,7 @@
         
         window.rejectRequest = async (requestId) => {
           try {
-            const response = await fetch(`http://127.0.0.1:5000/api/transfer/request/${requestId}/reject`, {
+            const response = await fetch(`https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request/${requestId}/reject`, {
               method: "POST",
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -2054,7 +2054,7 @@
         // 송금 내역 가져오기
         async function fetchTransferHistory() {
           try {
-            const res = await fetch("http://127.0.0.1:5000/api/transfer/history", {
+            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/history", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -2133,7 +2133,7 @@
             
             try {
               const response = await fetch(
-                "http://127.0.0.1:5000/api/deposit/request",
+                "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/deposit/request",
                 {
                   method: "POST",
                   headers: {
@@ -2208,7 +2208,7 @@
           
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/auth/user-info",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -2317,7 +2317,7 @@
           try {
             // 상세 사용자 정보 요청 시작
             const res = await fetch(
-              "http://127.0.0.1:5000/api/user/detailed-info",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/user/detailed-info",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -2810,7 +2810,7 @@
         async function fetchRecentGames() {
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/recent-games"
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/recent-games"
             );
             const games = await res.json();
             const container = document.getElementById("recentResults");
@@ -3613,7 +3613,7 @@
             }
             try {
               const response = await fetch(
-                "http://127.0.0.1:5000/api/exchange/request",
+                "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/request",
                 {
                   method: "POST",
                   headers: {
@@ -3727,7 +3727,7 @@
         async function fetchExchangeHistory() {
           try {
             const res = await fetch(
-              "http://127.0.0.1:5000/api/exchange/history",
+              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/history",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
