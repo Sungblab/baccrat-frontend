@@ -1722,7 +1722,7 @@
               showNotification("사용자 목록을 가져오는 데 실패했습니다.");
             }
           } catch (err) {
-            console.error("사용자 목록 조회 에러:", err);
+            // 사용자 목록 조회 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           }
         }
@@ -1860,7 +1860,7 @@
               showNotification(data.message || "송금에 실패했습니다.");
             }
           } catch (error) {
-            console.error("송금 에러:", error);
+            // 송금 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           } finally {
             confirmBtn.disabled = false;
@@ -1914,7 +1914,7 @@
               showNotification(data.message || "요청 전송에 실패했습니다.");
             }
           } catch (error) {
-            console.error("요청 전송 에러:", error);
+            // 요청 전송 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           } finally {
             confirmBtn.disabled = false;
@@ -1933,7 +1933,7 @@
               displayReceivedRequests(requests);
             }
           } catch (err) {
-            console.error("받은 요청 조회 에러:", err);
+            // 받은 요청 조회 에러
           }
         }
         
@@ -2002,7 +2002,7 @@
               showNotification(data.message || "요청 수락에 실패했습니다.");
             }
           } catch (error) {
-            console.error("요청 수락 에러:", error);
+            // 요청 수락 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           }
         };
@@ -2022,7 +2022,7 @@
               showNotification(data.message || "요청 거절에 실패했습니다.");
             }
           } catch (error) {
-            console.error("요청 거절 에러:", error);
+            // 요청 거절 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           }
         };
@@ -2038,7 +2038,7 @@
               displayTransferHistory(history);
             }
           } catch (err) {
-            console.error("송금 내역 조회 에러:", err);
+            // 송금 내역 조회 에러
           }
         }
         
@@ -2132,7 +2132,7 @@
                 showNotification(data.message || "충전 신청에 실패했습니다.");
               }
             } catch (error) {
-              console.error("충전 신청 에러:", error);
+              // 충전 신청 에러
               showNotification("서버 연결 오류가 발생했습니다.");
             } finally {
               submitDepositButton.disabled = false;
@@ -2251,7 +2251,7 @@
               showNotification("사용자 정보를 가져오는 데 실패했습니다.");
             }
           } catch (err) {
-            console.error(err);
+            // 에러
             showNotification("서버 연결 오류가 발생했습니다.");
           }
         }
@@ -2289,7 +2289,7 @@
         // 상세 사용자 정보 가져오기 함수
         async function fetchDetailedUserInfo() {
           try {
-            console.log("상세 사용자 정보 요청 시작");
+            // 상세 사용자 정보 요청 시작
             const res = await fetch(
               "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/user/detailed-info",
               {
@@ -2298,11 +2298,10 @@
             );
             if (res.ok) {
               const data = await res.json();
-              console.log("상세 사용자 정보 응답:", data);
-              console.log("베팅 통계:", data.bettingStats);
+              // 상세 사용자 정보 응답 및 베팅 통계
               updateDetailedMyInfoModal(data);
             } else {
-              console.error("API 응답 오류:", res.status, res.statusText);
+              // API 응답 오류
               showNotification("상세 정보를 가져오는 데 실패했습니다.");
             }
           } catch (err) {
@@ -2941,7 +2940,7 @@
           const bettingEndSound = document.getElementById("bettingEndSound");
           bettingEndSound
             ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
+            .catch((err) => {});
           // selectedChoice와 selectedChipAmount는 게임 결과 처리 후에 초기화
           // selectedChoice = null;
           // selectedChipAmount = 0;
@@ -3006,7 +3005,7 @@
           document
             .getElementById(soundId)
             ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
+            .catch((err) => {});
 
           // 미니게임에도 결과 표시
           if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
