@@ -2368,15 +2368,7 @@
           const bettingProfit = document.getElementById("modalBettingProfit");
           const averageBetAmount = document.getElementById("modalAverageBetAmount");
           
-          console.log("베팅 통계 업데이트:", {
-            totalBetAmount: data.bettingStats.totalBetAmount,
-            totalWinAmount: data.bettingStats.totalWinAmount,
-            bettingProfit: data.bettingStats.bettingProfit,
-            averageBetAmount: data.bettingStats.averageBetAmount
-          });
-          
           if (totalBetAmount) {
-            console.log("modalTotalBetAmount 요소 찾음, 값 설정:", data.bettingStats.totalBetAmount);
             totalBetAmount.textContent = `${data.bettingStats.totalBetAmount.toLocaleString()}원`;
           } else {
             console.error("modalTotalBetAmount 요소를 찾을 수 없음");
@@ -2881,7 +2873,7 @@
             document.getElementById("bettingStartSound");
           bettingStartSound
             ?.play()
-            .catch((err) => console.log("소리 재생 실패:", err));
+            .catch((err) => {});
 
           // 게임 상태 업데이트
           const gameStatusEl = document.getElementById("gameStatus");
@@ -3658,15 +3650,12 @@
           rollingInfoDiv &&
           submitExchangeButton
         ) {
-          console.log("환전 입력 이벤트 리스너 등록됨");
           exchangeAmountInput.addEventListener("input", () => {
             const amount = parseInt(exchangeAmountInput.value);
-            console.log("입력된 금액:", amount);
             
             if (isNaN(amount) || amount <= 0) {
               exchangePreview.classList.add("hidden");
               submitExchangeButton.disabled = true;
-              console.log("금액이 유효하지 않음, 버튼 비활성화");
               return;
             }
 
@@ -3685,29 +3674,15 @@
               ""
             );
             const maxExchangeAmount = parseInt(maxExchangeText) || 0;
-            console.log("환전 가능 금액:", maxExchangeAmount);
 
             if (
               amount < 5000 ||
               amount > maxExchangeAmount
             ) {
               submitExchangeButton.disabled = true;
-              console.log("조건 불충족, 버튼 비활성화 - 금액:", amount, "최소: 5000, 최대:", maxExchangeAmount);
             } else {
               submitExchangeButton.disabled = false;
-              console.log("조건 충족, 버튼 활성화");
             }
-          });
-        } else {
-          console.log("환전 관련 요소 중 일부가 없음:", {
-            exchangeAmountInput: !!exchangeAmountInput,
-            requestAmountSpan: !!requestAmountSpan,
-            feeAmountSpan: !!feeAmountSpan,
-            actualAmountSpan: !!actualAmountSpan,
-            exchangePreview: !!exchangePreview,
-            modalCoinBalance2: !!modalCoinBalance2,
-            rollingInfoDiv: !!rollingInfoDiv,
-            submitExchangeButton: !!submitExchangeButton
           });
         }
 
@@ -3718,21 +3693,17 @@
           modalCoinBalance2 &&
           rollingInfoDiv
         ) {
-          console.log("최대 버튼 이벤트 리스너 등록됨");
           maxAmountButton.addEventListener("click", () => {
-            console.log("최대 버튼 클릭됨");
             // 환전 가능 금액 가져오기
             const maxExchangeText = document.getElementById('maxExchangeAmount').textContent.replace(
               /[^0-9]/g,
               ""
             );
             const maxExchangeAmount = parseInt(maxExchangeText) || 0;
-            console.log("최대 버튼 클릭 시 환전 가능 금액:", maxExchangeAmount);
             
             if (maxExchangeAmount > 0) {
               // 환전 가능 금액 설정
               exchangeAmountInput.value = maxExchangeAmount;
-              console.log("입력 필드에 설정된 값:", exchangeAmountInput.value);
             } else {
               // 환전 가능 금액이 없음
               exchangeAmountInput.value = 0;
@@ -3740,15 +3711,7 @@
             }
 
             // 수동으로 input 이벤트 트리거하여 미리보기 업데이트
-            console.log("input 이벤트 트리거");
             exchangeAmountInput.dispatchEvent(new Event("input"));
-          });
-        } else {
-          console.log("최대 버튼 관련 요소 중 일부가 없음:", {
-            maxAmountButton: !!maxAmountButton,
-            exchangeAmountInput: !!exchangeAmountInput,
-            modalCoinBalance2: !!modalCoinBalance2,
-            rollingInfoDiv: !!rollingInfoDiv
           });
         }
 
@@ -3764,8 +3727,6 @@
           }
 
           preload() {
-            console.log("[MiniGame] Starting preload...");
-            
             // 카드 이미지 프리로드 (모든 숫자와 무늬 조합)
             const suits = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades (deckofcardsapi.com 형식)
             const values = [
@@ -3789,13 +3750,9 @@
                 // deckofcardsapi.com에서 사용하는 카드 코드 생성 (예: AH, 2S, 0D 등)
                 const cardCode = `${value}${suit}`;
                 const imageUrl = `https://deckofcardsapi.com/static/img/${cardCode}.png`;
-                console.log(`[MiniGame] Preloading: ${cardCode} from ${imageUrl}`);
                 
                 // 로드 에러 핸들러 추가
                 this.load.image(cardCode, imageUrl);
-                this.load.on(`filecomplete-image-${cardCode}`, () => {
-                  console.log(`[MiniGame] Successfully loaded: ${cardCode}`);
-                });
                 this.load.on(`loaderror`, (file) => {
                   if (file.key === cardCode) {
                     console.error(`[MiniGame] Failed to load: ${cardCode} from ${imageUrl}`);
@@ -3809,8 +3766,6 @@
               "card_back",
               "https://deckofcardsapi.com/static/img/back.png"
             );
-            
-            console.log("[MiniGame] Preload completed");
           }
 
           create() {
@@ -4002,8 +3957,6 @@
                 cardSprite.setDepth(5);
               }
 
-              console.log(`[MiniGame] Displaying card: ${cardKey} for ${target} at position ${cardIndex}`);
-              
               // 카드 등장 애니메이션 (위에서 떨어지는 효과)
               this.tweens.add({
                 targets: cardSprite,
@@ -4014,7 +3967,6 @@
                 duration: 600, // 애니메이션 시간도 늘림 (300ms -> 600ms)
                 ease: "Back.Out", // Bounce.Out에서 Back.Out으로 변경 (더 안정적)
                 onComplete: () => {
-                  console.log(`[MiniGame] Card animation completed for ${cardKey}`);
                   // 카드 안착 후 살짝 빛나는 효과
                   this.tweens.add({
                     targets: cardSprite,
