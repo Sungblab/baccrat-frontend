@@ -519,7 +519,7 @@
         }
 
         preload() {
-          const suits = ["hearts", "diamonds", "clubs", "spades"];
+          const suits = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades
           const values = [
             "A",
             "2",
@@ -539,9 +539,7 @@
           suits.forEach((suit) => {
             values.forEach((value) => {
               const cardKey = `${value}${suit}`;
-              const imageUrl = `https://deckofcardsapi.com/static/img/${value}${suit
-                .charAt(0)
-                .toUpperCase()}.png`;
+              const imageUrl = `https://deckofcardsapi.com/static/img/${cardKey}.png`;
               this.load.image(cardKey, imageUrl);
             });
           });
@@ -637,7 +635,7 @@
         }
 
         initializeDeck() {
-          const suits = ["hearts", "diamonds", "clubs", "spades"];
+          const suits = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades
           const values = [
             "A",
             "2",
@@ -835,7 +833,8 @@
 
           for (let card of hand) {
             let cardValue = 0;
-            if (["J", "Q", "K", "T"].includes(card.value)) {
+            if (["J", "Q", "K", "0"].includes(card.value)) {
+              // "T" 대신 "0" 사용
               cardValue = 0;
             } else if (card.value === "A") {
               cardValue = 1;
@@ -975,17 +974,17 @@
           this.add.text(x, 50, text, textStyle).setOrigin(0.5);
         }
 
-        // dealInitialCards 메서드 추
+        // dealInitialCards 메서드 추가 - 속도 조정
         async dealInitialCards() {
-          // 처음 2장 배분
+          // 처음 2장 배분 (속도를 800ms로 맞춤)
           await this.dealCard("player", 0);
-          await this.delay(500);
+          await this.delay(800);
           await this.dealCard("banker", 0);
-          await this.delay(500);
+          await this.delay(800);
           await this.dealCard("player", 1);
-          await this.delay(500);
+          await this.delay(800);
           await this.dealCard("banker", 1);
-          await this.delay(500);
+          await this.delay(800);
 
           const natural = this.checkNatural();
           if (!natural) {
@@ -998,14 +997,14 @@
             // 플레이어 0-5면 세 번째 카드를 받음
             if (playerScore.total <= 5) {
               await this.dealCard("player", 2);
-              await this.delay(500);
+              await this.delay(800);
               playerThirdCard = this.playerHand[2];
             }
 
             // 뱅커 세 번째 카드 규칙
             if (this.shouldBankerDraw(bankerScore.total, playerThirdCard)) {
               await this.dealCard("banker", 2);
-              await this.delay(500);
+              await this.delay(800);
             }
           }
         }
