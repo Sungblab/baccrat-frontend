@@ -159,6 +159,37 @@
         0%, 100% { opacity: 0.7; }
         50% { opacity: 1; }
       }
+
+      /* 승리 메시지 애니메이션 */
+      @keyframes winSlideIn {
+        0% {
+          transform: translateY(-20px) scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes winSlideOut {
+        0% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-20px) scale(0.9);
+          opacity: 0;
+        }
+      }
+
+      .win-message-enter {
+        animation: winSlideIn 0.3s ease-out forwards;
+      }
+
+      .win-message-exit {
+        animation: winSlideOut 0.3s ease-in forwards;
+      }
       
 
 
@@ -625,33 +656,33 @@
       <!-- 최근 게임 결과 섹션 (이동된 위치) -->
       <div class="mb-2 lg:mb-1 lg:flex-shrink-0">
         <div
-          class="bg-white rounded-lg border border-[#b8860b] p-3"
+          class="bg-gray-900 rounded-lg border border-[#b8860b] p-3"
         >
           <!-- 통계와 예측 버튼 -->
           <div class="flex justify-between items-start mb-2">
             <!-- 왼쪽 통계 -->
             <div class="flex items-center gap-3 text-sm">
-              <span class="text-blue-600 font-semibold">P: <span id="playerCount">0</span></span>
-              <span class="text-red-600 font-semibold">B: <span id="bankerCount">0</span></span>
-              <span class="text-green-600 font-semibold">T: <span id="tieCount">0</span></span>
+              <span class="text-blue-400 font-semibold">P: <span id="playerCount">0</span></span>
+              <span class="text-red-400 font-semibold">B: <span id="bankerCount">0</span></span>
+              <span class="text-green-400 font-semibold">T: <span id="tieCount">0</span></span>
             </div>
             
             <!-- 오른쪽 예측 버튼 -->
             <div class="flex gap-1">
-              <button id="predictPlayer" class="px-5 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors min-w-[32px]">
+              <button id="predictPlayer" class="px-5 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors min-w-[32px]">
                 P
               </button>
-              <button id="predictBanker" class="px-5 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors min-w-[32px]">
+              <button id="predictBanker" class="px-5 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors min-w-[32px]">
                 B
               </button>
-              <button id="predictTie" class="px-5 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors min-w-[32px]">
+              <button id="predictTie" class="px-5 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors min-w-[32px]">
                 T
               </button>
             </div>
           </div>
           
           <!-- 게임 결과 격자 -->
-          <div id="recentResults" class="custom-scrollbar bg-gray-50 border border-gray-200 rounded" style="min-height: 120px;">
+          <div id="recentResults" class="custom-scrollbar bg-gray-800 border border-gray-600 rounded" style="min-height: 120px;">
             <!-- 최근 결과가 여기에 추가됩니다 -->
           </div>
         </div>
@@ -1438,6 +1469,30 @@
           </div>
         </div>
       </div>
+
+      <!-- 승리 메시지 -->
+      <div
+        id="winMessage"
+        class="fixed top-20 left-0 right-0 flex justify-center z-50 hidden pointer-events-none"
+      >
+        <div class="bg-gradient-to-r from-gray-800 to-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl border border-green-500 backdrop-blur-sm transform transition-all duration-300 ease-out">
+          <div class="text-center">
+            <div class="flex items-center justify-center space-x-2 mb-2">
+              <div class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <h2 class="text-lg font-bold">
+                이기셨습니다!
+              </h2>
+            </div>
+            <p class="text-green-400 font-bold text-xl" id="winAmountDisplay">
+              0원
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
 
 
@@ -1519,7 +1574,7 @@
         }
 
         let socket = io(
-          "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+          "http://127.0.0.1:5000"
         );
         
         // 소켓 연결 후 인증
@@ -1540,6 +1595,7 @@
         const chargeExchangeModal = document.getElementById("chargeExchangeModal");
         const historyModal = document.getElementById("historyModal");
         const myInfoModal = document.getElementById("myInfoModal");
+        const winMessage = document.getElementById("winMessage");
 
         const showChargeExchangeButton = document.getElementById("showChargeExchange");
         const closeChargeExchangeButton = document.getElementById("closeChargeExchange");
@@ -1669,7 +1725,7 @@
         // 사용자 목록 가져오기
         async function fetchUsersList() {
           try {
-            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/users/list", {
+            const res = await fetch("http://127.0.0.1:5000/api/users/list", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1679,7 +1735,7 @@
               
               // 잔액 업데이트
               const balanceEl = document.getElementById("transferBalance");
-              const userRes = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info", {
+              const userRes = await fetch("http://127.0.0.1:5000/api/auth/user-info", {
                 headers: { Authorization: `Bearer ${token}` }
               });
               if (userRes.ok) {
@@ -1797,7 +1853,7 @@
           confirmBtn.textContent = "처리중...";
           
           try {
-            const response = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/send", {
+            const response = await fetch("http://127.0.0.1:5000/api/transfer/send", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -1858,7 +1914,7 @@
           confirmBtn.textContent = "처리중...";
           
           try {
-            const response = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request", {
+            const response = await fetch("http://127.0.0.1:5000/api/transfer/request", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -1893,7 +1949,7 @@
         // 받은 요청 목록 가져오기
         async function fetchReceivedRequests() {
           try {
-            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/requests/received", {
+            const res = await fetch("http://127.0.0.1:5000/api/transfer/requests/received", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1956,7 +2012,7 @@
           }
           
           try {
-            const response = await fetch(`https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request/${requestId}/accept`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/transfer/request/${requestId}/accept`, {
               method: "POST",
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -1977,7 +2033,7 @@
         
         window.rejectRequest = async (requestId) => {
           try {
-            const response = await fetch(`https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/request/${requestId}/reject`, {
+            const response = await fetch(`http://127.0.0.1:5000/api/transfer/request/${requestId}/reject`, {
               method: "POST",
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -1998,7 +2054,7 @@
         // 송금 내역 가져오기
         async function fetchTransferHistory() {
           try {
-            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/transfer/history", {
+            const res = await fetch("http://127.0.0.1:5000/api/transfer/history", {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (res.ok) {
@@ -2077,7 +2133,7 @@
             
             try {
               const response = await fetch(
-                "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/deposit/request",
+                "http://127.0.0.1:5000/api/deposit/request",
                 {
                   method: "POST",
                   headers: {
@@ -2152,7 +2208,7 @@
           
           try {
             const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
+              "http://127.0.0.1:5000/api/auth/user-info",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -2261,7 +2317,7 @@
           try {
             // 상세 사용자 정보 요청 시작
             const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/user/detailed-info",
+              "http://127.0.0.1:5000/api/user/detailed-info",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -2754,7 +2810,7 @@
         async function fetchRecentGames() {
           try {
             const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/recent-games"
+              "http://127.0.0.1:5000/api/recent-games"
             );
             const games = await res.json();
             const container = document.getElementById("recentResults");
@@ -2991,19 +3047,19 @@
 
 
           if (result === "player") {
-            statusText = `플레이어 승! (${playerScore} vs ${bankerScore})`;
+            statusText = `플레이어 승 (${playerScore}-${bankerScore})`;
             if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-blue-500 mb-1";
+              gameStatusEl.className = "text-xl font-bold text-blue-400 mb-2";
             soundId = "playerWinSound";
           } else if (result === "banker") {
-            statusText = `뱅커 승! (${playerScore} vs ${bankerScore})`;
+            statusText = `뱅커 승 (${playerScore}-${bankerScore})`;
             if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-red-500 mb-1";
+              gameStatusEl.className = "text-xl font-bold text-red-400 mb-2";
             soundId = "bankerWinSound";
           } else {
-            statusText = `타이! (${playerScore} vs ${bankerScore})`;
+            statusText = `타이 (${playerScore}-${bankerScore})`;
             if (gameStatusEl)
-              gameStatusEl.className = "text-xl font-bold text-green-500 mb-1";
+              gameStatusEl.className = "text-xl font-bold text-green-400 mb-2";
             soundId = "tieSound";
           }
           if (gameStatusEl) gameStatusEl.textContent = statusText;
@@ -3019,93 +3075,91 @@
 
           const timerEl = document.getElementById("timer");
           if (timerEl) {
-            timerEl.innerText = "결과 발표 중...";
-            timerEl.className = "text-base font-semibold text-yellow-400";
+            timerEl.innerText = "결과 발표 중... (2초 후 초기화)";
+            timerEl.className = "text-base font-semibold text-yellow-400 bg-black bg-opacity-50 inline-block px-3 py-1 rounded-lg border border-[#b8860b]";
+            
+            // 카운트다운 표시
+            let countdown = 2;
+            const countdownInterval = setInterval(() => {
+              countdown--;
+              if (countdown > 0) {
+                timerEl.innerText = `결과 발표 중... (${countdown}초 후 초기화)`;
+              } else {
+                clearInterval(countdownInterval);
+              }
+            }, 1000);
           }
           // 최근 결과 업데이트는 result_approved에서 처리하므로 여기서는 중복 호출 방지
           // fetchRecentGames(); // 이 부분은 result_approved로 이동 또는 거기서만 호출
         });
 
         socket.on("result_approved", (data) => {
-          fetchUserInfo();
-          fetchRecentGames(); // 결과 승인 후 최근 게임 목록 업데이트
-          
-          // 예측 결과 확인 및 제거
-          if (currentPrediction) {
-            removePrediction();
-          }
-          
-          const gameStatusEl = document.getElementById("gameStatus");
-          if (gameStatusEl) {
-            gameStatusEl.textContent = "게임 대기중";
-            gameStatusEl.className = "text-xl font-bold text-yellow-500 mb-1";
-          }
-          const timerEl = document.getElementById("timer");
-          if (timerEl) {
-            timerEl.textContent = "";
-            timerEl.className = "text-base font-semibold text-yellow-400";
-          }
-          // 베팅 정보 완전 초기화
-          selectedChipAmount = 0;
-          selectedChoice = null;
-          lastBetChoice = null;
-          lastBetAmount = 0;
-          isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
-          previousStats = {}; // 이전 통계 초기화
-          updateCurrentBet();
-          updateMyBetAmounts({}); // 내 베팅액 표시 초기화 (총 베팅 금액도 함께 초기화됨)
+          // 게임 결과를 즉시 초기화
+          setTimeout(() => {
+            fetchUserInfo();
+            fetchRecentGames(); // 결과 승인 후 최근 게임 목록 업데이트
+            
+            // 예측 결과 확인 및 제거
+            if (currentPrediction) {
+              removePrediction();
+            }
+            
+            const gameStatusEl = document.getElementById("gameStatus");
+            if (gameStatusEl) {
+              gameStatusEl.textContent = "게임 대기중";
+              gameStatusEl.className = "text-2xl font-bold text-yellow-500 mb-2";
+            }
+            const timerEl = document.getElementById("timer");
+            if (timerEl) {
+              timerEl.textContent = "";
+              timerEl.className = "text-base font-semibold text-yellow-400";
+            }
+            // 베팅 정보 완전 초기화
+            selectedChipAmount = 0;
+            selectedChoice = null;
+            lastBetChoice = null;
+            lastBetAmount = 0;
+            isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
+            previousStats = {}; // 이전 통계 초기화
+            updateCurrentBet();
+            updateMyBetAmounts({}); // 내 베팅액 표시 초기화 (총 베팅 금액도 함께 초기화됨)
 
-          // 미니게임 클리어
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            baccaratSceneMini.clearAllCardsAndText();
-          }
+            // 미니게임 클리어
+            if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
+              baccaratSceneMini.clearAllCardsAndText();
+            }
 
-          updateBettingStatsDisplay({
-            player: {
-              count: 0,
-              total: 0,
-              bettor_count: 0,
-              total_bet_amount: 0,
-            },
-            banker: {
-              count: 0,
-              total: 0,
-              bettor_count: 0,
-              total_bet_amount: 0,
-            },
-            tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
-            player_pair: {
-              count: 0,
-              total: 0,
-              bettor_count: 0,
-              total_bet_amount: 0,
-            },
-            banker_pair: {
-              count: 0,
-              total: 0,
-              bettor_count: 0,
-              total_bet_amount: 0,
-            },
-          });
+            updateBettingStatsDisplay({
+              player: {
+                count: 0,
+                total: 0,
+                bettor_count: 0,
+                total_bet_amount: 0,
+              },
+              banker: {
+                count: 0,
+                total: 0,
+                bettor_count: 0,
+                total_bet_amount: 0,
+              },
+              tie: { count: 0, total: 0, bettor_count: 0, total_bet_amount: 0 },
+              player_pair: {
+                count: 0,
+                total: 0,
+                bettor_count: 0,
+                total_bet_amount: 0,
+              },
+              banker_pair: {
+                count: 0,
+                total: 0,
+                bettor_count: 0,
+                total_bet_amount: 0,
+              },
+            });
+          }, 200); // 0.2초 후 초기화
         });
 
-        socket.on("result_rejected", () => {
-          const gameStatusEl = document.getElementById("gameStatus");
-          if (gameStatusEl) {
-            gameStatusEl.textContent =
-              "결과 승인이 거부되었습니다. 게임 대기중";
-            gameStatusEl.className = "text-xl font-bold text-yellow-500 mb-2";
-          }
-          const timerEl = document.getElementById("timer");
-          if (timerEl) {
-            timerEl.textContent = "";
-            timerEl.className = "text-base font-semibold text-yellow-400";
-          }
-          // 미니게임 클리어 (선택사항: 이전 상태로 복원할 수도 있음)
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            // baccaratSceneMini.clearAllCardsAndText(); // 거절 시에는 유지하거나, 특정 메시지 표시 가능
-          }
-        });
+
 
         socket.on("update_coins", () => {
           fetchUserInfo();
@@ -3166,6 +3220,14 @@
           showNotification(`${data.toUsername}님에게 ${data.amount.toLocaleString()}원을 송금했습니다. (수수료: ${data.fee.toLocaleString()}원)`);
         });
         
+        // 승리 알림 수신
+        socket.on("you_won", (data) => {
+          // 거의 바로 승리 메시지 표시
+          setTimeout(() => {
+            showWinMessage(data.winnings);
+          }, 50);
+        });
+
         // 송금 내역 업데이트 신호
         socket.on("transfer_history_updated", () => {
           // 뽀찌 탭이 열려있고 내역보기가 활성화되어 있다면 새로고침
@@ -3551,7 +3613,7 @@
             }
             try {
               const response = await fetch(
-                "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/request",
+                "http://127.0.0.1:5000/api/exchange/request",
                 {
                   method: "POST",
                   headers: {
@@ -3582,48 +3644,7 @@
             }
           });
 
-        // user.html에서 카드 표시 업데이트 로직 (서버에서 변환된 값 사용)
-        // 이 부분은 Phaser Scene으로 이동하거나 수정될 예정입니다.
-        /*
-        socket.on("display_card_on_user_html", (data) => {
-          // console.log('[user.html] Received display_card_on_user_html from server:', data); // 디버깅 로그
-          const { target, cardValue, cardIndex, isNewHand } = data;
-          const targetSelector =
-            target === "player" ? ".player-cards" : ".banker-cards";
-          const cardArea = document.querySelector(targetSelector);
-
-          if (cardArea) {
-            if (isNewHand && cardIndex === 0) {
-              const allSlots = cardArea.querySelectorAll(".card-slot");
-              allSlots.forEach((slot) => (slot.textContent = ""));
-            }
-            const cardSlot = cardArea.querySelector(
-              `.card-slot[data-index="${cardIndex}"]`
-            );
-            if (cardSlot) {
-              cardSlot.textContent = cardValue; // 서버에서 이미 변환된 값을 사용
-            }
-          } else {
-            // console.error('[user.html] Card area not found for selector:', targetSelector); // 디버깅 로그
-          }
-        });
-
-        socket.on("clear_cards_display_on_user_html", () => {
-          // console.log('[user.html] Received clear_cards_display_on_user_html from server'); // 디버깅 로그
-          const playerCardArea = document.querySelector(".player-cards");
-          const bankerCardArea = document.querySelector(".banker-cards");
-          if (playerCardArea) {
-            playerCardArea
-              .querySelectorAll(".card-slot")
-              .forEach((slot) => (slot.textContent = ""));
-          }
-          if (bankerCardArea) {
-            bankerCardArea
-              .querySelectorAll(".card-slot")
-              .forEach((slot) => (slot.textContent = ""));
-          }
-        });
-        */
+      
 
         // 모달 열기/닫기 이벤트 리스너
         if (showChargeExchangeButton && chargeExchangeModal && closeChargeExchangeButton) {
@@ -3658,6 +3679,41 @@
           });
         }
 
+        // 승리 메시지 표시 함수
+        function showWinMessage(winnings) {
+          if (winMessage) {
+            const messageDiv = winMessage.querySelector('div');
+            const winAmountDisplay = document.getElementById("winAmountDisplay");
+            
+            // 이긴 금액 표시
+            if (winAmountDisplay && winnings) {
+              winAmountDisplay.textContent = `${winnings.toLocaleString()}원`;
+            }
+            
+            // 메시지 표시
+            winMessage.classList.remove("hidden");
+            messageDiv.classList.add("win-message-enter");
+            
+            // 승리 사운드 재생
+            const playerWinSound = document.getElementById("playerWinSound");
+            if (playerWinSound) {
+              playerWinSound.play().catch(() => {});
+            }
+            
+            // 1.2초 후 사라지는 애니메이션 시작
+            setTimeout(() => {
+              messageDiv.classList.remove("win-message-enter");
+              messageDiv.classList.add("win-message-exit");
+              
+              // 애니메이션 완료 후 숨기기
+              setTimeout(() => {
+                winMessage.classList.add("hidden");
+                messageDiv.classList.remove("win-message-exit");
+              }, 300);
+            }, 1200);
+          }
+        }
+
         // 내 정보 모달 탭 이벤트 리스너
         const overviewTab = document.getElementById("overviewTab");
         const bettingTab = document.getElementById("bettingTab");
@@ -3671,7 +3727,7 @@
         async function fetchExchangeHistory() {
           try {
             const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/exchange/history",
+              "http://127.0.0.1:5000/api/exchange/history",
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -3784,8 +3840,8 @@
             this.cardSprites = { player: [], banker: [] }; // Phaser Image 객체 저장
             this.handsData = { player: [], banker: [] }; // 카드 값(문자열) 저장
             this.socket = socket;
-            this.cardScale = 0.4; // 미니게임 카드 크기 (0.25 -> 0.4로 확대)
-            this.cardSpacing = 55; // 미니게임 카드 간격 (45 -> 55로 확대)
+            this.cardScale = 0.3; // 미니게임 카드 크기 (모바일 최적화)
+            this.cardSpacing = 45; // 미니게임 카드 간격 (모바일 최적화)
           }
 
           preload() {
@@ -3886,28 +3942,17 @@
           }
 
           createBaccaratTable(width, height, centerX, centerY) {
-            // 심플한 테이블 배경 (진한 녹색 펠트만)
-            const tableGraphics = this.add.graphics();
-            
-            // 내부 펠트 (녹색) - 단순하고 깔끔하게
-            const feltColor = 0x0F5132; // 진한 녹색
-            tableGraphics.fillStyle(feltColor, 1);
-            tableGraphics.fillRoundedRect(0, 0, width, height, 8);
+            const g = this.add.graphics();
 
-            // 중앙 구분선만 유지 (더 얇고 심플하게)
-            tableGraphics.lineStyle(1, 0xFFFFFF, 0.3); // 흰색 구분선
-            tableGraphics.beginPath();
-            tableGraphics.moveTo(centerX, 35);
-            tableGraphics.lineTo(centerX, height - 35);
-            tableGraphics.strokePath();
+            // 테이블 배경: 진한, 고급스러운 녹색
+            const feltColor = 0x043521;
+            g.fillStyle(feltColor, 1);
+            g.fillRoundedRect(0, 0, width, height, 12);
 
-            // 플레이어 구역 표시 (파란색 테두리)
-            tableGraphics.lineStyle(2, 0x4169E1, 0.8); // 파란색
-            tableGraphics.strokeRoundedRect(10, 40, centerX - 20, height - 80, 5);
-            
-            // 뱅커 구역 표시 (빨간색 테두리)
-            tableGraphics.lineStyle(2, 0xDC143C, 0.8); // 빨간색
-            tableGraphics.strokeRoundedRect(centerX + 10, 40, centerX - 20, height - 80, 5);
+            // PLAYER, BANKER 영역에 은은한 하이라이트
+            g.fillStyle(0xFFFFFF, 0.03);
+            g.fillRoundedRect(10, 40, centerX - 20, height - 80, 10);
+            g.fillRoundedRect(centerX + 10, 40, centerX - 20, height - 80, 10);
           }
 
 
@@ -4144,13 +4189,13 @@
             let resultColor = "#FFD700";
             
             if (result === "player") {
-              message = `🎉 PLAYER WIN! 🎉\n(${pScore} vs ${bScore})`;
+              message = `PLAYER WIN!\n(${pScore} vs ${bScore})`;
               resultColor = "#4169E1"; // 파란색
             } else if (result === "banker") {
-              message = `🎉 BANKER WIN! 🎉\n(${pScore} vs ${bScore})`;
+              message = `BANKER WIN! \n(${pScore} vs ${bScore})`;
               resultColor = "#DC143C"; // 빨간색
             } else if (result === "tie") {
-              message = `🤝 TIE GAME! 🤝\n(${pScore} vs ${bScore})`;
+              message = `TIE\n(${pScore} vs ${bScore})`;
               resultColor = "#32CD32"; // 녹색
             }
 

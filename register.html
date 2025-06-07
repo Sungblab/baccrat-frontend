@@ -101,14 +101,11 @@
           }
 
           try {
-            const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/register",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
-              }
-            );
+            const res = await fetch("http://127.0.0.1:5000/api/auth/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password }),
+            });
 
             const data = await res.json();
 
