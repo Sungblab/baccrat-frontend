@@ -160,20 +160,7 @@
         50% { opacity: 1; }
       }
       
-      /* 승리 모달 애니메이션 */
-      @keyframes modalPop {
-        0% {
-          transform: scale(0.8);
-          opacity: 0;
-        }
-        50% {
-          transform: scale(1.05);
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
+
 
       .result-cell.player {
         background-color: #3b82f6; /* 파란색 */
@@ -1453,27 +1440,7 @@
       </div>
     </main>
 
-    <!-- 승리 모달 -->
-    <div
-      id="winModal"
-      class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden"
-      style="z-index: 9999;"
-    >
-      <div
-        class="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-xl p-4 border-2 border-yellow-500 shadow-xl transform scale-100"
-        style="animation: modalPop 0.3s ease-out;"
-      >
-        <div class="text-center">
-          <div class="text-3xl mb-2">🎉</div>
-          <h2 class="text-xl font-bold text-yellow-500 mb-2" style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8)">
-            이기셨습니다!
-          </h2>
-          <div class="text-2xl font-bold text-green-400" id="winAmount">
-            +0원
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- 알림  -->
     <div
@@ -1567,6 +1534,7 @@
         let lastBetAmount = 0;
         let miniGame = null; // Phaser 게임 인스턴스 변수
         let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
+        let isBettingInProgress = false; // 베팅 처리 중 플래그
 
         // DOM 요소 가져오기
         const chargeExchangeModal = document.getElementById("chargeExchangeModal");
@@ -2156,32 +2124,32 @@
         }
 
         // 승리 모달 표시 함수
-        function showWinModal(winAmount) {
-          const winModal = document.getElementById("winModal");
-          const winAmountElement = document.getElementById("winAmount");
-          if (!winModal || !winAmountElement) {
+
+
+        // fetchUserInfo 디바운싱을 위한 변수
+        let fetchUserInfoTimer = null;
+        let fetchUserInfoInProgress = false;
+        
+        // 사용자 정보 가져오기 (디바운싱 적용)
+        async function fetchUserInfo(immediate = false) {
+          // 즉시 실행이 아닌 경우 디바운싱 적용
+          if (!immediate) {
+            if (fetchUserInfoTimer) {
+              clearTimeout(fetchUserInfoTimer);
+            }
+            fetchUserInfoTimer = setTimeout(() => {
+              fetchUserInfo(true);
+            }, 200); // 200ms 디바운싱
             return;
           }
           
-          winAmountElement.textContent = `+${winAmount.toLocaleString()}원`;
-          winModal.classList.remove("hidden");
+          // 이미 요청 중이면 중복 요청 방지
+          if (fetchUserInfoInProgress) {
+            return;
+          }
           
-          // 모달이 제대로 표시되도록 강제로 스타일 적용
-          winModal.style.display = "block";
-          winModal.style.zIndex = "9999";
+          fetchUserInfoInProgress = true;
           
-          // 1.3초 후 자동으로 닫기
-          setTimeout(() => {
-            winModal.classList.add("hidden");
-            winModal.style.display = "none";
-          }, 1300);
-        }
-
-        // 테스트용: 승리 모달 테스트 (개발 중에만 사용)
-        // setTimeout(() => showWinModal(50000), 2000); // 2초 후 테스트 모달 표시 (테스트 시 주석 해제)
-
-        // 사용자 정보 가져오기
-        async function fetchUserInfo() {
           try {
             const res = await fetch(
               "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
@@ -2253,6 +2221,8 @@
           } catch (err) {
             // 에러
             showNotification("서버 연결 오류가 발생했습니다.");
+          } finally {
+            fetchUserInfoInProgress = false;
           }
         }
 
@@ -2698,7 +2668,17 @@
 
         // 베팅 종류 버튼 클릭 이벤트 수정: 선택 및 즉시 베팅
         document.querySelectorAll(".choice-button").forEach((button) => {
-          button.addEventListener("click", () => {
+          button.addEventListener("click", async () => {
+            // 베팅 처리 중이면 무시
+            if (isBettingInProgress) {
+              return;
+            }
+            
+            if (!bettingActive) {
+              showNotification("현재 베팅 시간이 아닙니다.");
+              return;
+            }
+            
             selectedChoice = button.getAttribute("data-choice");
             if (!selectedChoice) {
               showNotification("베팅 종류를 선택해주세요.");
@@ -2710,6 +2690,18 @@
               return;
             }
 
+            // 베팅 처리 시작
+            isBettingInProgress = true;
+            
+            // 버튼에 로딩 효과 추가
+            button.classList.add("opacity-50", "pointer-events-none");
+            const originalContent = button.innerHTML;
+            const loadingSpinner = document.createElement("div");
+            loadingSpinner.className = "absolute inset-0 flex items-center justify-center";
+            loadingSpinner.innerHTML = '<i class="fas fa-spinner fa-spin text-white text-2xl"></i>';
+            button.style.position = "relative";
+            button.appendChild(loadingSpinner);
+
             // 베팅 정보 저장
             lastBetChoice = selectedChoice;
             lastBetAmount = selectedChipAmount;
@@ -2719,6 +2711,16 @@
               amount: selectedChipAmount,
               token: token,
             });
+            
+            // 응답 대기 (타임아웃 설정)
+            setTimeout(() => {
+              if (isBettingInProgress) {
+                isBettingInProgress = false;
+                button.classList.remove("opacity-50", "pointer-events-none");
+                button.removeChild(loadingSpinner);
+              }
+            }, 3000); // 3초 타임아웃
+            
             updateCurrentBet();
           });
         });
@@ -2829,12 +2831,24 @@
 
         // Socket.IO 이벤트 핸들러들
         socket.on("bet_success", (data) => {
+          // 베팅 처리 완료
+          isBettingInProgress = false;
+          
+          // 모든 베팅 버튼의 로딩 상태 해제
+          document.querySelectorAll(".choice-button").forEach((btn) => {
+            btn.classList.remove("opacity-50", "pointer-events-none");
+            const spinner = btn.querySelector(".fa-spinner");
+            if (spinner && spinner.parentElement) {
+              btn.removeChild(spinner.parentElement);
+            }
+          });
+          
           // showNotification(message); // "베팅이 완료되었습니다." 알림 제거됨
           if (data.newBalance !== undefined) {
             // 서버에서 새 잔액을 보내준 경우 즉시 업데이트
             const coinBalanceEl = document.getElementById("coinBalance");
             if (coinBalanceEl) {
-              coinBalanceEl.textContent = `보유금액: ${data.newBalance.toLocaleString()}원`;
+              coinBalanceEl.textContent = `잔액: ${data.newBalance.toLocaleString()}원`;
             }
           } else {
             // 기존 방식으로 전체 정보 다시 가져오기
@@ -2860,6 +2874,18 @@
         });
 
         socket.on("error", (message) => {
+          // 베팅 처리 완료 (에러 발생)
+          isBettingInProgress = false;
+          
+          // 모든 베팅 버튼의 로딩 상태 해제
+          document.querySelectorAll(".choice-button").forEach((btn) => {
+            btn.classList.remove("opacity-50", "pointer-events-none");
+            const spinner = btn.querySelector(".fa-spinner");
+            if (spinner && spinner.parentElement) {
+              btn.removeChild(spinner.parentElement);
+            }
+          });
+          
           showNotification(message);
         });
 
@@ -2925,6 +2951,17 @@
 
         socket.on("betting_closed", () => {
           bettingActive = false;
+          isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
+          
+          // 모든 베팅 버튼의 로딩 상태 해제 (혹시 남아있을 경우)
+          document.querySelectorAll(".choice-button").forEach((btn) => {
+            btn.classList.remove("opacity-50", "pointer-events-none");
+            const spinner = btn.querySelector(".fa-spinner");
+            if (spinner && spinner.parentElement) {
+              btn.removeChild(spinner.parentElement);
+            }
+          });
+          
           const timerEl = document.getElementById("timer");
           if (timerEl)
             timerEl.innerText =
@@ -2951,31 +2988,7 @@
           let statusText = "";
           let soundId = "";
 
-          // 내가 베팅한 것과 게임 결과 비교하여 승리 모달 표시
-          if (lastBetChoice && lastBetAmount > 0) {
-            let isWin = false;
-            let winAmount = 0;
-            
-            // 주 베팅 (플레이어, 뱅커, 타이) 처리
-            if (lastBetChoice === "player" && result === "player") {
-              isWin = true;
-              winAmount = lastBetAmount * 2; // 1:1 배당
-            } else if (lastBetChoice === "banker" && result === "banker") {
-              isWin = true;
-              winAmount = Math.floor(lastBetAmount * 1.95); // 0.95:1 배당
-            } else if (lastBetChoice === "tie" && result === "tie") {
-              isWin = true;
-              winAmount = lastBetAmount * 9; // 8:1 배당 (총 9배 수령)
-            }
-            // 페어 베팅 처리는 서버에서 처리되므로 여기서는 주 베팅만 확인
-            // (페어 베팅의 경우 result_approved 이후 잔액 업데이트로 확인 가능)
-            
-            if (isWin) {
-              setTimeout(() => {
-                showWinModal(winAmount); // 총 수령액 표시
-              }, 1000); // 1초 후 표시
-            }
-          }
+
 
           if (result === "player") {
             statusText = `플레이어 승! (${playerScore} vs ${bankerScore})`;
@@ -3037,6 +3050,8 @@
           selectedChoice = null;
           lastBetChoice = null;
           lastBetAmount = 0;
+          isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
+          previousStats = {}; // 이전 통계 초기화
           updateCurrentBet();
           updateMyBetAmounts({}); // 내 베팅액 표시 초기화 (총 베팅 금액도 함께 초기화됨)
 
@@ -3202,73 +3217,99 @@
           showNotification(`${data.fromUsername}님의 ${data.amount.toLocaleString()}원 요청을 거절했습니다.`);
         });
 
-        // 베팅 통계 표시 업데이트 함수
+        // 이전 통계 상태 저장 (변경 감지용)
+        let previousStats = {};
+        
+        // 베팅 통계 표시 업데이트 함수 (최적화)
         function updateBettingStatsDisplay(stats) {
-          const totalMainBetsCount =
-            (stats.player?.count || 0) +
-            (stats.banker?.count || 0) +
-            (stats.tie?.count || 0);
+          // requestAnimationFrame을 사용하여 렌더링 최적화
+          requestAnimationFrame(() => {
+            const totalMainBetsCount =
+              (stats.player?.count || 0) +
+              (stats.banker?.count || 0) +
+              (stats.tie?.count || 0);
 
-          function formatAmount(amount) {
-            if (amount >= 1000000) {
-              // 1,000,000 이상은 M 단위
-              return (amount / 1000000).toFixed(1).replace(".0", "") + "M";
-            }
-            if (amount >= 1000) {
-              // 1,000 이상은 K 단위
-              return (amount / 1000).toFixed(1).replace(".0", "") + "K";
-            }
-            return amount.toString();
-          }
-
-          function updateSection(sectionKey, statsData) {
-            const sectionElement = document.getElementById(
-              `${sectionKey}Stats`
-            );
-            if (!sectionElement) return;
-            const percentageElement =
-              sectionElement.querySelector(".percentage-circle");
-            const totalBetElement = sectionElement.querySelector(
-              ".stats-details .total-bet"
-            );
-            const bettorCountElement = sectionElement.querySelector(
-              ".stats-details .bettor-count"
-            );
-
-            const count = statsData?.count || 0;
-            const totalAmount =
-              statsData?.total_bet_amount || statsData?.total || 0;
-            const bettorCount = statsData?.bettor_count || 0;
-            let percentage = 0;
-
-            if (percentageElement) {
-              // P PAIR, B PAIR는 percentageElement가 없을 수 있음 (display: none)
-              if (
-                totalMainBetsCount > 0 &&
-                (sectionKey === "player" ||
-                  sectionKey === "banker" ||
-                  sectionKey === "tie")
-              ) {
-                percentage = ((count / totalMainBetsCount) * 100).toFixed(0);
+            function formatAmount(amount) {
+              if (amount >= 1000000) {
+                return (amount / 1000000).toFixed(1).replace(".0", "") + "M";
               }
-              percentageElement.textContent = `${percentage}%`;
+              if (amount >= 1000) {
+                return (amount / 1000).toFixed(1).replace(".0", "") + "K";
+              }
+              return amount.toString();
             }
 
-            if (totalBetElement)
-              totalBetElement.textContent = `₩${formatAmount(totalAmount)}`; // K 단위 적용
-            if (bettorCountElement) {
-              // 모든 베팅 타입에 대해 인원수 표시 (P/B/T 외 페어에도 적용)
-              bettorCountElement.innerHTML = `<i class="fas fa-users"></i> ${bettorCount}`;
-              bettorCountElement.classList.remove("hidden");
+            function updateSection(sectionKey, statsData) {
+              // 이전 값과 비교하여 변경된 경우에만 업데이트
+              const prevData = previousStats[sectionKey] || {};
+              const count = statsData?.count || 0;
+              const totalAmount = statsData?.total_bet_amount || statsData?.total || 0;
+              const bettorCount = statsData?.bettor_count || 0;
+              
+              // 변경 사항이 없으면 건너뛰기
+              if (
+                prevData.count === count &&
+                prevData.totalAmount === totalAmount &&
+                prevData.bettorCount === bettorCount &&
+                prevData.totalMainBetsCount === totalMainBetsCount
+              ) {
+                return;
+              }
+              
+              // 이전 값 저장
+              previousStats[sectionKey] = {
+                count,
+                totalAmount,
+                bettorCount,
+                totalMainBetsCount
+              };
+              
+              const sectionElement = document.getElementById(`${sectionKey}Stats`);
+              if (!sectionElement) return;
+              
+              const percentageElement = sectionElement.querySelector(".percentage-circle");
+              const totalBetElement = sectionElement.querySelector(".stats-details .total-bet");
+              const bettorCountElement = sectionElement.querySelector(".stats-details .bettor-count");
+
+              let percentage = 0;
+
+              if (percentageElement) {
+                if (
+                  totalMainBetsCount > 0 &&
+                  (sectionKey === "player" ||
+                    sectionKey === "banker" ||
+                    sectionKey === "tie")
+                ) {
+                  percentage = ((count / totalMainBetsCount) * 100).toFixed(0);
+                }
+                const newText = `${percentage}%`;
+                if (percentageElement.textContent !== newText) {
+                  percentageElement.textContent = newText;
+                }
+              }
+
+              if (totalBetElement) {
+                const newText = `₩${formatAmount(totalAmount)}`;
+                if (totalBetElement.textContent !== newText) {
+                  totalBetElement.textContent = newText;
+                }
+              }
+              
+              if (bettorCountElement) {
+                const newHTML = `<i class="fas fa-users"></i> ${bettorCount}`;
+                if (bettorCountElement.innerHTML !== newHTML) {
+                  bettorCountElement.innerHTML = newHTML;
+                  bettorCountElement.classList.remove("hidden");
+                }
+              }
             }
-          }
-          if (stats.player) updateSection("player", stats.player);
-          if (stats.banker) updateSection("banker", stats.banker);
-          if (stats.tie) updateSection("tie", stats.tie);
-          if (stats.player_pair)
-            updateSection("player_pair", stats.player_pair);
-          if (stats.banker_pair)
-            updateSection("banker_pair", stats.banker_pair);
+            
+            if (stats.player) updateSection("player", stats.player);
+            if (stats.banker) updateSection("banker", stats.banker);
+            if (stats.tie) updateSection("tie", stats.tie);
+            if (stats.player_pair) updateSection("player_pair", stats.player_pair);
+            if (stats.banker_pair) updateSection("banker_pair", stats.banker_pair);
+          });
         }
 
         socket.on("betting_status", (status) => {
@@ -3293,9 +3334,30 @@
           }
         });
 
+        // 배치 업데이트를 위한 변수
+        let statsUpdateTimer = null;
+        let pendingStatsUpdate = null;
+        
         socket.on("new_bet", (data) => {
           if (data.stats) {
-            updateBettingStatsDisplay(data.stats);
+            // 배치 업데이트가 아닌 경우 디바운싱 적용
+            if (!data.batchUpdate) {
+              pendingStatsUpdate = data.stats;
+              
+              if (statsUpdateTimer) {
+                clearTimeout(statsUpdateTimer);
+              }
+              
+              statsUpdateTimer = setTimeout(() => {
+                if (pendingStatsUpdate) {
+                  updateBettingStatsDisplay(pendingStatsUpdate);
+                  pendingStatsUpdate = null;
+                }
+              }, 50); // 50ms 디바운싱
+            } else {
+              // 배치 업데이트인 경우 즉시 적용
+              updateBettingStatsDisplay(data.stats);
+            }
           }
         });
 
@@ -3458,7 +3520,7 @@
             total_bet_amount: 0,
           },
         });
-        fetchUserInfo();
+        fetchUserInfo(true); // 초기 로드는 즉시 실행
         fetchRecentGames();
         // 페이지 로드 시 카드 표시 초기화 (서버에 요청하는 대신 직접 클리어 또는 서버가 연결시 보내주는 이벤트 활용)
         // socket.emit("clear_cards_on_user_ui"); // 이 부분은 서버 로직으로 대체됨
