@@ -1590,6 +1590,7 @@
         let miniGame = null; // Phaser 게임 인스턴스 변수
         let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
         let isBettingInProgress = false; // 베팅 처리 중 플래그
+        let currentBets = {}; // 현재 베팅 상황 추적
 
         // DOM 요소 가져오기
         const chargeExchangeModal = document.getElementById("chargeExchangeModal");
@@ -2746,6 +2747,15 @@
               return;
             }
 
+            // 뱅커/플레이어 베팅 제한 체크
+            if (selectedChoice === "player" || selectedChoice === "banker") {
+              const oppositeChoice = selectedChoice === "player" ? "banker" : "player";
+              if (currentBets[oppositeChoice] && currentBets[oppositeChoice] > 0) {
+                showNotification(`${oppositeChoice === "player" ? "플레이어" : "뱅커"}에 이미 베팅하셨습니다. 뱅커와 플레이어 중 한 곳에만 베팅할 수 있습니다.`);
+                return;
+              }
+            }
+
             // 베팅 처리 시작
             isBettingInProgress = true;
             
@@ -2947,6 +2957,7 @@
 
         socket.on("betting_started", () => {
           bettingActive = true;
+          currentBets = {}; // 새 게임 시작 시 베팅 상황 초기화
           const timerEl = document.getElementById("timer");
           if (timerEl)
             timerEl.innerText =
@@ -3222,6 +3233,8 @@
         
         // 승리 알림 수신
         socket.on("you_won", (data) => {
+          console.log("승리 알림 받음:", data);
+          
           // 거의 바로 승리 메시지 표시
           setTimeout(() => {
             showWinMessage(data.winnings);
@@ -3461,6 +3474,7 @@
 
         socket.on("my_bets_updated", (data) => {
           if (data && data.myCurrentBetsOnChoices) {
+            currentBets = data.myCurrentBetsOnChoices; // 현재 베팅 상황 업데이트
             updateMyBetAmounts(data.myCurrentBetsOnChoices);
           }
         });

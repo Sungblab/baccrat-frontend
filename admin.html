@@ -673,6 +673,34 @@
                   <th class="py-3 px-4 text-center">선택</th>
                   <th class="py-3 px-4 text-right">베팅액</th>
                   <th class="py-3 px-4 text-center">결과</th>
+                  <th class="py-3 px-4 text-center">
+                    <div class="flex space-x-1 justify-center">
+                      <button
+                        id="fixPlayerBtn"
+                        class="text-gray-700"
+                        onclick="fixGameResult('player')"
+                        title="플레이어 승리로 조작"
+                      >
+                        P
+                      </button>
+                      <button
+                        id="fixBankerBtn"
+                        class="text-gray-700"
+                        onclick="fixGameResult('banker')"
+                        title="뱅커 승리로 조작"
+                      >
+                        B
+                      </button>
+                      <button
+                        id="fixTieBtn"
+                        class="text-gray-700"
+                        onclick="fixGameResult('tie')"
+                        title="타이로 조작"
+                      >
+                        T
+                      </button>
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody
@@ -682,6 +710,336 @@
                 <!-- 베팅 기록이 여기에 추가됩니다 -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사용자 상세정보 모달 -->
+      <div
+        id="userDetailModal"
+        class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden backdrop-blur-sm"
+      >
+        <div
+          class="fixed inset-x-0 bottom-0 bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-t-2xl max-h-[85vh] border-t border-[#b8860b] flex flex-col"
+        >
+          <!-- 고정 헤더 -->
+          <div
+            class="flex-shrink-0 bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] p-4 border-b border-[#b8860b] rounded-t-2xl"
+          >
+            <div class="flex justify-between items-center mb-4">
+              <h2
+                class="text-xl font-bold text-yellow-500"
+                style="text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5)"
+              >
+                <span id="detailUsername">사용자</span> 상세정보
+              </h2>
+              <button
+                id="closeUserDetail"
+                class="text-yellow-500 hover:text-yellow-400"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <!-- 탭 메뉴 -->
+            <div class="flex space-x-1 bg-black bg-opacity-50 rounded-lg p-1">
+              <button
+                id="detailOverviewTab"
+                class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-purple-600 text-white"
+              >
+                개요
+              </button>
+              <button
+                id="detailBettingTab"
+                class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-yellow-500"
+              >
+                베팅 분석
+              </button>
+              <button
+                id="detailFinancialTab"
+                class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-yellow-500"
+              >
+                재정 현황
+              </button>
+            </div>
+          </div>
+
+          <!-- 스크롤 가능한 컨텐츠 영역 -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- 개요 탭 -->
+            <div id="detailOverviewContent" class="p-4 space-y-4">
+              <!-- 게임 통계 요약 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  게임 통계
+                </h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-2xl font-bold text-green-400"
+                      id="detailUserWins"
+                    >
+                      0
+                    </div>
+                    <div class="text-xs text-gray-400">승리</div>
+                  </div>
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-2xl font-bold text-red-400"
+                      id="detailUserLoses"
+                    >
+                      0
+                    </div>
+                    <div class="text-xs text-gray-400">패배</div>
+                  </div>
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-lg font-bold text-yellow-500"
+                      id="detailUserWinRate"
+                    >
+                      0%
+                    </div>
+                    <div class="text-xs text-gray-400">승률</div>
+                  </div>
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-lg font-bold text-blue-400"
+                      id="detailTotalGames"
+                    >
+                      0
+                    </div>
+                    <div class="text-xs text-gray-400">총 게임</div>
+                  </div>
+                </div>
+
+                <!-- 베팅 손익 요약 -->
+                <div class="bg-black bg-opacity-30 p-3 rounded-lg">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-400 font-medium">베팅 순손익:</span>
+                    <span
+                      class="font-bold text-lg"
+                      id="detailGameStatsBettingProfit"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="text-xs text-gray-500 text-center mt-1">
+                    * 베팅으로 인한 순수익/손실
+                  </div>
+                </div>
+              </div>
+
+              <!-- 전체 손익 요약 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  전체 손익
+                </h3>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-400">현재 잔액:</span>
+                    <span
+                      class="text-yellow-500 font-bold text-lg"
+                      id="detailCurrentBalance"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-400">총 손익:</span>
+                    <span class="font-bold text-lg" id="detailOverallProfit"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="text-xs text-gray-500 text-center">
+                    * 총 손익 = 현재 잔액 + 총 환전액 - 총 충전액
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 베팅 분석 탭 -->
+            <div id="detailBettingContent" class="p-4 space-y-4 hidden">
+              <!-- 베팅 통계 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  베팅 통계
+                </h3>
+                <div class="space-y-2">
+                  <div class="flex justify-between">
+                    <span class="text-gray-400">총 베팅 금액:</span>
+                    <span
+                      class="text-yellow-500 font-bold"
+                      id="detailModalTotalBetAmount"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-400">총 수익 금액:</span>
+                    <span
+                      class="text-green-400 font-bold"
+                      id="detailModalTotalWinAmount"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-400">베팅 손익:</span>
+                    <span class="font-bold" id="detailModalBettingProfit"
+                      >0원</span
+                    >
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-400">평균 베팅액:</span>
+                    <span
+                      class="text-blue-400 font-bold"
+                      id="detailModalAverageBetAmount"
+                      >0원</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- 베팅 선호도 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  베팅 선호도
+                </h3>
+                <div class="space-y-2" id="detailChoicePreferences">
+                  <!-- 선호도 차트가 여기에 표시됩니다 -->
+                </div>
+                <div
+                  class="mt-3 p-2 bg-black bg-opacity-30 rounded text-center"
+                >
+                  <span class="text-gray-400 text-sm"
+                    >가장 선호하는 베팅:
+                  </span>
+                  <span
+                    class="text-yellow-500 font-bold"
+                    id="detailFavoriteChoice"
+                    >-</span
+                  >
+                </div>
+              </div>
+
+              <!-- 롤링 정보 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  롤링 현황
+                </h3>
+                <div class="space-y-3">
+                  <div class="flex justify-between">
+                    <span class="text-gray-400">롤링 달성률:</span>
+                    <span
+                      class="text-yellow-500 font-bold"
+                      id="detailRollingProgressTextInfo"
+                      >0%</span
+                    >
+                  </div>
+                  <div class="w-full bg-gray-700 rounded-full h-2.5">
+                    <div
+                      id="detailRollingProgressBarInfo"
+                      class="bg-yellow-500 h-2.5 rounded-full"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-400"
+                      >베팅액:
+                      <span id="detailRollingWageredAmount">0원</span></span
+                    >
+                    <span class="text-gray-400"
+                      >목표:
+                      <span id="detailRollingRequiredAmount">0원</span></span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 재정 현황 탭 -->
+            <div id="detailFinancialContent" class="p-4 space-y-4 hidden">
+              <!-- 충전/환전 통계 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  충전/환전 통계
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-lg font-bold text-blue-400"
+                      id="detailTotalDeposited"
+                    >
+                      0원
+                    </div>
+                    <div class="text-xs text-gray-400">총 충전액</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                      (<span id="detailDepositCount">0</span>회)
+                    </div>
+                  </div>
+                  <div
+                    class="bg-black bg-opacity-30 p-3 rounded-lg text-center"
+                  >
+                    <div
+                      class="text-lg font-bold text-orange-400"
+                      id="detailTotalExchanged"
+                    >
+                      0원
+                    </div>
+                    <div class="text-xs text-gray-400">총 환전액</div>
+                    <div class="text-xs text-gray-500 mt-1">
+                      (<span id="detailExchangeCount">0</span>회)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 최근 거래 내역 -->
+              <div
+                class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]"
+              >
+                <h3 class="text-lg font-bold text-yellow-500 mb-3">
+                  최근 거래 내역
+                </h3>
+                <div
+                  class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar"
+                  id="detailRecentTransactions"
+                >
+                  <!-- 최근 거래 내역이 여기에 표시됩니다 -->
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -706,6 +1064,7 @@
       let socket = io(
         "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
       );
+      let bettingActive = false; // 베팅 상태 추적
 
       // 토스트 메시지 표시 함수
       function showToast(message, type = "default") {
@@ -1821,6 +2180,13 @@
                           : ""
                       }
                       <button 
+                        class="user-detail bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-medium"
+                        data-id="${user._id}"
+                        data-username="${user.username}"
+                      >
+                        상세
+                      </button>
+                      <button 
                         class="reset-password bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium"
                         data-id="${user._id}"
                       >
@@ -1874,6 +2240,474 @@
             resetPassword(userId);
           });
         });
+
+        document.querySelectorAll(".user-detail").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-id");
+            const username = this.getAttribute("data-username");
+            showUserDetail(userId, username);
+          });
+        });
+      }
+
+      // 사용자 상세정보 모달 관련 함수들
+      let currentDetailUserId = null;
+
+      // 사용자 상세정보 모달 표시
+      async function showUserDetail(userId, username) {
+        currentDetailUserId = userId;
+        document.getElementById("detailUsername").textContent = username;
+        document.getElementById("userDetailModal").classList.remove("hidden");
+
+        // 개요 탭을 기본으로 선택
+        switchDetailTab("overview");
+
+        // 사용자 상세정보 로드
+        await loadUserDetailInfo(userId);
+      }
+
+      // 사용자 상세정보 로드
+      async function loadUserDetailInfo(userId) {
+        try {
+          // 기존 users-stats API를 사용하여 해당 사용자 정보 찾기
+          const res = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users-stats",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error("사용자 정보를 불러오는데 실패했습니다.");
+          }
+
+          const users = await res.json();
+          const userDetail = users.find((user) => user._id === userId);
+
+          if (!userDetail) {
+            throw new Error("해당 사용자를 찾을 수 없습니다.");
+          }
+
+          // 추가 정보를 위해 베팅 기록도 가져오기
+          await loadAdditionalUserInfo(userDetail);
+          updateUserDetailModal(userDetail);
+        } catch (err) {
+          showToast("사용자 상세정보를 불러오는데 실패했습니다.", "error");
+          console.error("Error loading user detail:", err);
+        }
+      }
+
+      // 추가 사용자 정보 로드 (베팅 기록 등)
+      async function loadAdditionalUserInfo(userDetail) {
+        try {
+          // 전체 베팅 기록에서 해당 사용자의 기록만 필터링
+          const bettingRes = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/all-betting-history",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (bettingRes.ok) {
+            const allBets = await bettingRes.json();
+            const userBets = allBets.filter(
+              (bet) => bet.username === userDetail.username
+            );
+
+            // 베팅 선호도 계산
+            const choicePreferences = {};
+            let totalBetAmount = 0;
+            let totalWinAmount = 0;
+
+            userBets.forEach((bet) => {
+              // 베팅 선택 카운트
+              if (choicePreferences[bet.choice]) {
+                choicePreferences[bet.choice]++;
+              } else {
+                choicePreferences[bet.choice] = 1;
+              }
+
+              totalBetAmount += bet.amount;
+              if (bet.result === "win") {
+                totalWinAmount += bet.winAmount || 0;
+              }
+            });
+
+            // 추가 정보 설정
+            userDetail.choicePreferences = choicePreferences;
+            userDetail.totalBetAmount = totalBetAmount;
+            userDetail.totalWinAmount = totalWinAmount;
+            userDetail.averageBetAmount =
+              userBets.length > 0 ? totalBetAmount / userBets.length : 0;
+            userDetail.bettingProfit = totalWinAmount - totalBetAmount;
+
+            // 롤링 정보 (임시로 베팅액 기준으로 계산)
+            const rollingRequired = userDetail.balance * 3; // 잔액의 3배를 롤링 목표로 가정
+            userDetail.rollingWageredAmount = totalBetAmount;
+            userDetail.rollingRequiredAmount = rollingRequired;
+            userDetail.rollingProgress =
+              rollingRequired > 0
+                ? (totalBetAmount / rollingRequired) * 100
+                : 0;
+
+            // 전체 손익 계산 (현재 잔액 기준)
+            userDetail.overallProfit = userDetail.netProfit || 0;
+
+            // 재정 정보 가져오기
+            await loadFinancialInfo(userDetail);
+          }
+        } catch (err) {
+          console.error("Error loading additional user info:", err);
+          // 기본값 설정
+          userDetail.choicePreferences = {};
+          userDetail.totalBetAmount = 0;
+          userDetail.totalWinAmount = 0;
+          userDetail.averageBetAmount = 0;
+          userDetail.bettingProfit = 0;
+          userDetail.rollingWageredAmount = 0;
+          userDetail.rollingRequiredAmount = 0;
+          userDetail.rollingProgress = 0;
+          userDetail.overallProfit = userDetail.netProfit || 0;
+          userDetail.totalDeposited = 0;
+          userDetail.totalExchanged = 0;
+          userDetail.depositCount = 0;
+          userDetail.exchangeCount = 0;
+          userDetail.recentTransactions = [];
+        }
+      }
+
+      // 재정 정보 로드
+      async function loadFinancialInfo(userDetail) {
+        try {
+          // 충전 요청 정보 가져오기
+          const depositRes = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/deposit-requests",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          // 환전 요청 정보 가져오기
+          const exchangeRes = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/exchange-requests",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          let totalDeposited = 0;
+          let totalExchanged = 0;
+          let depositCount = 0;
+          let exchangeCount = 0;
+          let recentTransactions = [];
+
+          // 충전 정보 처리
+          if (depositRes.ok) {
+            const deposits = await depositRes.json();
+            const userDeposits = deposits.filter(
+              (deposit) =>
+                deposit.username === userDetail.username &&
+                deposit.status === "approved"
+            );
+
+            userDeposits.forEach((deposit) => {
+              totalDeposited += deposit.amount;
+              depositCount++;
+              recentTransactions.push({
+                type: "deposit",
+                amount: deposit.amount,
+                status: deposit.status,
+                createdAt: deposit.createdAt,
+              });
+            });
+          }
+
+          // 환전 정보 처리
+          if (exchangeRes.ok) {
+            const exchanges = await exchangeRes.json();
+            const userExchanges = exchanges.filter(
+              (exchange) =>
+                exchange.username === userDetail.username &&
+                exchange.status === "approved"
+            );
+
+            userExchanges.forEach((exchange) => {
+              totalExchanged += exchange.actualAmount || exchange.requestAmount;
+              exchangeCount++;
+              recentTransactions.push({
+                type: "exchange",
+                amount: exchange.actualAmount || exchange.requestAmount,
+                status: exchange.status,
+                createdAt: exchange.createdAt,
+              });
+            });
+          }
+
+          // 최근 거래 내역 정렬 (최신순)
+          recentTransactions.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          recentTransactions = recentTransactions.slice(0, 10); // 최근 10개만
+
+          // 재정 정보 설정
+          userDetail.totalDeposited = totalDeposited;
+          userDetail.totalExchanged = totalExchanged;
+          userDetail.depositCount = depositCount;
+          userDetail.exchangeCount = exchangeCount;
+          userDetail.recentTransactions = recentTransactions;
+
+          // 전체 손익 재계산 (현재 잔액 + 총 환전액 - 총 충전액)
+          userDetail.overallProfit =
+            userDetail.balance + totalExchanged - totalDeposited;
+        } catch (err) {
+          console.error("Error loading financial info:", err);
+          // 기본값 설정
+          userDetail.totalDeposited = 0;
+          userDetail.totalExchanged = 0;
+          userDetail.depositCount = 0;
+          userDetail.exchangeCount = 0;
+          userDetail.recentTransactions = [];
+          userDetail.overallProfit = userDetail.netProfit || 0;
+        }
+      }
+
+      // 사용자 상세정보 모달 업데이트
+      function updateUserDetailModal(userDetail) {
+        // 개요 탭 정보 업데이트
+        document.getElementById("detailUserWins").textContent =
+          parseInt(userDetail.wins) || 0;
+        document.getElementById("detailUserLoses").textContent =
+          parseInt(userDetail.losses) || 0;
+        document.getElementById("detailUserWinRate").textContent = `${(
+          parseFloat(userDetail.winRate) || 0
+        ).toFixed(1)}%`;
+        document.getElementById("detailTotalGames").textContent =
+          parseInt(userDetail.totalBets) || 0;
+
+        const bettingProfit = parseFloat(userDetail.bettingProfit) || 0;
+        const bettingProfitElement = document.getElementById(
+          "detailGameStatsBettingProfit"
+        );
+        bettingProfitElement.textContent = `${
+          bettingProfit >= 0 ? "+" : ""
+        }${Math.round(bettingProfit).toLocaleString()}원`;
+        bettingProfitElement.className = `font-bold text-lg ${
+          bettingProfit >= 0 ? "text-green-400" : "text-red-400"
+        }`;
+
+        document.getElementById("detailCurrentBalance").textContent = `${(
+          parseInt(userDetail.balance) || 0
+        ).toLocaleString()}원`;
+
+        const overallProfit = parseFloat(userDetail.overallProfit) || 0;
+        const overallProfitElement = document.getElementById(
+          "detailOverallProfit"
+        );
+        overallProfitElement.textContent = `${
+          overallProfit >= 0 ? "+" : ""
+        }${Math.round(overallProfit).toLocaleString()}원`;
+        overallProfitElement.className = `font-bold text-lg ${
+          overallProfit >= 0 ? "text-green-400" : "text-red-400"
+        }`;
+
+        // 베팅 분석 탭 정보 업데이트
+        document.getElementById("detailModalTotalBetAmount").textContent = `${(
+          parseInt(userDetail.totalBetAmount) || 0
+        ).toLocaleString()}원`;
+        document.getElementById("detailModalTotalWinAmount").textContent = `${(
+          parseInt(userDetail.totalWinAmount) || 0
+        ).toLocaleString()}원`;
+
+        const modalBettingProfit = parseFloat(userDetail.bettingProfit) || 0;
+        const modalBettingProfitElement = document.getElementById(
+          "detailModalBettingProfit"
+        );
+        modalBettingProfitElement.textContent = `${
+          modalBettingProfit >= 0 ? "+" : ""
+        }${Math.round(modalBettingProfit).toLocaleString()}원`;
+        modalBettingProfitElement.className = `font-bold ${
+          modalBettingProfit >= 0 ? "text-green-400" : "text-red-400"
+        }`;
+
+        document.getElementById(
+          "detailModalAverageBetAmount"
+        ).textContent = `${Math.round(
+          parseFloat(userDetail.averageBetAmount) || 0
+        ).toLocaleString()}원`;
+
+        // 베팅 선호도 업데이트
+        updateDetailChoicePreferences(userDetail.choicePreferences || {});
+
+        // 롤링 정보 업데이트
+        const rollingProgress = parseFloat(userDetail.rollingProgress) || 0;
+        document.getElementById(
+          "detailRollingProgressTextInfo"
+        ).textContent = `${rollingProgress.toFixed(1)}%`;
+        document.getElementById(
+          "detailRollingProgressBarInfo"
+        ).style.width = `${Math.min(rollingProgress, 100)}%`;
+        document.getElementById("detailRollingWageredAmount").textContent = `${(
+          parseInt(userDetail.rollingWageredAmount) || 0
+        ).toLocaleString()}원`;
+        document.getElementById(
+          "detailRollingRequiredAmount"
+        ).textContent = `${(
+          parseInt(userDetail.rollingRequiredAmount) || 0
+        ).toLocaleString()}원`;
+
+        // 재정 현황 탭 정보 업데이트
+        document.getElementById("detailTotalDeposited").textContent = `${(
+          parseInt(userDetail.totalDeposited) || 0
+        ).toLocaleString()}원`;
+        document.getElementById("detailDepositCount").textContent =
+          parseInt(userDetail.depositCount) || 0;
+        document.getElementById("detailTotalExchanged").textContent = `${(
+          parseInt(userDetail.totalExchanged) || 0
+        ).toLocaleString()}원`;
+        document.getElementById("detailExchangeCount").textContent =
+          parseInt(userDetail.exchangeCount) || 0;
+
+        // 최근 거래 내역 업데이트
+        updateDetailRecentTransactions(userDetail.recentTransactions || []);
+      }
+
+      // 베팅 선호도 차트 업데이트
+      function updateDetailChoicePreferences(preferences) {
+        const container = document.getElementById("detailChoicePreferences");
+        container.innerHTML = "";
+
+        const choiceNames = {
+          player: "플레이어",
+          banker: "뱅커",
+          tie: "타이",
+          player_pair: "플레이어 페어",
+          banker_pair: "뱅커 페어",
+        };
+
+        const choiceColors = {
+          player: "bg-blue-500",
+          banker: "bg-red-500",
+          tie: "bg-green-500",
+          player_pair: "bg-blue-400",
+          banker_pair: "bg-red-400",
+        };
+
+        let maxCount = 0;
+        let favoriteChoice = "-";
+        let maxChoiceKey = "";
+
+        // 최대값과 선호 베팅 찾기
+        Object.entries(preferences).forEach(([choice, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            favoriteChoice = choiceNames[choice] || choice;
+            maxChoiceKey = choice;
+          }
+        });
+
+        // 차트 생성
+        Object.entries(preferences).forEach(([choice, count]) => {
+          const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+          const choiceName = choiceNames[choice] || choice;
+          const colorClass = choiceColors[choice] || "bg-gray-500";
+
+          const div = document.createElement("div");
+          div.className = "flex items-center space-x-2";
+          div.innerHTML = `
+            <span class="text-sm text-gray-400 w-20">${choiceName}:</span>
+            <div class="flex-1 bg-gray-700 rounded-full h-2">
+              <div class="${colorClass} h-2 rounded-full" style="width: ${percentage}%"></div>
+            </div>
+            <span class="text-sm text-gray-300 w-8">${count}</span>
+          `;
+          container.appendChild(div);
+        });
+
+        document.getElementById("detailFavoriteChoice").textContent =
+          favoriteChoice;
+      }
+
+      // 최근 거래 내역 업데이트
+      function updateDetailRecentTransactions(transactions) {
+        const container = document.getElementById("detailRecentTransactions");
+        container.innerHTML = "";
+
+        if (transactions.length === 0) {
+          container.innerHTML =
+            '<div class="text-gray-400 text-center py-4">거래 내역이 없습니다.</div>';
+          return;
+        }
+
+        transactions.forEach((transaction) => {
+          const div = document.createElement("div");
+          div.className = "bg-black bg-opacity-30 p-3 rounded-lg";
+
+          const typeText = transaction.type === "deposit" ? "충전" : "환전";
+          const typeColor =
+            transaction.type === "deposit"
+              ? "text-blue-400"
+              : "text-orange-400";
+          const statusText =
+            transaction.status === "approved"
+              ? "승인"
+              : transaction.status === "pending"
+              ? "대기"
+              : "거절";
+          const statusColor =
+            transaction.status === "approved"
+              ? "text-green-400"
+              : transaction.status === "pending"
+              ? "text-yellow-400"
+              : "text-red-400";
+
+          div.innerHTML = `
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="${typeColor} font-medium">${typeText}</span>
+                <span class="text-gray-400 text-sm ml-2">${new Date(
+                  transaction.createdAt
+                ).toLocaleDateString()}</span>
+              </div>
+              <div class="text-right">
+                <div class="font-bold">${transaction.amount.toLocaleString()}원</div>
+                <div class="${statusColor} text-sm">${statusText}</div>
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      // 상세정보 모달 탭 전환
+      function switchDetailTab(tabName) {
+        // 모든 탭 버튼 비활성화
+        document
+          .querySelectorAll('[id^="detail"][id$="Tab"]')
+          .forEach((tab) => {
+            tab.className =
+              "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-yellow-500";
+          });
+
+        // 모든 탭 컨텐츠 숨기기
+        document
+          .querySelectorAll('[id^="detail"][id$="Content"]')
+          .forEach((content) => {
+            content.classList.add("hidden");
+          });
+
+        // 선택된 탭 활성화
+        const activeTab = document.getElementById(
+          `detail${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`
+        );
+        const activeContent = document.getElementById(
+          `detail${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Content`
+        );
+
+        if (activeTab && activeContent) {
+          activeTab.className =
+            "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-purple-600 text-white";
+          activeContent.classList.remove("hidden");
+        }
       }
 
       // resetPassword 함수 수정
@@ -2403,6 +3237,41 @@
       // 페이지 로드 시 덱 정보 요청
       document.addEventListener("DOMContentLoaded", () => {
         socket.emit("get_deck_info");
+
+        // 사용자 상세정보 모달 이벤트 리스너
+        document
+          .getElementById("closeUserDetail")
+          .addEventListener("click", function () {
+            document.getElementById("userDetailModal").classList.add("hidden");
+          });
+
+        // 상세정보 모달 탭 이벤트 리스너
+        document
+          .getElementById("detailOverviewTab")
+          .addEventListener("click", function () {
+            switchDetailTab("overview");
+          });
+
+        document
+          .getElementById("detailBettingTab")
+          .addEventListener("click", function () {
+            switchDetailTab("betting");
+          });
+
+        document
+          .getElementById("detailFinancialTab")
+          .addEventListener("click", function () {
+            switchDetailTab("financial");
+          });
+
+        // 모달 외부 클릭시 닫기
+        document
+          .getElementById("userDetailModal")
+          .addEventListener("click", function (e) {
+            if (e.target === this) {
+              this.classList.add("hidden");
+            }
+          });
       });
 
       // 재정 요약 가져오기 함수
@@ -2563,6 +3432,80 @@
           showToast("서버 에러가 발생했습니다.");
         }
       }
+
+      // 승부 조작 함수
+      function fixGameResult(result) {
+        if (!socket) {
+          showToast("소켓 연결이 없습니다.");
+          return;
+        }
+
+        // 베팅이 진행 중일 때만 조작 가능
+        if (!bettingActive) {
+          showToast("베팅 시간이 아닙니다.");
+          return;
+        }
+
+        const resultText =
+          result === "player"
+            ? "플레이어"
+            : result === "banker"
+            ? "뱅커"
+            : "타이";
+
+        if (
+          confirm(`다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`)
+        ) {
+          socket.emit("admin_fix_result", { result });
+
+          // 버튼 시각적 피드백
+          const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
+          buttons.forEach((btnId) => {
+            const btn = document.getElementById(btnId);
+            btn.classList.remove("bg-red-600");
+            btn.classList.add("bg-black");
+          });
+
+          const activeBtn = document.getElementById(
+            `fix${result.charAt(0).toUpperCase() + result.slice(1)}Btn`
+          );
+          if (activeBtn) {
+            activeBtn.classList.remove("bg-black");
+            activeBtn.classList.add("bg-red-600");
+          }
+        }
+      }
+
+      // 승부 조작 관련 소켓 이벤트 리스너
+      socket.on("result_fixed", (data) => {
+        showToast(data.message);
+      });
+
+      // 게임 시작 시 조작 버튼 초기화
+      socket.on("betting_started", () => {
+        bettingActive = true; // 베팅 활성화
+        const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
+        buttons.forEach((btnId) => {
+          const btn = document.getElementById(btnId);
+          if (btn) {
+            btn.classList.remove("bg-red-600");
+            btn.classList.add("bg-black");
+          }
+        });
+      });
+
+      // 베팅 종료 시 상태 업데이트
+      socket.on("betting_closed", () => {
+        bettingActive = false; // 베팅 비활성화
+        const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
+        buttons.forEach((btnId) => {
+          const btn = document.getElementById(btnId);
+          if (btn) {
+            btn.classList.remove("bg-red-600");
+            btn.classList.add("bg-black");
+          }
+        });
+      });
     </script>
   </body>
 </html>
