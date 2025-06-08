@@ -2300,61 +2300,36 @@
       // 추가 사용자 정보 로드 (베팅 기록 등)
       async function loadAdditionalUserInfo(userDetail) {
         try {
-          // 전체 베팅 기록에서 해당 사용자의 기록만 필터링
-          const bettingRes = await fetch(
-            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/all-betting-history",
+          // 새로운 사용자 상세 정보 API 호출
+          const detailRes = await fetch(
+            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/user-detail/${userDetail._id}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
 
-          if (bettingRes.ok) {
-            const allBets = await bettingRes.json();
-            const userBets = allBets.filter(
-              (bet) => bet.username === userDetail.username
-            );
+          if (detailRes.ok) {
+            const detailData = await detailRes.json();
 
-            // 베팅 선호도 계산
-            const choicePreferences = {};
-            let totalBetAmount = 0;
-            let totalWinAmount = 0;
+            // 서버에서 받은 실제 데이터로 업데이트
+            userDetail.choicePreferences = detailData.choiceStats;
+            userDetail.totalBetAmount = detailData.totalBetAmount; // 실제 베팅액 100%
+            userDetail.totalWinAmount = detailData.totalWinAmount;
+            userDetail.averageBetAmount = detailData.averageBetAmount;
+            userDetail.bettingProfit = detailData.bettingProfit;
 
-            userBets.forEach((bet) => {
-              // 베팅 선택 카운트
-              if (choicePreferences[bet.choice]) {
-                choicePreferences[bet.choice]++;
-              } else {
-                choicePreferences[bet.choice] = 1;
-              }
+            // 롤링 정보 (실제 서버 데이터)
+            userDetail.rollingWageredAmount = detailData.rollingWagered; // 실제 베팅액
+            userDetail.rollingRequiredAmount = detailData.rollingRequirement; // 롤링 요구량
+            userDetail.rollingProgress = detailData.rollingProgress; // 롤링 진행률
 
-              totalBetAmount += bet.amount;
-              if (bet.result === "win") {
-                totalWinAmount += bet.winAmount || 0;
-              }
-            });
-
-            // 추가 정보 설정
-            userDetail.choicePreferences = choicePreferences;
-            userDetail.totalBetAmount = totalBetAmount;
-            userDetail.totalWinAmount = totalWinAmount;
-            userDetail.averageBetAmount =
-              userBets.length > 0 ? totalBetAmount / userBets.length : 0;
-            userDetail.bettingProfit = totalWinAmount - totalBetAmount;
-
-            // 롤링 정보 (임시로 베팅액 기준으로 계산)
-            const rollingRequired = userDetail.balance * 3; // 잔액의 3배를 롤링 목표로 가정
-            userDetail.rollingWageredAmount = totalBetAmount;
-            userDetail.rollingRequiredAmount = rollingRequired;
-            userDetail.rollingProgress =
-              rollingRequired > 0
-                ? (totalBetAmount / rollingRequired) * 100
-                : 0;
-
-            // 전체 손익 계산 (현재 잔액 기준)
-            userDetail.overallProfit = userDetail.netProfit || 0;
-
-            // 재정 정보 가져오기
-            await loadFinancialInfo(userDetail);
+            // 재정 정보
+            userDetail.totalDeposited = detailData.totalDeposited;
+            userDetail.totalExchanged = detailData.totalExchanged;
+            userDetail.depositCount = detailData.depositCount;
+            userDetail.exchangeCount = detailData.exchangeCount;
+            userDetail.overallProfit = detailData.overallProfit;
+            userDetail.recentTransactions = detailData.recentTransactions;
           }
         } catch (err) {
           console.error("Error loading additional user info:", err);
@@ -2373,101 +2348,6 @@
           userDetail.depositCount = 0;
           userDetail.exchangeCount = 0;
           userDetail.recentTransactions = [];
-        }
-      }
-
-      // 재정 정보 로드
-      async function loadFinancialInfo(userDetail) {
-        try {
-          // 충전 요청 정보 가져오기
-          const depositRes = await fetch(
-            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/deposit-requests",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-
-          // 환전 요청 정보 가져오기
-          const exchangeRes = await fetch(
-            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/exchange-requests",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-
-          let totalDeposited = 0;
-          let totalExchanged = 0;
-          let depositCount = 0;
-          let exchangeCount = 0;
-          let recentTransactions = [];
-
-          // 충전 정보 처리
-          if (depositRes.ok) {
-            const deposits = await depositRes.json();
-            const userDeposits = deposits.filter(
-              (deposit) =>
-                deposit.username === userDetail.username &&
-                deposit.status === "approved"
-            );
-
-            userDeposits.forEach((deposit) => {
-              totalDeposited += deposit.amount;
-              depositCount++;
-              recentTransactions.push({
-                type: "deposit",
-                amount: deposit.amount,
-                status: deposit.status,
-                createdAt: deposit.createdAt,
-              });
-            });
-          }
-
-          // 환전 정보 처리
-          if (exchangeRes.ok) {
-            const exchanges = await exchangeRes.json();
-            const userExchanges = exchanges.filter(
-              (exchange) =>
-                exchange.username === userDetail.username &&
-                exchange.status === "approved"
-            );
-
-            userExchanges.forEach((exchange) => {
-              totalExchanged += exchange.actualAmount || exchange.requestAmount;
-              exchangeCount++;
-              recentTransactions.push({
-                type: "exchange",
-                amount: exchange.actualAmount || exchange.requestAmount,
-                status: exchange.status,
-                createdAt: exchange.createdAt,
-              });
-            });
-          }
-
-          // 최근 거래 내역 정렬 (최신순)
-          recentTransactions.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          recentTransactions = recentTransactions.slice(0, 10); // 최근 10개만
-
-          // 재정 정보 설정
-          userDetail.totalDeposited = totalDeposited;
-          userDetail.totalExchanged = totalExchanged;
-          userDetail.depositCount = depositCount;
-          userDetail.exchangeCount = exchangeCount;
-          userDetail.recentTransactions = recentTransactions;
-
-          // 전체 손익 재계산 (현재 잔액 + 총 환전액 - 총 충전액)
-          userDetail.overallProfit =
-            userDetail.balance + totalExchanged - totalDeposited;
-        } catch (err) {
-          console.error("Error loading financial info:", err);
-          // 기본값 설정
-          userDetail.totalDeposited = 0;
-          userDetail.totalExchanged = 0;
-          userDetail.depositCount = 0;
-          userDetail.exchangeCount = 0;
-          userDetail.recentTransactions = [];
-          userDetail.overallProfit = userDetail.netProfit || 0;
         }
       }
 
