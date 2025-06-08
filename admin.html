@@ -674,32 +674,14 @@
                   <th class="py-3 px-4 text-right">베팅액</th>
                   <th class="py-3 px-4 text-center">결과</th>
                   <th class="py-3 px-4 text-center">
-                    <div class="flex space-x-1 justify-center">
-                      <button
-                        id="fixPlayerBtn"
-                        class="text-gray-700"
-                        onclick="fixGameResult('player')"
-                        title="플레이어 승리로 조작"
-                      >
-                        P
-                      </button>
-                      <button
-                        id="fixBankerBtn"
-                        class="text-gray-700"
-                        onclick="fixGameResult('banker')"
-                        title="뱅커 승리로 조작"
-                      >
-                        B
-                      </button>
-                      <button
-                        id="fixTieBtn"
-                        class="text-gray-700"
-                        onclick="fixGameResult('tie')"
-                        title="타이로 조작"
-                      >
-                        T
-                      </button>
-                    </div>
+                    <button
+                      id="showFixPanelBtn"
+                      class="hover:text-gray-300 text-sm px-2 py-1"
+                      onclick="toggleFixPanel()"
+                      title="고급 옵션"
+                    >
+                      관리
+                    </button>
                   </th>
                 </tr>
               </thead>
@@ -710,6 +692,109 @@
                 <!-- 베팅 기록이 여기에 추가됩니다 -->
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 승부 조작 패널 모달 -->
+      <div
+        id="fixPanelModal"
+        class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden backdrop-blur-sm"
+        onclick="closeFixPanelOnOutsideClick(event)"
+      >
+        <div
+          class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 rounded-t-2xl border-t border-gray-600 p-6"
+          onclick="event.stopPropagation()"
+        >
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-white">고급 게임 설정</h3>
+            <button
+              id="closeFixPanel"
+              class="text-gray-400 hover:text-white"
+              onclick="toggleFixPanel()"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <!-- 패턴 선택 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                게임 패턴 선택
+              </label>
+              <select
+                id="patternSelect"
+                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="1">패턴 1 - 내추럴 승부 (9 vs 8)</option>
+                <option value="2">패턴 2 - 역전승/뱅커룰 승부</option>
+                <option value="3">패턴 3 - 간발의 차이/압도적 승부</option>
+              </select>
+            </div>
+
+            <!-- 결과 선택 버튼들 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                게임 결과 설정
+              </label>
+              <div class="grid grid-cols-3 gap-3">
+                <button
+                  id="fixPlayerBtn"
+                  class="bg-gray-700 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-colors font-medium"
+                  onclick="fixGameResult('player')"
+                >
+                  <div class="text-lg">🔵</div>
+                  <div class="text-sm">플레이어</div>
+                </button>
+                <button
+                  id="fixBankerBtn"
+                  class="bg-gray-700 hover:bg-red-600 text-white py-3 px-4 rounded-lg transition-colors font-medium"
+                  onclick="fixGameResult('banker')"
+                >
+                  <div class="text-lg">🔴</div>
+                  <div class="text-sm">뱅커</div>
+                </button>
+                <button
+                  id="fixTieBtn"
+                  class="bg-gray-700 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors font-medium"
+                  onclick="fixGameResult('tie')"
+                >
+                  <div class="text-lg">🟢</div>
+                  <div class="text-sm">타이</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 현재 상태 표시 -->
+            <div
+              id="fixStatusDisplay"
+              class="text-center text-sm text-gray-400 hidden"
+            >
+              <div class="bg-gray-800 rounded-lg p-3">
+                <span id="fixStatusText">설정된 결과가 없습니다</span>
+              </div>
+            </div>
+
+            <!-- 주의사항 -->
+            <div
+              class="text-xs text-gray-500 text-center bg-gray-800 rounded-lg p-3"
+            >
+              ⚠️ 이 기능은 베팅이 활성화된 상태에서만 사용할 수 있습니다
+            </div>
           </div>
         </div>
       </div>
@@ -3313,6 +3398,23 @@
         }
       }
 
+      // 승부 조작 패널 토글 함수
+      function toggleFixPanel() {
+        const modal = document.getElementById("fixPanelModal");
+        if (modal.classList.contains("hidden")) {
+          modal.classList.remove("hidden");
+        } else {
+          modal.classList.add("hidden");
+        }
+      }
+
+      // 모달 외부 클릭 시 닫기
+      function closeFixPanelOnOutsideClick(event) {
+        if (event.target.id === "fixPanelModal") {
+          toggleFixPanel();
+        }
+      }
+
       // 승부 조작 함수
       function fixGameResult(result) {
         if (!socket) {
@@ -3326,6 +3428,10 @@
           return;
         }
 
+        // 선택된 패턴 가져오기
+        const patternSelect = document.getElementById("patternSelect");
+        const selectedPattern = parseInt(patternSelect.value);
+
         const resultText =
           result === "player"
             ? "플레이어"
@@ -3333,26 +3439,69 @@
             ? "뱅커"
             : "타이";
 
+        // 패턴 설명
+        const patternDescriptions = {
+          player: {
+            1: "내추럴 9 vs 8",
+            2: "세 번째 카드로 역전승",
+            3: "간발의 차이로 승리",
+          },
+          banker: {
+            1: "내추럴 9 vs 8",
+            2: "뱅커 룰에 의한 승리",
+            3: "압도적 승리",
+          },
+          tie: {
+            1: "내추럴 8 타이",
+            2: "세 번째 카드 후 타이",
+            3: "낮은 점수 타이",
+          },
+        };
+
+        const patternDesc =
+          patternDescriptions[result][selectedPattern] || "기본 패턴";
+
         if (
-          confirm(`다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`)
+          confirm(
+            `다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?\n패턴: ${patternDesc}`
+          )
         ) {
-          socket.emit("admin_fix_result", { result });
+          socket.emit("admin_fix_result", { result, pattern: selectedPattern });
 
           // 버튼 시각적 피드백
           const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
           buttons.forEach((btnId) => {
             const btn = document.getElementById(btnId);
-            btn.classList.remove("bg-red-600");
-            btn.classList.add("bg-black");
+            btn.classList.remove("bg-blue-600", "bg-red-600", "bg-green-600");
+            btn.classList.add("bg-gray-700");
           });
 
           const activeBtn = document.getElementById(
             `fix${result.charAt(0).toUpperCase() + result.slice(1)}Btn`
           );
           if (activeBtn) {
-            activeBtn.classList.remove("bg-black");
-            activeBtn.classList.add("bg-red-600");
+            activeBtn.classList.remove("bg-gray-700");
+            if (result === "player") {
+              activeBtn.classList.add("bg-blue-600");
+            } else if (result === "banker") {
+              activeBtn.classList.add("bg-red-600");
+            } else if (result === "tie") {
+              activeBtn.classList.add("bg-green-600");
+            }
           }
+
+          // 상태 표시 업데이트
+          const statusDisplay = document.getElementById("fixStatusDisplay");
+          const statusText = document.getElementById("fixStatusText");
+          statusDisplay.classList.remove("hidden");
+          statusText.textContent = `설정됨: ${resultText} 승리 (${patternDesc})`;
+          statusDisplay.classList.remove("text-gray-400");
+          statusDisplay.classList.add("text-green-400");
+
+          // 모달 닫기
+          setTimeout(() => {
+            toggleFixPanel();
+          }, 1500);
         }
       }
 
@@ -3364,28 +3513,36 @@
       // 게임 시작 시 조작 버튼 초기화
       socket.on("betting_started", () => {
         bettingActive = true; // 베팅 활성화
-        const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
-        buttons.forEach((btnId) => {
-          const btn = document.getElementById(btnId);
-          if (btn) {
-            btn.classList.remove("bg-red-600");
-            btn.classList.add("bg-black");
-          }
-        });
+        resetFixPanel();
       });
 
       // 베팅 종료 시 상태 업데이트
       socket.on("betting_closed", () => {
         bettingActive = false; // 베팅 비활성화
+        resetFixPanel();
+      });
+
+      // 승부 조작 패널 초기화 함수
+      function resetFixPanel() {
         const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
         buttons.forEach((btnId) => {
           const btn = document.getElementById(btnId);
           if (btn) {
-            btn.classList.remove("bg-red-600");
-            btn.classList.add("bg-black");
+            btn.classList.remove("bg-blue-600", "bg-red-600", "bg-green-600");
+            btn.classList.add("bg-gray-700");
           }
         });
-      });
+
+        // 상태 표시 초기화
+        const statusDisplay = document.getElementById("fixStatusDisplay");
+        const statusText = document.getElementById("fixStatusText");
+        if (statusDisplay && statusText) {
+          statusDisplay.classList.add("hidden");
+          statusText.textContent = "설정된 결과가 없습니다";
+          statusDisplay.classList.remove("text-green-400");
+          statusDisplay.classList.add("text-gray-400");
+        }
+      }
     </script>
   </body>
 </html>
