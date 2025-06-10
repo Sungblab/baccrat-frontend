@@ -957,15 +957,6 @@
           <!-- 충전 신청 탭 내용 -->
           <div id="chargeContent" class="p-4">
             <div class="space-y-4">
-              <!-- <div class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b]">
-                  <h3 class="text-lg font-bold text-yellow-500 mb-3">충전 계좌 안내</h3>
-                  <div class="space-y-1 text-gray-300">
-                      <p>은행: <span class="font-semibold text-white">골든 뱅크</span></p>
-                      <p>계좌번호: <span class="font-semibold text-white">123-456-789012</span></p>
-                      <p>예금주: <span class="font-semibold text-white">김골든</span></p>
-                      <p class="text-xs text-yellow-400 mt-2">* 반드시 가입하신 성함으로 입금해주세요.</p>
-                  </div>
-              </div> -->
 
               <div>
                   <label class="block text-sm font-medium text-yellow-500 mb-2">충전 신청 금액</label>
@@ -1519,12 +1510,146 @@
       <p id="notificationMessage" class="text-center font-bold"></p>
     </div>
 
+    <!-- 환전 신청 완료 모달 -->
+    <div
+      id="exchangeRequestModal"
+      class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden"
+    >
+      <div class="bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] rounded-xl p-6 max-w-md w-full mx-4 border-2 border-[#b8860b] shadow-2xl">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-yellow-500 mb-2">환전 신청 완료</h2>
+          <p class="text-white text-lg mb-4">환전이 신청되었습니다.<br>승인을 될 수도 있고, 안될 수도 있습니다.</p>
+          <div class="bg-black bg-opacity-50 p-4 rounded-lg border border-[#b8860b] mb-4">
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-400">신청 금액:</span>
+                <span class="text-yellow-500 font-bold" id="modalRequestAmount">0원</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">차감된 잔액:</span>
+                <span class="text-red-400 font-bold" id="modalDeductedAmount">0원</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">현재 잔액:</span>
+                <span class="text-blue-400 font-bold" id="modalCurrentBalance">0원</span>
+              </div>
+            </div>
+          </div>
+          <button
+            id="closeExchangeRequestModal"
+            class="golden-btn py-3 px-6 rounded-lg text-lg font-bold"
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 오디오 요소들 -->
     <audio id="bettingStartSound" src="sound.mp3" preload="auto"></audio>
     <audio id="bettingEndSound" src="endsound.mp3" preload="auto"></audio>
-    <audio id="playerWinSound" src="player.mp3" preload="auto"></audio>
-    <audio id="bankerWinSound" src="banker.mp3" preload="auto"></audio>
-    <audio id="tieSound" src="tie.mp3" preload="auto"></audio>
+
+    <!-- 플로팅 채팅 UI -->
+    <!-- 채팅 플로팅 버튼 (헤더 아래, 작은 크기) -->
+    <div id="chatFloatingButton" class="fixed top-20 right-4 z-40 transition-all duration-300">
+      <button class="w-10 h-10 bg-gradient-to-r from-[#b8860b] to-[#daa520] rounded-full shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-300 flex items-center justify-center text-white bg-opacity-60 backdrop-blur-sm hover:bg-opacity-80">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
+        </svg>
+        <!-- 새 메시지 알림 뱃지 -->
+        <div id="chatNotificationBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold hidden animate-pulse">
+          <span id="chatNotificationCount" class="text-xs">0</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- 채팅 창 오버레이 -->
+    <div id="chatOverlay" class="fixed inset-0 bg-black bg-opacity-30 z-40 hidden transition-opacity duration-300"></div>
+    
+    <!-- 채팅 창 -->
+    <div id="chatWindow" class="fixed bottom-0 left-0 right-0 h-96 bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] border-t-2 border-[#b8860b] shadow-2xl z-50 hidden transform transition-all duration-300 backdrop-blur-md bg-opacity-95">
+      <div class="flex flex-col h-full">
+        <!-- 채팅 헤더 -->
+        <div class="flex items-center justify-between p-4 border-b border-[#b8860b] bg-gradient-to-r from-[#b8860b] to-[#daa520]">
+          <h3 class="text-white font-bold text-lg">실시간 채팅</h3>
+          <button id="closeChatButton" class="text-white hover:text-gray-300 transition-colors">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 채팅 메시지 영역 -->
+        <div id="chatMessages" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3">
+          <!-- 채팅 메시지들이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+        <!-- 채팅 입력 영역 -->
+        <div class="p-4 border-t border-[#b8860b]">
+          <div class="flex space-x-2">
+            <button 
+              id="highlightChatButton" 
+              class="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all duration-300 font-bold text-sm"
+              title="강조 모드 토글"
+            >
+              🔥
+            </button>
+            <input 
+              type="text" 
+              id="chatMessageInput" 
+              placeholder="메시지를 입력하세요..." 
+              maxlength="500"
+              class="flex-1 px-3 py-2 bg-black bg-opacity-50 border border-[#b8860b] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500 text-sm"
+            >
+            <button 
+              id="sendChatButton" 
+              class="px-4 py-2 bg-gradient-to-r from-[#b8860b] to-[#daa520] text-white rounded-lg hover:from-[#daa520] hover:to-[#ffd700] transition-all duration-300 font-bold text-sm"
+            >
+              전송
+            </button>
+          </div>
+          <div class="flex justify-between items-center text-xs mt-1">
+            <div id="highlightModeIndicator" class="text-orange-400 font-bold hidden">
+              🔥 강조 모드 활성화
+            </div>
+            <div class="text-gray-400">
+              <span id="chatCharCount">0</span>/500
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 메시지 알림 바 (관리자 & 강조 메시지 공용) -->
+    <div id="adminMessageBar" class="fixed top-[72px] left-0 right-0 z-40 transform -translate-y-full transition-all duration-500 ease-in-out">
+      <div id="adminMessageBarContainer" class="bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-white border-opacity-20">
+        <div class="flex items-center p-3">
+          <div class="flex-shrink-0 mr-3">
+            <svg id="adminMessageBarIcon" class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span id="adminMessageBarSender" class="text-yellow-400 font-bold text-sm">관리자</span>
+              <span id="adminMessageBarTime" class="text-gray-400 text-xs"></span>
+            </div>
+            <p id="adminMessageBarContent" class="text-white text-sm font-medium mt-1 break-words"></p>
+          </div>
+          <button id="closeAdminMessageBar" class="flex-shrink-0 ml-3 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script>
       // 환전 내역 카드 생성 함수
@@ -1580,11 +1705,42 @@
         return card;
       }
 
-      window.addEventListener("DOMContentLoaded", () => {
+      window.addEventListener("DOMContentLoaded", async () => {
         const token = localStorage.getItem("token");
-        if (!token) {
-          window.location.href = "index.html";
-          return; // token 없으면 이후 코드 실행 안 함
+        
+        // 토큰 유효성 검사 함수
+        async function validateToken() {
+          if (!token) {
+            console.log("토큰이 없습니다. 로그인 페이지로 이동합니다.");
+            window.location.href = "index.html";
+            return false;
+          }
+          
+          try {
+            // 간단한 API 호출로 토큰 유효성 검사
+            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            
+            if (res.status === 401 || res.status === 403) {
+              console.log("토큰이 만료되었거나 유효하지 않습니다. 로그인 페이지로 이동합니다.");
+              localStorage.removeItem("token");
+              window.location.href = "index.html";
+              return false;
+            }
+            
+            return true;
+          } catch (err) {
+            console.error("토큰 검증 중 오류:", err);
+            // 네트워크 오류는 토큰 문제가 아닐 수 있으므로 계속 진행
+            return true;
+          }
+        }
+        
+        // 토큰 검증 후 계속 진행
+        const isValidToken = await validateToken();
+        if (!isValidToken) {
+          return; // 토큰이 유효하지 않으면 함수 종료
         }
 
         let socket = io(
@@ -1605,6 +1761,11 @@
         let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
         let isBettingInProgress = false; // 베팅 처리 중 플래그
         let currentBets = {}; // 현재 베팅 상황 추적
+        
+        // 채팅 관련 변수들
+        let isChatOpen = false;
+        let unreadChatCount = 0;
+        let isHighlightMode = false;
 
         // DOM 요소 가져오기
         const chargeExchangeModal = document.getElementById("chargeExchangeModal");
@@ -1639,6 +1800,34 @@
         const actualAmountSpan = document.getElementById("actualAmount");
         const maxAmountButton = document.getElementById("maxAmount");
         const submitExchangeButton = document.getElementById("submitExchange");
+
+        // 환전 신청 완료 모달 관련 요소들
+        const exchangeRequestModal = document.getElementById("exchangeRequestModal");
+        const closeExchangeRequestModal = document.getElementById("closeExchangeRequestModal");
+        const modalRequestAmount = document.getElementById("modalRequestAmount");
+        const modalDeductedAmount = document.getElementById("modalDeductedAmount");
+        const modalCurrentBalance = document.getElementById("modalCurrentBalance");
+
+        // 채팅 관련 DOM 요소들
+        const chatFloatingButton = document.getElementById("chatFloatingButton");
+        const chatWindow = document.getElementById("chatWindow");
+        const chatOverlay = document.getElementById("chatOverlay");
+        const closeChatButton = document.getElementById("closeChatButton");
+        const chatMessages = document.getElementById("chatMessages");
+        const chatMessageInput = document.getElementById("chatMessageInput");
+        const sendChatButton = document.getElementById("sendChatButton");
+        const highlightChatButton = document.getElementById("highlightChatButton");
+        const chatCharCount = document.getElementById("chatCharCount");
+        const chatNotificationBadge = document.getElementById("chatNotificationBadge");
+        const chatNotificationCount = document.getElementById("chatNotificationCount");
+        const highlightModeIndicator = document.getElementById("highlightModeIndicator");
+        const adminMessageBar = document.getElementById("adminMessageBar");
+        const adminMessageBarContainer = document.getElementById("adminMessageBarContainer");
+        const adminMessageBarIcon = document.getElementById("adminMessageBarIcon");
+        const adminMessageBarSender = document.getElementById("adminMessageBarSender");
+        const adminMessageBarTime = document.getElementById("adminMessageBarTime");
+        const adminMessageBarContent = document.getElementById("adminMessageBarContent");
+        const closeAdminMessageBar = document.getElementById("closeAdminMessageBar");
 
         // 탭 전환 기능
         function switchTab(activeTab) {
@@ -1692,6 +1881,332 @@
         if (exchangeTab) exchangeTab.addEventListener("click", () => switchTab('exchange'));
         if (historyTab) historyTab.addEventListener("click", () => switchTab('history'));
         if (transferTab) transferTab.addEventListener("click", () => switchTab('transfer'));
+
+        // ===========================
+        // 채팅 관련 함수들
+        // ===========================
+        
+        // 채팅창 열기/닫기
+        function toggleChat() {
+          if (isChatOpen) {
+            closeChatWindow();
+          } else {
+            openChatWindow();
+          }
+        }
+        
+        function openChatWindow() {
+          if (chatWindow && chatOverlay && chatFloatingButton) {
+            chatOverlay.classList.remove("hidden");
+            chatWindow.classList.remove("hidden");
+            chatFloatingButton.style.opacity = "0.5";
+            isChatOpen = true;
+            
+            // 읽지 않은 메시지 카운트 초기화
+            unreadChatCount = 0;
+            updateChatNotificationBadge();
+            
+            // 스크롤을 맨 아래로
+            if (chatMessages) {
+              setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+              }, 100);
+            }
+            
+            // 채팅 기록 로드
+            loadChatHistory();
+          }
+        }
+        
+        function closeChatWindow() {
+          if (chatWindow && chatOverlay && chatFloatingButton) {
+            chatOverlay.classList.add("hidden");
+            chatWindow.classList.add("hidden");
+            chatFloatingButton.style.opacity = "1";
+            isChatOpen = false;
+          }
+        }
+        
+        // 채팅 기록 로드
+        async function loadChatHistory() {
+          try {
+            const res = await fetch("https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/chat/messages", {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+              const messages = await res.json();
+              displayChatMessages(messages);
+            }
+          } catch (err) {
+            console.error("채팅 기록 로드 오류:", err);
+          }
+        }
+        
+        // 채팅 메시지들 표시
+        function displayChatMessages(messages) {
+          if (!chatMessages) return;
+          
+          chatMessages.innerHTML = "";
+          messages.forEach(message => {
+            appendChatMessage(message);
+          });
+          
+          // 스크롤을 맨 아래로
+          setTimeout(() => {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }, 100);
+        }
+        
+        // 채팅 메시지 추가
+        function appendChatMessage(message) {
+          if (!chatMessages) return;
+          
+          const messageEl = document.createElement("div");
+          messageEl.className = `chat-message ${message.isAdmin ? 'admin-message' : 'user-message'} ${message.isHighlighted ? 'highlight-message' : ''}`;
+          
+          const timeStr = new Date(message.createdAt).toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const adminBadge = message.isAdmin ? '<span class="inline-block px-2 py-1 bg-yellow-500 text-black text-xs font-bold rounded-full mr-2">관리자</span>' : '';
+          const highlightBadge = '';
+          
+          let bgClass = 'bg-black bg-opacity-30 rounded-lg p-3';
+          if (message.isAdmin) {
+            bgClass = 'bg-yellow-500 bg-opacity-10 border border-yellow-500 rounded-lg p-3';
+          } else if (message.isHighlighted) {
+            bgClass = 'bg-black bg-opacity-30 border border-orange-400 rounded-lg p-3';
+          }
+          
+          
+          const messageText = message.isHighlighted ? ` ${message.message}` : message.message;
+          
+          messageEl.innerHTML = `
+            <div class="flex flex-col ${bgClass}">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center">
+                  ${adminBadge}
+                  ${highlightBadge}
+                  <span class="font-bold ${message.isAdmin ? 'text-yellow-500' : message.isHighlighted ? 'text-orange-300' : 'text-white'} text-sm">${message.username}</span>
+                </div>
+                <span class="text-gray-400 text-xs">${timeStr}</span>
+              </div>
+              <p class="text-white text-sm break-words">${escapeHtml(messageText)}</p>
+            </div>
+          `;
+          
+          chatMessages.appendChild(messageEl);
+        }
+        
+        // HTML 이스케이프 함수
+        function escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+        
+        // 채팅 메시지 전송
+        async function sendChatMessage() {
+          const message = chatMessageInput?.value.trim();
+          if (!message || message.length > 500) return;
+          
+          try {
+            if (isHighlightMode) {
+              // 강조 모드일 때 강조 메시지 전송
+              socket.emit("send_highlight_message", { message });
+              // 강조 모드 자동 해제
+              toggleHighlightMode();
+            } else {
+              // 일반 메시지 전송
+              socket.emit("send_chat_message", { message });
+            }
+            
+            // 입력창 초기화
+            if (chatMessageInput) {
+              chatMessageInput.value = "";
+              updateCharCount();
+            }
+          } catch (err) {
+            console.error("채팅 전송 오류:", err);
+            showNotification("채팅 전송에 실패했습니다.");
+          }
+        }
+        
+        // 강조 모드 토글
+        function toggleHighlightMode() {
+          isHighlightMode = !isHighlightMode;
+          
+          if (isHighlightMode) {
+            // 강조 모드 활성화
+            highlightChatButton.className = "px-3 py-2 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white rounded-lg hover:from-[#ff8c42] hover:to-[#ffa726] transition-all duration-300 font-bold text-sm";
+            highlightModeIndicator.classList.remove("hidden");
+            chatMessageInput.placeholder = "강조 메시지를 입력하세요...";
+            chatMessageInput.classList.add("border-orange-400");
+            chatMessageInput.classList.remove("border-[#b8860b]");
+          } else {
+            // 강조 모드 비활성화
+            highlightChatButton.className = "px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-all duration-300 font-bold text-sm";
+            highlightModeIndicator.classList.add("hidden");
+            chatMessageInput.placeholder = "메시지를 입력하세요...";
+            chatMessageInput.classList.remove("border-orange-400");
+            chatMessageInput.classList.add("border-[#b8860b]");
+          }
+        }
+        
+        // 문자 수 업데이트
+        function updateCharCount() {
+          if (chatMessageInput && chatCharCount) {
+            const count = chatMessageInput.value.length;
+            chatCharCount.textContent = count;
+            
+            if (count > 450) {
+              chatCharCount.style.color = "#ef4444"; // 빨간색
+            } else if (count > 350) {
+              chatCharCount.style.color = "#f59e0b"; // 주황색
+            } else {
+              chatCharCount.style.color = "#6b7280"; // 회색
+            }
+          }
+        }
+        
+        // 채팅 알림 뱃지 업데이트
+        function updateChatNotificationBadge() {
+          if (chatNotificationBadge && chatNotificationCount) {
+            if (unreadChatCount > 0 && !isChatOpen) {
+              chatNotificationBadge.classList.remove("hidden");
+              chatNotificationCount.textContent = unreadChatCount > 99 ? "99+" : unreadChatCount;
+            } else {
+              chatNotificationBadge.classList.add("hidden");
+            }
+          }
+        }
+        
+        // 소리 알림 (간단한 알림음)
+        function playNotificationSound() {
+          try {
+            // 간단한 알림음 효과
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+          } catch (err) {
+            // 오디오 재생 실패 시 무시
+          }
+        }
+        
+        // 메시지 알림 바 표시 (관리자 & 강조 메시지 공용)
+        function showMessageBar(message, isHighlight = false) {
+          if (adminMessageBar && adminMessageBarContent && adminMessageBarTime && adminMessageBarSender && adminMessageBarContainer && adminMessageBarIcon) {
+            // 메시지 내용 설정
+            adminMessageBarContent.textContent = message.message;
+            adminMessageBarTime.textContent = new Date(message.createdAt).toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            
+            if (isHighlight) {
+              // 강조 메시지 스타일 (관리자 메시지와 동일한 투명 배경)
+              adminMessageBarSender.textContent = message.username;
+              adminMessageBarSender.className = "text-orange-400 font-bold text-sm";
+              adminMessageBarContainer.className = "bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-orange-400";
+              adminMessageBarIcon.className = "w-5 h-5 text-orange-400 animate-pulse";
+              adminMessageBarIcon.innerHTML = '<path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0112.12 15.12z" clip-rule="evenodd"></path>';
+              
+              // 강조 메시지는 2초 후 숨기기
+              setTimeout(() => {
+                hideMessageBar();
+              }, 2000);
+            } else {
+              // 관리자 메시지 스타일
+              adminMessageBarSender.textContent = "관리자";
+              adminMessageBarSender.className = "text-yellow-400 font-bold text-sm";
+              adminMessageBarContainer.className = "bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-white border-opacity-20";
+              adminMessageBarIcon.className = "w-5 h-5 text-yellow-400";
+              adminMessageBarIcon.innerHTML = '<path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"></path>';
+              
+              // 관리자 메시지는 3초 후 숨기기
+              setTimeout(() => {
+                hideMessageBar();
+              }, 3000);
+            }
+            
+            // 슬라이드 다운 애니메이션으로 표시
+            adminMessageBar.classList.remove("-translate-y-full");
+            adminMessageBar.classList.add("translate-y-0");
+          }
+        }
+        
+        // 메시지 알림 바 숨기기
+        function hideMessageBar() {
+          if (adminMessageBar) {
+            adminMessageBar.classList.remove("translate-y-0");
+            adminMessageBar.classList.add("-translate-y-full");
+            
+            // 스타일을 기본 관리자 스타일로 초기화
+            setTimeout(() => {
+              if (adminMessageBarContainer && adminMessageBarSender && adminMessageBarIcon) {
+                adminMessageBarContainer.className = "bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-white border-opacity-20";
+                adminMessageBarSender.className = "text-yellow-400 font-bold text-sm";
+                adminMessageBarSender.textContent = "관리자";
+                adminMessageBarIcon.className = "w-5 h-5 text-yellow-400";
+                adminMessageBarIcon.innerHTML = '<path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"></path>';
+              }
+            }, 500); // 애니메이션 완료 후 초기화
+          }
+        }
+        
+        // 채팅 이벤트 리스너들
+        if (chatFloatingButton) {
+          chatFloatingButton.addEventListener("click", toggleChat);
+        }
+        
+        if (closeChatButton) {
+          closeChatButton.addEventListener("click", closeChatWindow);
+        }
+        
+        if (chatOverlay) {
+          chatOverlay.addEventListener("click", closeChatWindow);
+        }
+        
+        if (sendChatButton) {
+          sendChatButton.addEventListener("click", sendChatMessage);
+        }
+        
+        if (highlightChatButton) {
+          highlightChatButton.addEventListener("click", toggleHighlightMode);
+        }
+        
+        if (chatMessageInput) {
+          chatMessageInput.addEventListener("input", updateCharCount);
+          chatMessageInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendChatMessage();
+            }
+          });
+        }
+        
+        if (closeAdminMessageBar) {
+          closeAdminMessageBar.addEventListener("click", () => {
+            hideMessageBar();
+          });
+        }
+        
+        // 초기 문자 수 설정
+        updateCharCount();
 
         // 뽀찌 관련 변수 및 함수들
         let selectedUserId = null;
@@ -2192,6 +2707,30 @@
           setTimeout(() => {
             notification.classList.add("hidden");
           }, duration);
+        }
+
+        // 환전 신청 완료 모달 표시 함수
+        function showExchangeRequestModal(requestAmount, newBalance) {
+          if (modalRequestAmount) modalRequestAmount.textContent = `${requestAmount.toLocaleString()}원`;
+          if (modalDeductedAmount) modalDeductedAmount.textContent = `${requestAmount.toLocaleString()}원`;
+          if (modalCurrentBalance) modalCurrentBalance.textContent = `${newBalance.toLocaleString()}원`;
+          if (exchangeRequestModal) exchangeRequestModal.classList.remove("hidden");
+        }
+
+        // 환전 완료 모달 닫기 이벤트
+        if (closeExchangeRequestModal) {
+          closeExchangeRequestModal.addEventListener("click", () => {
+            if (exchangeRequestModal) exchangeRequestModal.classList.add("hidden");
+          });
+        }
+
+        // 환전 완료 모달 외부 클릭 시 닫기
+        if (exchangeRequestModal) {
+          exchangeRequestModal.addEventListener("click", (e) => {
+            if (e.target === exchangeRequestModal) {
+              exchangeRequestModal.classList.add("hidden");
+            }
+          });
         }
 
         // 승리 모달 표시 함수
@@ -2754,8 +3293,13 @@
 
         // 로그아웃 기능
         document.getElementById("logout")?.addEventListener("click", () => {
-          localStorage.removeItem("token");
-          window.location.href = "index.html";
+          if (confirm("정말 로그아웃 하시겠습니까?")) {
+            localStorage.removeItem("token");
+            showNotification("로그아웃되었습니다.");
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 1000);
+          }
         });
 
         // 베팅 종류 버튼 클릭 이벤트 수정: 선택 및 즉시 베팅
@@ -3327,6 +3871,149 @@
           showNotification(`${data.fromUsername}님의 ${data.amount.toLocaleString()}원 요청을 거절했습니다.`);
         });
 
+        // ===========================
+        // 채팅 관련 Socket 이벤트들
+        // ===========================
+        
+        // 새 채팅 메시지 수신
+        socket.on("new_chat_message", (message) => {
+          // 채팅창이 열려있으면 메시지 추가
+          if (isChatOpen) {
+            appendChatMessage(message);
+            // 스크롤을 맨 아래로
+            setTimeout(() => {
+              if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+              }
+            }, 100);
+          } else {
+            // 채팅창이 닫혀있으면 읽지 않은 메시지 카운트 증가
+            unreadChatCount++;
+            updateChatNotificationBadge();
+            
+            // 일반 메시지는 간단한 알림음만
+            if (!message.isAdmin) {
+              playNotificationSound();
+            }
+          }
+        });
+        
+        // Admin 메시지 특별 알림
+        socket.on("admin_message_notification", (data) => {
+          const message = data.message;
+          
+          // Admin 메시지 알림 바 표시
+          showMessageBar(message, false);
+          
+          // 특별한 알림음 (더 강한 소리)
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Admin 메시지는 더 긴 알림음
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+          } catch (err) {
+            // 오디오 재생 실패 시 무시
+          }
+          
+          // 채팅창이 닫혀있어도 Admin 메시지는 바로 추가
+          if (!isChatOpen && chatMessages) {
+            appendChatMessage(message);
+          }
+        });
+        
+        // 강조 메시지 특별 알림
+        socket.on("highlight_message_notification", (data) => {
+          const message = data.message;
+          
+          // 강조 메시지 알림 바 표시 (2초간)
+          showMessageBar(message, true);
+          
+          // 강조 메시지 알림음
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // 강조 메시지는 특별한 알림음
+            oscillator.frequency.setValueAtTime(900, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(900, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.12, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+          } catch (err) {
+            // 오디오 재생 실패 시 무시
+          }
+          
+          // 채팅창이 닫혀있어도 강조 메시지는 바로 추가 (관리자 메시지와 동일)
+          if (!isChatOpen && chatMessages) {
+            const highlightMessage = { 
+              ...message, 
+              isHighlight: true 
+            };
+            appendChatMessage(highlightMessage);
+          }
+        });
+        
+        // 일반 강조 메시지 수신 (채팅창에 표시용)
+        socket.on("highlight_message", (message) => {
+          // 채팅창이 열려있으면 강조 메시지 추가
+          if (isChatOpen) {
+            const highlightMessage = { 
+              ...message, 
+              isHighlight: true 
+            };
+            appendChatMessage(highlightMessage);
+            // 스크롤을 맨 아래로
+            setTimeout(() => {
+              if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+              }
+            }, 100);
+          } else {
+            // 채팅창이 닫혀있으면 읽지 않은 메시지 카운트 증가
+            unreadChatCount++;
+            updateChatNotificationBadge();
+          }
+        });
+        
+        // 채팅 메시지 삭제 (관리자가 삭제한 경우)
+        socket.on("chat_message_deleted", (data) => {
+          const messageElements = chatMessages?.querySelectorAll('.chat-message');
+          if (messageElements) {
+            messageElements.forEach(el => {
+              // 메시지 ID로 찾아서 삭제 (실제로는 데이터 속성을 추가해야 하지만 간단하게 구현)
+              // 여기서는 전체 채팅 기록을 다시 로드하는 방식으로 처리
+            });
+            // 채팅 기록 다시 로드
+            if (isChatOpen) {
+              loadChatHistory();
+            }
+          }
+        });
+        
+        // 채팅 참여 신호
+        socket.emit("join_chat");
+
         // 이전 통계 상태 저장 (변경 감지용)
         let previousStats = {};
         
@@ -3674,7 +4361,10 @@
               );
               const data = await response.json();
               if (response.ok) {
-                if (exchangeModal) exchangeModal.classList.add("hidden");
+                // 환전 완료 모달 표시
+                showExchangeRequestModal(amountValue, data.newBalance);
+                
+                if (chargeExchangeModal) chargeExchangeModal.classList.add("hidden");
                 if (exchangeAmountInput) exchangeAmountInput.value = "";
                 if (exchangePreview) exchangePreview.classList.add("hidden");
                 await fetchUserInfo();
