@@ -58,7 +58,7 @@
 
       .coin-button.active {
         transform: scale(0.95);
-        box-shadow: 0 0 15px rgba(255, 223, 0, 0.3);
+        box-shadow: 0 0 10px rgba(255, 223, 0, 0.3);
       }
 
       /* 헤더 스타일 */
@@ -552,14 +552,14 @@
 
       /* 금액 선택 영역 동그라미 버튼 스타일 유지 */
       .amount-button {
-        width: 50px; /* 모바일 기본 크기 */
-        height: 50px;
+        width: 46px; /* 모바일 기본 크기 (50px -> 46px) */
+        height: 46px;
         border-radius: 50%;
         background: linear-gradient(145deg, #374151, #4b5563);
         border: 2px solid #6b7280;
         color: #fbbf24;
         font-weight: 600;
-        font-size: 0.7rem; /* 모바일 기본 폰트 */
+        font-size: 0.65rem; /* 모바일 기본 폰트 (0.7rem -> 0.65rem) */
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
@@ -571,23 +571,23 @@
       /* 반응형 버튼 크기 */
       @media (min-width: 640px) {
         .amount-button {
-          width: 55px;
-          height: 55px;
-          font-size: 0.75rem;
+          width: 50px; /* 55px -> 50px */
+          height: 50px;
+          font-size: 0.7rem; /* 0.75rem -> 0.7rem */
         }
       }
       @media (min-width: 768px) {
         .amount-button {
-          width: 60px;
-          height: 60px;
-          font-size: 0.8rem;
+          width: 55px; /* 60px -> 55px */
+          height: 55px;
+          font-size: 0.75rem; /* 0.8rem -> 0.75rem */
         }
       }
       @media (min-width: 1024px) {
         .amount-button {
-          width: 65px;
-          height: 65px;
-          font-size: 0.85rem;
+          width: 60px; /* 65px -> 60px */
+          height: 60px;
+          font-size: 0.8rem; /* 0.85rem -> 0.8rem */
         }
       }
       .amount-button.active {
@@ -806,6 +806,48 @@
         </div>
       </div>
 
+   <!-- 금액 선택 영역 - 동그라미 스타일 -->
+   <div class="mb-2 lg:mb-1 lg:flex-shrink-0">
+    <div class="flex justify-center items-center gap-2 sm:gap-3 md:gap-4 px-4"> <!-- 반응형 간격 -->
+      <button data-amount="1000" class="amount-button coin-button relative">
+        1K
+      </button>
+      <button data-amount="5000" class="amount-button coin-button relative">
+        5K
+      </button>
+      <button
+        data-amount="10000"
+        class="amount-button coin-button relative"
+      >
+        10K
+      </button>
+      <button
+        data-amount="25000"
+        class="amount-button coin-button relative"
+      >
+        25K
+      </button>
+      <button
+        data-amount="50000"
+        class="amount-button coin-button relative"
+      >
+        50K
+      </button>
+      <button data-amount="100000" class="amount-button coin-button relative">
+        100K
+      </button>
+      <button data-amount="500000" class="amount-button coin-button relative">
+        500K
+      </button>
+      <button
+        id="undoBetButton"
+        class="golden-btn px-4 py-2 rounded-lg text-sm font-semibold ml-2"
+      >
+        <i class="fas fa-undo"></i>
+      </button>
+    </div>
+  </div>
+
 <!-- 최근 게임 결과 섹션 (이동된 위치) -->
 <div class="mb-2 lg:mb-1 lg:flex-shrink-0">
   <div
@@ -834,6 +876,7 @@
       </div>
     </div>
     
+
     <!-- 게임 결과 격자 -->
     <div id="recentResults" class="custom-scrollbar bg-gray-800 border border-gray-600 rounded" style="min-height: 120px;">
       <!-- 최근 결과가 여기에 추가됩니다 -->
@@ -841,47 +884,6 @@
   </div>
 </div>
 
-      <!-- 금액 선택 영역 - 동그라미 스타일 -->
-      <div class="mb-2 lg:mb-1 lg:flex-shrink-0">
-        <div class="flex justify-center items-center gap-2 sm:gap-3 md:gap-4 px-4"> <!-- 반응형 간격 -->
-          <button data-amount="1000" class="amount-button coin-button relative">
-            1K
-          </button>
-          <button data-amount="5000" class="amount-button coin-button relative">
-            5K
-          </button>
-          <button
-            data-amount="10000"
-            class="amount-button coin-button relative"
-          >
-            10K
-          </button>
-          <button
-            data-amount="25000"
-            class="amount-button coin-button relative"
-          >
-            25K
-          </button>
-          <button
-            data-amount="50000"
-            class="amount-button coin-button relative"
-          >
-            50K
-          </button>
-          <button data-amount="100000" class="amount-button coin-button relative">
-            100K
-          </button>
-          <button data-amount="500000" class="amount-button coin-button relative">
-            500K
-          </button>
-          <button
-            id="undoBetButton"
-            class="golden-btn px-4 py-2 rounded-lg text-sm font-semibold ml-2"
-          >
-            <i class="fas fa-undo"></i>
-          </button>
-        </div>
-      </div>
 
       <!-- 하단 버튼 레이아웃 새로 구성 -->
       <div class="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mt-2 lg:mt-1 mb-2 lg:mb-1 px-2 sm:px-4 lg:flex-shrink-0"> <!-- 반응형 간격과 패딩 추가 -->
@@ -3618,7 +3620,7 @@
           const timerEl = document.getElementById("timer");
           if (timerEl)
             timerEl.innerText =
-              "베팅이 시작되었습니다. 20초 내에 베팅해주세요.";
+              "베팅이 시작되었습니다. 16초 내에 베팅해주세요.";
           const bettingStartSound =
             document.getElementById("bettingStartSound");
           bettingStartSound
@@ -3633,7 +3635,7 @@
           }
           // 새 베팅 라운드 시작시에만 UI 선택 초기화 (마지막 베팅 정보는 유지)
           selectedChoice = null;
-          selectedChipAmount = 0;
+          // selectedChipAmount = 0; // 베팅 금액은 유지
           updateCurrentBet();
         });
 
@@ -3659,7 +3661,7 @@
                 "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
               timerElement.className = "text-red-500 font-bold";
               selectedChoice = null;
-              selectedChipAmount = 0;
+              // selectedChipAmount = 0; // 베팅 금액은 유지
               updateCurrentBet();
               return;
             }
@@ -3783,7 +3785,7 @@
               timerEl.className = "text-base font-semibold text-yellow-400";
             }
             // 베팅 정보 완전 초기화
-            selectedChipAmount = 0;
+            // selectedChipAmount = 0; // 베팅 금액은 유지
             selectedChoice = null;
             lastBetChoice = null;
             lastBetAmount = 0;

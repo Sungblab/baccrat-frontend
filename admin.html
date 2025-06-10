@@ -1720,17 +1720,17 @@
         if (!autoGameState.isActive) return;
 
         updateAutoStatus("다음 자동 베팅까지");
-        autoGameState.nextAutoStart = Date.now() + 4000; // 4초 후
+        autoGameState.nextAutoStart = Date.now() + 3000; // 3초 후
 
         // 카운트다운 표시
         startAutoCountdown();
 
-        // 4초 후 다음 베팅 시작
+        // 3초 후 다음 베팅 시작
         autoGameState.autoTimer = setTimeout(() => {
           if (autoGameState.isActive && !gameState.isBetting) {
             triggerBettingStart();
           }
-        }, 4000);
+        }, 3000);
       }
 
       // 자동 베팅 카운트다운 표시
