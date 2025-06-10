@@ -240,6 +240,75 @@
         }
       }
 
+      /* 패드 가로 화면 최적화 (768px ~ 1366px) */
+      @media (min-width: 768px) and (max-width: 1600px) and (orientation: landscape) {
+        /* 미니게임 컨테이너 높이 줄이기 */
+        #miniGameContainer {
+          height: 180px !important; /* 기본 288px에서 180px로 감소 */
+        }
+        
+        /* 베팅 영역 높이 줄이기 */
+        .betting-area {
+          height: 120px !important; /* 160px에서 120px로 감소 */
+          gap: 6px;
+        }
+        
+        /* 베팅 옵션 패딩 줄이기 */
+        .bet-option {
+          padding: 2px 3px !important; /* 4px 4px에서 2px 3px로 감소 */
+        }
+        
+        /* 최근 게임 결과 섹션 높이 줄이기 */
+        #recentResults {
+          min-height: 80px !important; /* 120px에서 80px로 감소 */
+        }
+        
+        /* 마진과 패딩 줄이기 */
+        .mt-2, .mb-2 {
+          margin-top: 0.25rem !important;
+          margin-bottom: 0.25rem !important;
+        }
+        
+        /* 금액 선택 버튼 영역 패딩 줄이기 */
+        .amount-button {
+          padding: 6px 8px !important; /* 기본 패딩에서 줄임 */
+          font-size: 0.75rem !important;
+        }
+        
+        /* 하단 버튼 그리드 패딩 줄이기 */
+        .grid.grid-cols-3 {
+          margin-top: 0.25rem !important;
+          margin-bottom: 0.25rem !important;
+          padding-left: 0.5rem !important;
+          padding-right: 0.5rem !important;
+        }
+        
+        /* 헤더 높이도 약간 줄이기 */
+        header {
+          height: 56px !important; /* 64px에서 56px로 감소 */
+        }
+        
+        main {
+          padding-top: 56px !important; /* 헤더 높이에 맞춰 조정 */
+        }
+        
+        /* 게임 상태 표시 영역 마진 줄이기 */
+        .mt-2.lg\\:mt-1 {
+          margin-top: 0.125rem !important;
+        }
+        
+        /* 미니게임 컨테이너 래퍼 마진도 줄이기 */
+        #miniGameContainerWrapper {
+          margin-top: 0.25rem !important;
+          margin-bottom: 0.25rem !important;
+        }
+        
+        /* 관리자/강조 메시지 바 위치 조정 */
+        #adminMessageBar {
+          top: 56px !important; /* 헤더 높이에 맞춰 조정 */
+        }
+      }
+
       .bet-option {
         position: relative;
         padding: 4px 4px; /* 패딩 조정 (8px 4px -> 4px 4px) */
@@ -1627,7 +1696,7 @@
 
 
     <!-- 메시지 알림 바 (관리자 & 강조 메시지 공용) -->
-    <div id="adminMessageBar" class="fixed top-[72px] left-0 right-0 z-40 transform -translate-y-full transition-all duration-500 ease-in-out">
+    <div id="adminMessageBar" class="fixed top-[72px] left-0 right-0 z-[60] transform -translate-y-full transition-all duration-500 ease-in-out hidden">
       <div id="adminMessageBarContainer" class="bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-white border-opacity-20">
         <div class="flex items-center p-3">
           <div class="flex-shrink-0 mr-3">
@@ -2143,7 +2212,8 @@
               }, 3000);
             }
             
-            // 슬라이드 다운 애니메이션으로 표시
+            // hidden 클래스 제거하고 슬라이드 다운 애니메이션으로 표시
+            adminMessageBar.classList.remove("hidden");
             adminMessageBar.classList.remove("-translate-y-full");
             adminMessageBar.classList.add("translate-y-0");
           }
@@ -2155,14 +2225,19 @@
             adminMessageBar.classList.remove("translate-y-0");
             adminMessageBar.classList.add("-translate-y-full");
             
-            // 스타일을 기본 관리자 스타일로 초기화
+            // 완전히 숨기기 위해 hidden 클래스도 추가
             setTimeout(() => {
-              if (adminMessageBarContainer && adminMessageBarSender && adminMessageBarIcon) {
+              adminMessageBar.classList.add("hidden");
+              
+              // 스타일을 기본 관리자 스타일로 초기화
+              if (adminMessageBarContainer && adminMessageBarSender && adminMessageBarIcon && adminMessageBarContent) {
                 adminMessageBarContainer.className = "bg-black bg-opacity-30 mx-4 rounded-lg backdrop-blur-md border border-white border-opacity-20";
                 adminMessageBarSender.className = "text-yellow-400 font-bold text-sm";
                 adminMessageBarSender.textContent = "관리자";
                 adminMessageBarIcon.className = "w-5 h-5 text-yellow-400";
                 adminMessageBarIcon.innerHTML = '<path fill-rule="evenodd" d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" clip-rule="evenodd"></path>';
+                adminMessageBarContent.textContent = ""; // 내용도 초기화
+                adminMessageBarTime.textContent = ""; // 시간도 초기화
               }
             }, 500); // 애니메이션 완료 후 초기화
           }
@@ -2207,6 +2282,9 @@
         
         // 초기 문자 수 설정
         updateCharCount();
+        
+        // 페이지 로드 시 관리자 메시지 바 숨기기 (초기 상태)
+        hideMessageBar();
 
         // 뽀찌 관련 변수 및 함수들
         let selectedUserId = null;
