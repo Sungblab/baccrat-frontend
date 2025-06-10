@@ -2178,6 +2178,8 @@
               player: "플레이어",
               banker: "뱅커",
               tie: "타이",
+              player_pair: "플레이어페어",
+              banker_pair: "뱅커페어",
             };
 
             const profitClass =
@@ -2190,7 +2192,9 @@
               </td>
               <td class="py-3 px-4">${bet.username}</td>
               <td class="py-3 px-4 text-center">
-                ${choiceKorean[bet.choice]} → ${choiceKorean[bet.gameResult]}
+                ${choiceKorean[bet.choice] || bet.choice} → ${
+              choiceKorean[bet.gameResult] || bet.gameResult
+            }
               </td>
               <td class="py-3 px-4 text-right">
                 <span class="text-yellow-400">${bet.amount} 원</span>

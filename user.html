@@ -3272,7 +3272,7 @@
           if (winRateEl) winRateEl.textContent = `승률: ${winRateValue}%`;
 
           history
-            .slice(-10)
+            .slice()
             .reverse()
             .forEach((record) => {
               const card = document.createElement("div");
