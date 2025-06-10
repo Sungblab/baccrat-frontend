@@ -2892,43 +2892,131 @@
         }
       }
 
-      // adjustCoins 함수 수정 (실시간 업데이트 개선)
+      // adjustCoins 함수 수정 (모달 사용으로 개선)
       async function adjustCoins(userId) {
-        const amount = prompt("조정할 금액(원)을 입력하세요 (음수 가능):");
-        if (amount === null) return;
+        return new Promise((resolve) => {
+          // 모달 생성
+          const modal = document.createElement("div");
+          modal.className =
+            "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+          modal.innerHTML = `
+            <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+              <h3 class="text-lg font-semibold text-white mb-4">잔액 조정</h3>
+              <div class="mb-4">
+                <label class="block text-gray-300 text-sm font-medium mb-2">
+                  조정할 금액(원)을 입력하세요 (음수 가능):
+                </label>
+                <input 
+                  type="number" 
+                  id="adjustmentAmount" 
+                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="예: 10000 또는 -5000"
+                  step="1000"
+                />
+              </div>
+              <div class="flex space-x-3">
+                <button 
+                  id="confirmAdjust" 
+                  class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                >
+                  확인
+                </button>
+                <button 
+                  id="cancelAdjust" 
+                  class="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          `;
 
-        const adjustment = parseInt(amount);
-        if (isNaN(adjustment)) {
-          showToast("유효한 숫자를 입력해주세요.");
-          return;
-        }
+          document.body.appendChild(modal);
 
-        try {
-          const res = await fetch(
-            `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/adjust-coins`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ adjustment }),
+          const input = modal.querySelector("#adjustmentAmount");
+          const confirmBtn = modal.querySelector("#confirmAdjust");
+          const cancelBtn = modal.querySelector("#cancelAdjust");
+
+          // 입력 필드에 포커스
+          input.focus();
+
+          // Enter 키로 확인
+          input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              confirmBtn.click();
             }
-          );
+          });
 
-          const data = await res.json();
-          showToast(data.message);
-          if (res.ok) {
-            // 실시간 업데이트: 특정 사용자 잔액만 업데이트
-            if (data.newBalance !== undefined) {
-              updateUserBalanceInTable(userId, data.newBalance);
-            } else {
-              fetchUsers(); // 실시간 업데이트가 안 되면 전체 새로고침
+          // 확인 버튼 클릭
+          confirmBtn.addEventListener("click", async () => {
+            const amount = input.value.trim();
+            if (!amount) {
+              showToast("금액을 입력해주세요.", "error");
+              return;
             }
-          }
-        } catch (err) {
-          showToast("서버 에러가 발생했습니다.");
-        }
+
+            const adjustment = parseInt(amount);
+            if (isNaN(adjustment)) {
+              showToast("유효한 숫자를 입력해주세요.", "error");
+              return;
+            }
+
+            try {
+              const res = await fetch(
+                `https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/users/${userId}/adjust-coins`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ adjustment }),
+                }
+              );
+
+              const data = await res.json();
+              showToast(data.message);
+              if (res.ok) {
+                // 실시간 업데이트: 특정 사용자 잔액만 업데이트
+                if (data.newBalance !== undefined) {
+                  updateUserBalanceInTable(userId, data.newBalance);
+                } else {
+                  fetchUsers(); // 실시간 업데이트가 안 되면 전체 새로고침
+                }
+              }
+            } catch (err) {
+              showToast("서버 에러가 발생했습니다.", "error");
+            }
+
+            // 모달 제거
+            document.body.removeChild(modal);
+            resolve();
+          });
+
+          // 취소 버튼 클릭
+          cancelBtn.addEventListener("click", () => {
+            document.body.removeChild(modal);
+            resolve();
+          });
+
+          // 모달 외부 클릭시 닫기
+          modal.addEventListener("click", (e) => {
+            if (e.target === modal) {
+              document.body.removeChild(modal);
+              resolve();
+            }
+          });
+
+          // ESC 키로 닫기
+          const handleEscape = (e) => {
+            if (e.key === "Escape") {
+              document.removeEventListener("keydown", handleEscape);
+              document.body.removeChild(modal);
+              resolve();
+            }
+          };
+          document.addEventListener("keydown", handleEscape);
+        });
       }
 
       // 게임 기록 초기화 함수 추가
