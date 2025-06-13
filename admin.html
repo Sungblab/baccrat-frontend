@@ -506,6 +506,46 @@
             </button>
           </div>
 
+          <!-- 게임 결과 표시 섹션 -->
+          <div
+            id="gameResultDisplay"
+            class="mb-4 bg-gray-900 p-3 rounded-lg border border-gray-700"
+          >
+            <h4 class="text-base font-semibold mb-2 text-gray-300">
+              게임 결과
+            </h4>
+            <div class="grid grid-cols-1 gap-2">
+              <div>
+                <h5 class="text-sm font-semibold mb-1 text-blue-400">
+                  플레이어
+                </h5>
+                <div id="playerCards" class="mb-1 text-gray-500 text-sm">
+                  카드가 없습니다
+                </div>
+                <div id="playerScore" class="text-sm font-bold"></div>
+              </div>
+              <div>
+                <h5 class="text-sm font-semibold mb-1 text-red-400">뱅커</h5>
+                <div id="bankerCards" class="mb-1 text-gray-500 text-sm">
+                  카드가 없습니다
+                </div>
+                <div id="bankerScore" class="text-sm font-bold"></div>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div
+                id="gameWinner"
+                class="text-base font-bold text-center mb-1 text-gray-500"
+              >
+                게임 결과 대기 중...
+              </div>
+              <div
+                id="pairResults"
+                class="text-center text-sm text-gray-400"
+              ></div>
+            </div>
+          </div>
+
           <!-- 결과 패턴 -->
           <div class="bg-gray-900 p-3 rounded-lg mb-4 border border-gray-700">
             <div class="flex justify-between items-center mb-2">
@@ -545,46 +585,6 @@
                   <!-- 게임 기록이 여기 추가 됩니다 -->
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <!-- 게임 결과 표시 섹션 -->
-          <div
-            id="gameResultDisplay"
-            class="mb-4 bg-gray-900 p-3 rounded-lg border border-gray-700"
-          >
-            <h4 class="text-base font-semibold mb-2 text-gray-300">
-              게임 결과
-            </h4>
-            <div class="grid grid-cols-1 gap-2">
-              <div>
-                <h5 class="text-sm font-semibold mb-1 text-blue-400">
-                  플레이어
-                </h5>
-                <div id="playerCards" class="mb-1 text-gray-500 text-sm">
-                  카드가 없습니다
-                </div>
-                <div id="playerScore" class="text-sm font-bold"></div>
-              </div>
-              <div>
-                <h5 class="text-sm font-semibold mb-1 text-red-400">뱅커</h5>
-                <div id="bankerCards" class="mb-1 text-gray-500 text-sm">
-                  카드가 없습니다
-                </div>
-                <div id="bankerScore" class="text-sm font-bold"></div>
-              </div>
-            </div>
-            <div class="mt-2">
-              <div
-                id="gameWinner"
-                class="text-base font-bold text-center mb-1 text-gray-500"
-              >
-                게임 결과 대기 중...
-              </div>
-              <div
-                id="pairResults"
-                class="text-center text-sm text-gray-400"
-              ></div>
             </div>
           </div>
         </div>
