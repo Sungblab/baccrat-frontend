@@ -2277,7 +2277,6 @@
 
         // 소켓 연결 해제 시 서버에 알림
         socket.on("disconnect", () => {
-          console.log("[AUTO_GAME] 소켓 연결이 해제되었습니다.");
           hasJoinedGame = false; // 연결 해제 시 상태 초기화
         });
 
@@ -2310,11 +2309,6 @@
 
         // 자동 게임 상태 수신
         socket.on("auto_game_status", (data) => {
-          console.log(
-            `[AUTO_GAME] 자동 게임 상태: ${
-              data.isActive ? "활성" : "비활성"
-            }, 접속자 수: ${data.connectedUsers}`
-          );
           // 필요시 UI에 자동 게임 상태 표시
         });
 
@@ -4646,15 +4640,6 @@
             lastBetChoice = selectedChoice;
             lastBetAmount = selectedChipAmount;
 
-            // 베팅 전 디버깅 로그 추가
-            console.log("==== 베팅 요청 전 정보 ====");
-            console.log("선택한 베팅:", selectedChoice);
-            console.log("베팅 금액:", selectedChipAmount);
-            console.log(
-              "현재 표시된 잔액:",
-              document.getElementById("coinBalance")?.textContent
-            );
-
             socket.emit("place_bet", {
               choice: selectedChoice,
               amount: selectedChipAmount,
@@ -4765,10 +4750,6 @@
 
         // Socket.IO 이벤트 핸들러들
         socket.on("bet_success", (data) => {
-          // 베팅 성공 디버깅 로그
-          console.log("==== 베팅 성공 응답 ====");
-          console.log("응답 데이터:", data);
-
           // 베팅 처리 완료
           isBettingInProgress = false;
 
@@ -4812,9 +4793,6 @@
         });
 
         socket.on("error", (message) => {
-          // 에러 디버깅 로그
-          console.log("==== 베팅 에러 응답 ====");
-          console.log("에러 메시지:", message);
           console.log(
             "현재 표시된 잔액:",
             document.getElementById("coinBalance")?.textContent
@@ -5100,8 +5078,6 @@
 
         // 승리 알림 수신
         socket.on("you_won", (data) => {
-          console.log("승리 알림 받음:", data);
-
           // 거의 바로 승리 메시지 표시
           setTimeout(() => {
             showWinMessage(data.winnings);
@@ -6469,7 +6445,6 @@
           // Scene 인스턴스를 게임의 'ready' 이벤트 발생 시점에 가져옵니다.
           // 이렇게 하면 Scene Manager가 Scene을 처리할 충분한 시간을 갖게 됩니다.
           miniGame.events.on("ready", () => {
-            // console.log("Phaser Game is READY.");
             if (miniGame && miniGame.scene) {
               baccaratSceneMini = miniGame.scene.getScene("BaccaratSceneMini");
               if (!baccaratSceneMini) {
@@ -6477,8 +6452,6 @@
                   "BaccaratSceneMini 인스턴스를 game READY 이벤트 후에도 가져올 수 없습니다. 소켓 이벤트 연동에 문제가 있을 수 있습니다."
                 );
               } else {
-                // console.log("BaccaratSceneMini instance obtained after game READY event.");
-                // BaccaratSceneMini의 create() 메소드에서 필요한 초기화 (예: clearAllCardsAndText)를 수행합니다.
               }
             } else {
               console.error(
@@ -6486,12 +6459,6 @@
               );
             }
           });
-
-          // 즉시 baccaratSceneMini를 확인하는 로직은 제거합니다.
-          // if (!baccaratSceneMini) {
-          //      console.error("BaccaratSceneMini 인스턴스를 가져올 수 없습니다. 소켓 이벤트가 미니게임과 정상적으로 연동되지 않을 수 있습니다.");
-          // }
-          // 참고: BaccaratSceneMini의 create() 메소드에서 이미 clearAllCardsAndText()를 호출합니다.
         }
 
         // 창 크기 변경 시 게임 리사이즈 및 반응형 설정 재적용
@@ -6514,11 +6481,9 @@
 
         // 기존 카드 표시 이벤트 (game.html 호환)
         socket.on("display_card_on_user_html", (data) => {
-          // console.log("[user.html] Received display_card_on_user_html from server:", data);
           if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
             const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
             if (isNewHand && cardIndex === 0) {
-              // console.log(`[MiniGame] New hand for ${target}, clearing previous cards.`);
               baccaratSceneMini.clearCards(
                 target === "player" ? "player" : "banker"
               ); // 해당 타겟의 카드만 클리어
@@ -6555,7 +6520,6 @@
         });
 
         socket.on("clear_cards_display_on_user_html", () => {
-          // console.log("[user.html] Received clear_cards_display_on_user_html from server");
           if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
             baccaratSceneMini.clearAllCardsAndText();
           }

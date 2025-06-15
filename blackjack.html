@@ -614,7 +614,6 @@
         );
 
         socket.on("connect", () => {
-          console.log("서버에 연결되었습니다.");
           socket.emit("authenticate", token);
         });
 
@@ -625,7 +624,6 @@
         // 인증 결과
         socket.on("authentication_result", (data) => {
           if (data.success) {
-            console.log("인증 성공:", data.user);
             updateBalance(data.user.balance);
             updateGameSession(data.session);
             showNotification("게임에 접속했습니다.", "success");
@@ -654,8 +652,6 @@
             const betBtnText = document.getElementById("betBtnText");
             placeBetBtn.disabled = true;
             betBtnText.textContent = "베팅 완료";
-
-            console.log("베팅 완료 - 게임 시작 버튼 활성화됨");
           } else {
             showNotification(data.message, "error");
           }
@@ -765,7 +761,6 @@
           setTimeout(() => {
             if (gameSession && gameSession.status === "waiting") {
               updateBetDisplay(); // 베팅 버튼 상태 재확인
-              console.log("게임 완료 후 베팅 상태 재설정");
             }
           }, 3000);
         });
@@ -805,9 +800,6 @@
             selectedChipAmount = chipAmount; // 마지막 선택된 칩 금액 저장
             updateChipSelection();
             updateBetDisplay();
-            console.log(
-              `칩 추가: +${chipAmount.toLocaleString()}, 총 베팅액: ${currentBetAmount.toLocaleString()}`
-            );
           });
         });
 
@@ -815,7 +807,6 @@
         document.getElementById("clearBetBtn").addEventListener("click", () => {
           currentBetAmount = 0;
           updateBetDisplay();
-          console.log("베팅 금액 초기화됨");
         });
 
         // 베팅
@@ -906,21 +897,14 @@
           betBtnText.textContent = "베팅";
           betBtn.disabled = true; // 베팅액이 없으면 비활성화
           startBtn.disabled = true;
-          console.log("베팅 대기 상태");
         } else if (serverBet === 0 && currentBetAmount > 0) {
           betBtnText.textContent = "베팅";
           betBtn.disabled = false; // 누적 베팅액이 있으면 활성화
           startBtn.disabled = true;
-          console.log(
-            `누적 베팅액: ₩${currentBetAmount.toLocaleString()} - 베팅 가능`
-          );
         } else if (serverBet > 0) {
           betBtnText.textContent = "완료";
           betBtn.disabled = true;
           startBtn.disabled = false; // 서버에 베팅이 있으면 딜 버튼 활성화
-          console.log(
-            `서버 베팅 금액: ₩${serverBet.toLocaleString()} - 딜 가능`
-          );
         }
       }
 
@@ -969,7 +953,6 @@
           return;
         }
 
-        console.log(`베팅 시도: ₩${currentBetAmount.toLocaleString()}`);
         showLoading();
         socket.emit("place_bet", {
           amount: currentBetAmount,
@@ -1129,15 +1112,12 @@
           if (gameSession && gameSession.status === "waiting") {
             isGameActive = false; // 확실히 비활성화
             updateBetDisplay(); // 베팅 버튼 상태 재설정
-            console.log("게임 종료 후 베팅 상태로 전환 완료");
           }
         }, 3000);
       }
 
       // 새 게임
       function newGame() {
-        console.log("새 게임 시작");
-
         // 상태 초기화
         isGameActive = false;
         isDealerTurn = false;
@@ -1156,7 +1136,6 @@
         // 베팅 상태 재설정
         setTimeout(() => {
           updateBetDisplay();
-          console.log("새 게임 초기화 완료");
         }, 500);
       }
 
@@ -1630,8 +1609,6 @@
         if (blackjackScene) {
           blackjackScene.clearAllCardsAndText();
         }
-
-        console.log("게임 UI 초기화 완료");
       }
 
       // 알림 표시
@@ -2047,15 +2024,11 @@
         blackjackGame = new Phaser.Game(config);
 
         blackjackGame.events.on("ready", () => {
-          console.log("Blackjack Phaser Game is READY.");
           if (blackjackGame && blackjackGame.scene) {
             blackjackScene = blackjackGame.scene.getScene("BlackjackScene");
             if (!blackjackScene) {
               console.error("BlackjackScene 인스턴스를 가져올 수 없습니다.");
             } else {
-              console.log(
-                "BlackjackScene instance obtained after game READY event."
-              );
             }
           }
         });
@@ -2077,11 +2050,8 @@
       // 초기 카드 렌더링 (Phaser 버전)
       function renderInitialCards() {
         if (!gameSession || !blackjackScene || !blackjackScene.sys.isActive()) {
-          console.log("게임 세션이나 Phaser Scene이 준비되지 않음");
           return;
         }
-
-        console.log("초기 카드 렌더링 시작:", gameSession);
 
         // 기존 카드 제거
         blackjackScene.clearAllCardsAndText();
@@ -2091,7 +2061,6 @@
           gameSession.playerHand.forEach((card, index) => {
             if (card && card.value && card.suit) {
               setTimeout(() => {
-                console.log(`플레이어 카드 ${index} 추가:`, card);
                 blackjackScene.addCard("player", card);
               }, index * 300);
             } else {
@@ -2111,15 +2080,12 @@
               setTimeout(() => {
                 if (index === 0 && card.value !== "hidden") {
                   // 첫 번째 카드는 숨김 (hidden이 아닌 경우)
-                  console.log(`딜러 카드 ${index} 추가 (숨김):`, card);
                   blackjackScene.addCard("dealer", card, true);
                 } else if (card.value !== "hidden") {
                   // 일반 카드
-                  console.log(`딜러 카드 ${index} 추가:`, card);
                   blackjackScene.addCard("dealer", card);
                 } else {
                   // hidden 카드는 뒷면으로 표시
-                  console.log(`딜러 카드 ${index} 추가 (hidden):`, card);
                   blackjackScene.addCard(
                     "dealer",
                     { value: "A", suit: "S" },
@@ -2151,7 +2117,6 @@
           return;
         }
 
-        console.log(`카드 추가: ${handType}`, card);
         blackjackScene.addCard(handType, card);
       }
 
