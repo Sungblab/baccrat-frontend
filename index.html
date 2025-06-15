@@ -9,143 +9,629 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
     <style>
       body {
         background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
         font-family: "Noto Serif KR", serif;
       }
-      .login-container {
+
+      .golden-text {
+        background: linear-gradient(45deg, #b8860b, #ffd700, #daa520);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes shimmer {
+        0% {
+          filter: brightness(1);
+        }
+        100% {
+          filter: brightness(1.3);
+        }
+      }
+
+      .game-card {
         background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
         border: 1px solid #b8860b;
-        box-shadow: 0 0 20px rgba(184, 134, 11, 0.2);
-      }
-      .input-field {
-        background: rgba(0, 0, 0, 0.5);
-        border: 1px solid #b8860b;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(184, 134, 11, 0.2);
       }
-      .input-field:focus {
+
+      .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
         border-color: #ffd700;
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
       }
-      .login-btn {
+
+      .game-btn {
         background: linear-gradient(to right, #b8860b, #daa520);
         transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
       }
-      .login-btn:hover {
+
+      .game-btn:hover {
         background: linear-gradient(to right, #daa520, #ffd700);
         transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
       }
-      .notice-link {
-        background: transparent;
-        border: 1px solid #b8860b;
-        color: #b8860b;
-        transition: all 0.3s ease;
+
+      .floating-animation {
+        animation: floating 3s ease-in-out infinite;
       }
-      .notice-link:hover {
-        background: #b8860b;
-        color: white;
+
+      @keyframes floating {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      /* 햄버거 메뉴 스타일 */
+      .mobile-menu {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .mobile-menu.active {
+        transform: translateX(0);
+      }
+
+      .hamburger {
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        padding: 4px;
+      }
+
+      .hamburger span {
+        width: 20px;
+        height: 2px;
+        background-color: #ffd700;
+        margin: 2px 0;
+        transition: 0.3s;
+      }
+
+      .hamburger.active span:nth-child(1) {
+        transform: rotate(-45deg) translate(-4px, 4px);
+      }
+
+      .hamburger.active span:nth-child(2) {
+        opacity: 0;
+      }
+
+      .hamburger.active span:nth-child(3) {
+        transform: rotate(45deg) translate(-4px, -4px);
+      }
+
+      /* 오버레이 */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+      }
+
+      .overlay.active {
+        opacity: 1;
+        visibility: visible;
       }
     </style>
   </head>
-  <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-sm sm:max-w-md login-container p-8 rounded-lg">
-      <h2
-        class="text-2xl sm:text-3xl font-bold mb-8 text-center text-yellow-500"
-        style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5)"
-      >
-        GOLDEN CASINO
-      </h2>
+  <body class="min-h-screen flex flex-col">
+    <!-- 오버레이 -->
+    <div id="overlay" class="overlay" onclick="closeMobileMenu()"></div>
 
-      <form id="loginForm">
-        <div class="mb-6">
-          <label class="block text-yellow-500 mb-2 font-medium">이름</label>
-          <input
-            type="text"
-            id="username"
-            required
-            class="input-field w-full px-4 py-3 rounded-lg text-white"
-          />
+    <!-- 헤더 -->
+    <header
+      class="py-3 px-2 border-b border-yellow-600 bg-black bg-opacity-50 relative z-50"
+    >
+      <!-- 모바일 레이아웃 -->
+      <div class="flex justify-between items-center md:hidden">
+        <!-- 모바일 햄버거 메뉴 -->
+        <div>
+          <div id="hamburger" class="hamburger" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
         </div>
-        <div class="mb-8">
-          <label class="block text-yellow-500 mb-2 font-medium">비밀번호</label>
-          <input
-            type="password"
-            id="password"
-            required
-            class="input-field w-full px-4 py-3 rounded-lg text-white"
-          />
+
+        <!-- 타이틀 (모바일: 중앙) -->
+        <h1 class="text-xl font-bold golden-text">Golden Casino</h1>
+
+        <!-- 모바일에서 타이틀 중앙 정렬을 위한 더미 요소 -->
+        <div class="w-8"></div>
+      </div>
+
+      <!-- PC 레이아웃: 그리드로 3분할 -->
+      <div class="hidden md:grid md:grid-cols-3 md:gap-4 md:items-center">
+        <!-- 왼쪽: 타이틀 -->
+        <div class="justify-self-start">
+          <h1 class="text-2xl font-bold golden-text">Golden Casino</h1>
         </div>
-        <button
-          type="submit"
-          class="login-btn w-full py-3 rounded-lg text-white text-lg font-bold shadow-lg"
-        >
-          로그인
-        </button>
-      </form>
-      <div class="mt-6 text-center text-gray-400">
-        <p>
-          계정이 없으신가요?
-          <a
-            href="register.html"
-            class="text-yellow-500 hover:text-yellow-400 font-medium"
-            >회원가입</a
+
+        <!-- 가운데: 게임 메뉴 -->
+        <div class="justify-self-center">
+          <nav class="flex space-x-6">
+            <button
+              onclick="startBaccarat()"
+              class="text-yellow-500 hover:text-yellow-300 transition font-semibold text-lg"
+            >
+              Baccarat
+            </button>
+            <button
+              onclick="startBlackjack()"
+              class="text-yellow-500 hover:text-yellow-300 transition font-semibold text-lg"
+            >
+              Blackjack
+            </button>
+          </nav>
+        </div>
+
+        <!-- 오른쪽: 사용자 메뉴 -->
+        <div class="justify-self-end">
+          <div class="flex space-x-2">
+            <a
+              href="login.html"
+              class="px-3 py-2 border border-yellow-600 text-yellow-500 rounded hover:bg-yellow-600 hover:text-black transition"
+            >
+              로그인
+            </a>
+            <a
+              href="register.html"
+              class="px-3 py-2 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black rounded font-bold hover:from-yellow-500 hover:to-yellow-400 transition"
+            >
+              회원가입
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 모바일 사이드 메뉴 -->
+    <div
+      id="mobileMenu"
+      class="mobile-menu fixed top-0 left-0 w-64 h-full bg-gradient-to-b from-gray-900 to-black border-r border-yellow-600 z-50 md:hidden"
+    >
+      <div class="p-4">
+        <!-- 메뉴 헤더 -->
+        <div class="flex justify-between items-center mb-8 pt-2">
+          <h2 class="text-xl font-bold golden-text">GOLDEN CASINO</h2>
+          <button onclick="closeMobileMenu()" class="text-yellow-500 text-xl">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- 로그인 상태 표시 -->
+        <div id="mobileUserInfo" class="mb-6 hidden">
+          <div class="flex items-center space-x-2 text-yellow-500 mb-3">
+            <i class="fas fa-user"></i>
+            <span id="mobileUsername"></span>
+          </div>
+        </div>
+
+        <!-- 메뉴 항목들 -->
+        <nav class="space-y-4">
+          <div id="mobileAuthButtons">
+            <a
+              href="login.html"
+              class="block w-full py-3 px-4 border border-yellow-600 text-yellow-500 rounded hover:bg-yellow-600 hover:text-black transition text-center"
+            >
+              <i class="fas fa-sign-in-alt mr-2"></i>
+              로그인
+            </a>
+            <a
+              href="register.html"
+              class="block w-full py-3 px-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black rounded font-bold hover:from-yellow-500 hover:to-yellow-400 transition text-center mt-3"
+            >
+              <i class="fas fa-user-plus mr-2"></i>
+              회원가입
+            </a>
+          </div>
+
+          <div id="mobileLogoutButton" class="hidden">
+            <button
+              onclick="logout()"
+              class="block w-full py-3 px-4 border border-yellow-600 text-yellow-500 rounded hover:bg-yellow-600 hover:text-black transition text-center"
+            >
+              <i class="fas fa-sign-out-alt mr-2"></i>
+              로그아웃
+            </button>
+          </div>
+
+          <hr class="border-yellow-600 opacity-30" />
+
+          <button
+            onclick="startBaccarat(); closeMobileMenu();"
+            class="block w-full py-3 px-4 text-gray-300 hover:text-yellow-500 transition text-left"
           >
-        </p>
-        <div class="mt-4">
-          <a
-            href="notice.html"
-            class="notice-link inline-block w-full py-2 rounded-lg text-sm font-bold"
+            Baccarat
+          </button>
+
+          <button
+            onclick="startBlackjack(); closeMobileMenu();"
+            class="block w-full py-3 px-4 text-gray-300 hover:text-yellow-500 transition text-left"
           >
-            게임 이용 안내 및 유의사항
-          </a>
-        </div>
+            Blackjack
+          </button>
+        </nav>
       </div>
     </div>
 
-    <script>
-      document
-        .getElementById("loginForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const username = document.getElementById("username").value.trim();
-          const password = document.getElementById("password").value.trim();
+    <!-- 메인 게임 선택 섹션 -->
+    <main class="flex-1 py-6 px-2 flex flex-col justify-center">
+      <div class="container mx-auto max-w-4xl">
+        <!-- 타이틀 -->
+        <div class="text-center mb-8">
+          <h1 class="text-2xl md:text-4xl font-bold golden-text mb-3">
+            게임 선택
+          </h1>
+          <p class="text-base md:text-lg text-gray-300">
+            원하시는 게임을 선택해주세요
+          </p>
+        </div>
 
-          if (!username || !password) {
-            alert("모든 필드를 입력해주세요.");
+        <!-- 게임 카드들 -->
+        <div class="grid md:grid-cols-2 gap-4 md:gap-6 px-2">
+          <!-- 바카라 게임 -->
+          <div class="game-card p-4 md:p-6 rounded-xl text-center">
+            <div
+              class="text-4xl md:text-5xl text-yellow-500 mb-4 flex justify-center space-x-2"
+            >
+              <img
+                src="https://www.high1.com/site/casino/images/contents/cst_1765_img.jpg"
+                alt="바카라"
+              />
+            </div>
+            <h2 class="text-xl md:text-2xl font-bold text-yellow-500 mb-3">
+              Baccarat
+            </h2>
+            <p class="text-gray-300 mb-4 text-sm md:text-base leading-relaxed">
+              클래식 바카라 게임<br />
+              Player vs Banker<br />
+              실시간 멀티플레이어
+            </p>
+            <div class="space-y-2">
+              <button
+                onclick="startBaccarat()"
+                class="game-btn w-full py-3 rounded-lg text-white font-bold shadow-lg text-sm md:text-base"
+              >
+                <i class="fas fa-play mr-2"></i>
+                게임 시작하기
+              </button>
+              <button
+                onclick="window.open('bac-notice.html', '_blank')"
+                class="w-full py-2 border border-yellow-600 text-yellow-500 rounded-lg hover:bg-yellow-600 hover:text-black transition text-sm md:text-base font-semibold"
+              >
+                <i class="fas fa-info-circle mr-2"></i>
+                더 알아보기
+              </button>
+            </div>
+          </div>
+
+          <!-- 블랙잭 게임 -->
+          <div class="game-card p-4 md:p-6 rounded-xl text-center">
+            <div
+              class="text-4xl md:text-5xl text-yellow-500 mb-4 flex justify-center space-x-2"
+            >
+              <img
+                src="https://www.high1.com/site/casino/images/contents/cst_1764_img.jpg"
+                alt="블랙잭"
+              />
+            </div>
+            <h2 class="text-xl md:text-2xl font-bold text-yellow-500 mb-3">
+              Blackjack
+            </h2>
+            <p class="text-gray-300 mb-4 text-sm md:text-base leading-relaxed">
+              21에 가장 가까운 숫자<br />
+              딜러와의 승부<br />
+              전략적 카드 게임
+            </p>
+            <div class="space-y-2">
+              <button
+                onclick="startBlackjack()"
+                class="game-btn w-full py-3 rounded-lg text-white font-bold shadow-lg text-sm md:text-base"
+              >
+                <i class="fas fa-play mr-2"></i>
+                게임 시작하기
+              </button>
+              <button
+                onclick="window.open('black-notice.html', '_blank')"
+                class="w-full py-2 border border-yellow-600 text-yellow-500 rounded-lg hover:bg-yellow-600 hover:text-black transition text-sm md:text-base font-semibold"
+              >
+                <i class="fas fa-info-circle mr-2"></i>
+                더 알아보기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="py-4 px-2 border-t border-yellow-600 bg-black bg-opacity-50">
+      <div class="container mx-auto text-center">
+        <div
+          class="flex flex-col md:flex-row justify-center items-center space-y-2 md:space-y-0 md:space-x-4 text-gray-400 text-xs"
+        ></div>
+        <p class="text-xs text-gray-500 mt-5 mb-5">
+          © 2025 Golden Casino. All rights reserved.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // 모바일 메뉴 토글
+      function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const hamburger = document.getElementById("hamburger");
+        const overlay = document.getElementById("overlay");
+
+        menu.classList.toggle("active");
+        hamburger.classList.toggle("active");
+        overlay.classList.toggle("active");
+
+        // 바디 스크롤 제어
+        if (menu.classList.contains("active")) {
+          document.body.style.overflow = "hidden";
+        } else {
+          document.body.style.overflow = "";
+        }
+      }
+
+      // 모바일 메뉴 닫기
+      function closeMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        const hamburger = document.getElementById("hamburger");
+        const overlay = document.getElementById("overlay");
+
+        menu.classList.remove("active");
+        hamburger.classList.remove("active");
+        overlay.classList.remove("active");
+        document.body.style.overflow = "";
+      }
+
+      // 바카라 게임 시작
+      function startBaccarat() {
+        // 로그인 상태 확인
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          alert("로그인이 필요합니다.");
+          window.location.href = "login.html";
+          return;
+        }
+
+        // 토큰 유효성 체크 (한글 지원)
+        try {
+          const parts = token.split(".");
+          if (parts.length !== 3) {
+            throw new Error("Invalid token format");
+          }
+
+          // JWT 페이로드 디코딩 시 한글 처리
+          const base64Payload = parts[1];
+          const paddedBase64 =
+            base64Payload + "=".repeat((4 - (base64Payload.length % 4)) % 4);
+          const decodedPayload = atob(
+            paddedBase64.replace(/-/g, "+").replace(/_/g, "/")
+          );
+          const payload = JSON.parse(
+            decodeURIComponent(escape(decodedPayload))
+          );
+          const now = Date.now() / 1000;
+
+          if (!payload.exp || payload.exp < now) {
+            alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
             return;
           }
 
-          try {
-            const res = await fetch(
-              "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/login",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
+          if (!payload.username) {
+            alert("사용자 정보가 올바르지 않습니다. 다시 로그인해주세요.");
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+            return;
+          }
+
+          // 바카라 게임 페이지로 이동
+          window.location.href = "baccarat.html";
+        } catch (error) {
+          console.error("토큰 검증 에러:", error);
+          alert("로그인 정보가 올바르지 않습니다. 다시 로그인해주세요.");
+          localStorage.removeItem("token");
+          window.location.href = "login.html";
+        }
+      }
+
+      // 블랙잭 게임 시작
+      function startBlackjack() {
+        // 로그인 상태 확인
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          alert("로그인이 필요합니다.");
+          window.location.href = "login.html";
+          return;
+        }
+
+        // 토큰 유효성 체크 (한글 지원)
+        try {
+          const parts = token.split(".");
+          if (parts.length !== 3) {
+            throw new Error("Invalid token format");
+          }
+
+          // JWT 페이로드 디코딩 시 한글 처리
+          const base64Payload = parts[1];
+          const paddedBase64 =
+            base64Payload + "=".repeat((4 - (base64Payload.length % 4)) % 4);
+          const decodedPayload = atob(
+            paddedBase64.replace(/-/g, "+").replace(/_/g, "/")
+          );
+          const payload = JSON.parse(
+            decodeURIComponent(escape(decodedPayload))
+          );
+          const now = Date.now() / 1000;
+
+          if (!payload.exp || payload.exp < now) {
+            alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+            return;
+          }
+
+          if (!payload.username) {
+            alert("사용자 정보가 올바르지 않습니다. 다시 로그인해주세요.");
+            localStorage.removeItem("token");
+            window.location.href = "login.html";
+            return;
+          }
+
+          // 블랙잭 게임 페이지로 바로 이동
+          window.location.href = "blackjack.html";
+        } catch (error) {
+          console.error("토큰 검증 에러:", error);
+          alert("로그인 정보가 올바르지 않습니다. 다시 로그인해주세요.");
+          localStorage.removeItem("token");
+          window.location.href = "login.html";
+        }
+      }
+
+      // 로그인 상태 UI 업데이트
+      function updateLoginUI(payload) {
+        const isAdmin = payload.role === "admin";
+
+        // PC 헤더의 오른쪽 사용자 메뉴 업데이트
+        const rightSection = document.querySelector(".justify-self-end");
+        if (rightSection) {
+          rightSection.innerHTML = `
+            <div class="flex space-x-2 items-center">
+              <div class="text-yellow-400 font-bold">
+                <i class="fas fa-user mr-2"></i>${payload.username}
+              </div>
+              ${
+                isAdmin
+                  ? '<a href="admin.html" target="_blank" class="px-3 py-2 border border-yellow-600 text-yellow-500 rounded hover:bg-yellow-600 hover:text-black transition text-sm">관리자</a>'
+                  : ""
               }
+              <button onclick="logout()" class="px-3 py-2 border border-yellow-600 text-yellow-500 rounded hover:bg-yellow-600 hover:text-black transition text-sm">
+                로그아웃
+              </button>
+            </div>
+          `;
+        }
+
+        // 모바일 메뉴 업데이트
+        const mobileAuthButtons = document.getElementById("mobileAuthButtons");
+        const mobileLogoutButton =
+          document.getElementById("mobileLogoutButton");
+        const mobileUserInfo = document.getElementById("mobileUserInfo");
+        const mobileUsername = document.getElementById("mobileUsername");
+
+        if (mobileAuthButtons) mobileAuthButtons.classList.add("hidden");
+        if (mobileLogoutButton) mobileLogoutButton.classList.remove("hidden");
+        if (mobileUserInfo) mobileUserInfo.classList.remove("hidden");
+        if (mobileUsername) mobileUsername.textContent = payload.username;
+
+        // 관리자인 경우 관리자 메뉴 추가
+        if (isAdmin) {
+          const adminButton = document.createElement("a");
+          adminButton.href = "admin.html";
+          adminButton.target = "_blank";
+          adminButton.className =
+            "block w-full py-3 px-4 text-gray-300 hover:text-yellow-500 transition text-left";
+          adminButton.innerHTML =
+            '<i class="fas fa-cog mr-2"></i>관리자 페이지';
+          mobileLogoutButton.parentNode.insertBefore(
+            adminButton,
+            mobileLogoutButton.nextSibling
+          );
+        }
+      }
+
+      // 페이지 로드시 로그인 상태 확인
+      document.addEventListener("DOMContentLoaded", function () {
+        const token = localStorage.getItem("token");
+
+        if (token) {
+          try {
+            // JWT 토큰 디코딩 (한글 지원)
+            const parts = token.split(".");
+            if (parts.length !== 3) {
+              throw new Error("Invalid token format");
+            }
+
+            // JWT 페이로드 디코딩 시 한글 처리
+            const base64Payload = parts[1];
+            // Base64 URL 디코딩을 위한 패딩 추가
+            const paddedBase64 =
+              base64Payload + "=".repeat((4 - (base64Payload.length % 4)) % 4);
+            const decodedPayload = atob(
+              paddedBase64.replace(/-/g, "+").replace(/_/g, "/")
             );
 
-            const data = await res.json();
+            // UTF-8 디코딩을 위한 처리
+            const payload = JSON.parse(
+              decodeURIComponent(escape(decodedPayload))
+            );
+            const now = Date.now() / 1000;
 
-            if (res.ok) {
-              // 토큰 저장 후 사용자 페이지로 이동
-              localStorage.setItem("token", data.token);
-              // 토큰 디코딩하여 역할 확인
-              const payload = JSON.parse(atob(data.token.split(".")[1]));
-              if (payload.role === "admin") {
-                window.location.href = "admin.html";
-              } else {
-                window.location.href = "user.html";
+            console.log("토큰 정보:", payload); // 디버깅용
+
+            // 토큰이 유효한지 확인
+            if (payload.exp && payload.exp >= now) {
+              // username이 없으면 기본값 설정하지만 경고 출력
+              if (!payload.username) {
+                console.warn(
+                  "토큰에 username이 없습니다. 다시 로그인해주세요."
+                );
+                localStorage.removeItem("token");
+                return;
               }
+
+              updateLoginUI(payload);
             } else {
-              alert(data.message);
+              // 만료된 토큰 제거
+              console.log("토큰이 만료되었습니다.");
+              localStorage.removeItem("token");
             }
-          } catch (err) {
-            console.error(err);
-            alert("서버 에러");
+          } catch (error) {
+            // 토큰이 잘못된 경우 제거
+            console.error("토큰 파싱 에러:", error);
+            localStorage.removeItem("token");
           }
-        });
+        }
+      });
+
+      // 로그아웃 함수
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.reload();
+      }
+
+      // ESC 키로 모바일 메뉴 닫기
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          closeMobileMenu();
+        }
+      });
     </script>
   </body>
 </html>

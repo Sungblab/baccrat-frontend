@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>블랙잭 - 골든 카지노</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <!-- Phaser 라이브러리 추가 -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        font-family: "Noto Serif KR", serif;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* 골든 버튼 스타일 */
+      .golden-btn {
+        background: linear-gradient(to right, #b8860b, #daa520);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+      .golden-btn:hover {
+        background: linear-gradient(to right, #daa520, #ffd700);
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+      }
+      .golden-btn:disabled {
+        background: #666;
+        transform: none;
+        cursor: not-allowed;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      /* 동그라미 버튼 특별 스타일 */
+      .golden-btn.rounded-full {
+        border: 2px solid rgba(255, 215, 0, 0.3);
+      }
+      .golden-btn.rounded-full:hover {
+        border-color: #ffd700;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+      }
+
+      /* 헤더 스타일 */
+      .header-container {
+        background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+        border-bottom: 1px solid #b8860b;
+        box-shadow: 0 4px 6px -1px rgba(184, 134, 11, 0.1);
+      }
+
+      /* 게임 테이블 */
+      .game-table {
+        background: radial-gradient(ellipse at center, #1a4b3a 0%, #0f2e21 70%);
+        border: 2px solid #b8860b;
+        border-radius: 16px;
+        position: relative;
+        min-height: 300px;
+      }
+
+      /* 카드 스타일 */
+      .card {
+        width: 50px;
+        height: 70px;
+        border-radius: 6px;
+        border: 1px solid #333;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .card.hidden {
+        background: linear-gradient(45deg, #1e40af, #3b82f6);
+        background-image: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 2px,
+          rgba(255, 255, 255, 0.1) 2px,
+          rgba(255, 255, 255, 0.1) 4px
+        );
+      }
+
+      .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 6px;
+      }
+
+      /* 카드 애니메이션 */
+      .card-dealing {
+        animation: cardDeal 0.5s ease-out;
+      }
+
+      @keyframes cardDeal {
+        from {
+          transform: translateX(-100px) rotateY(180deg);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0) rotateY(0deg);
+          opacity: 1;
+        }
+      }
+
+      /* 핸드 영역 */
+      .hand-area {
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      /* 베팅 칩 */
+      .chip {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        font-size: 0.65rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      }
+
+      .chip:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .chip.active {
+        transform: scale(1.15);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        border-color: #ffd700;
+      }
+
+      .chip[data-amount="1000"] {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+      }
+      .chip[data-amount="5000"] {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+      }
+      .chip[data-amount="10000"] {
+        background: linear-gradient(135deg, #2ecc71, #27ae60);
+      }
+      .chip[data-amount="50000"] {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      }
+      .chip[data-amount="100000"] {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+      }
+
+      #clearBetBtn {
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
+      }
+      #clearBetBtn:hover {
+        background: linear-gradient(135deg, #7f8c8d, #95a5a6) !important;
+      }
+
+      /* 액션 버튼 */
+      .action-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        font-size: 0.85rem;
+      }
+
+      .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-hit {
+        background: linear-gradient(45deg, #4caf50, #45a049);
+        color: white;
+      }
+      .btn-stand {
+        background: linear-gradient(45deg, #f44336, #da190b);
+        color: white;
+      }
+      .btn-double {
+        background: linear-gradient(45deg, #ff9800, #e68900);
+        color: white;
+      }
+      .btn-split {
+        background: linear-gradient(45deg, #9c27b0, #7b1fa2);
+        color: white;
+      }
+      .btn-insurance {
+        background: linear-gradient(45deg, #2196f3, #1976d2);
+        color: white;
+      }
+
+      /* 점수 표시 */
+      .score-display {
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid #b8860b;
+        border-radius: 12px;
+        padding: 4px 12px;
+        color: #ffd700;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+      }
+
+      /* 알림 스타일 */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #1f2937;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border-left: 4px solid #10b981;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+        opacity: 0;
+        transform: translateX(100px);
+        transition: all 0.3s ease;
+      }
+
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .notification.error {
+        border-left-color: #ef4444;
+      }
+      .notification.success {
+        border-left-color: #10b981;
+      }
+      .notification.warning {
+        border-left-color: #f59e0b;
+      }
+
+      /* 로딩 애니메이션 */
+      .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #b8860b;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* 딜러 턴 표시 */
+      .dealer-turn-indicator {
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      /* 모바일 최적화 */
+      @media (max-width: 640px) {
+        .card {
+          width: 45px;
+          height: 63px;
+        }
+        .chip {
+          width: 36px;
+          height: 36px;
+          font-size: 0.6rem;
+        }
+        .action-btn {
+          font-size: 0.75rem;
+          padding: 6px 12px;
+        }
+
+        /* 모바일에서 버튼 크기 조정 */
+        .golden-btn.rounded-full {
+          width: 48px !important;
+          height: 48px !important;
+          font-size: 0.6rem;
+        }
+
+        .golden-btn.rounded-full i {
+          font-size: 0.7rem !important;
+        }
+
+        /* 버튼 간격 조정 */
+        .flex.space-x-2 {
+          gap: 4px;
+        }
+      }
+
+      /* 게임 결과 모달 스타일 */
+      .text-shadow-lg {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      }
+
+      #gameResultModal .bg-gradient-to-br {
+        animation: modalBounce 0.3s ease-out;
+      }
+
+      @keyframes modalBounce {
+        0% {
+          transform: scale(0.3) rotate(-10deg);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.2) rotate(5deg);
+        }
+        100% {
+          transform: scale(1.1) rotate(0deg);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen">
+    <!-- 헤더 -->
+    <header class="header-container p-2">
+      <div class="flex justify-between items-center">
+        <button
+          id="logout"
+          class="golden-btn px-3 py-1.5 rounded text-white text-sm"
+        >
+          <i class="fas fa-sign-out-alt mr-1"></i>종료하기
+        </button>
+        <div class="flex items-center">
+          <span class="text-sm text-gray-400 mr-2">잔액:</span>
+          <span id="balance" class="text-lg font-bold text-yellow-400">₩0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 메인 게임 영역 -->
+    <main class="container mx-auto p-3 max-w-5xl">
+      <!-- Phaser 게임 테이블 -->
+      <div class="mb-4">
+        <div
+          id="blackjackGameContainer"
+          class="w-full h-64 sm:h-72 md:h-80 lg:h-96 rounded-lg shadow-xl overflow-hidden mx-auto"
+          style="max-width: 1000px"
+        >
+          <!-- Phaser 게임이 여기에 렌더링됩니다. -->
+        </div>
+
+        <!-- 게임 상태 표시 (Phaser 게임 아래) -->
+        <div id="gameStatusDisplay" class="text-center mt-4 hidden">
+          <div id="dealerStatus" class="text-gray-400 mb-2">
+            <!-- 딜러 상태 메시지 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 게임 상태 표시 -->
+      <div class="bg-gray-800 p-3 rounded-lg border border-yellow-600 mb-4">
+        <div class="flex justify-between items-center">
+          <div class="text-sm text-gray-400">게임 상태</div>
+          <div id="gameStatus" class="text-base font-bold text-blue-400">
+            대기 중
+          </div>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+          <div class="text-sm text-gray-400">현재 베팅액</div>
+          <div id="currentBet" class="text-base font-bold text-yellow-400">
+            ₩0
+          </div>
+        </div>
+      </div>
+
+      <!-- 베팅 영역 (초기 표시) -->
+      <div
+        id="bettingArea"
+        class="bg-gray-800 p-4 rounded-lg border border-yellow-600"
+      >
+        <div class="flex flex-col space-y-4">
+          <!-- 칩 선택 -->
+          <div>
+            <h3 class="text-base font-bold text-yellow-500 mb-3 text-center">
+              <i class="fas fa-coins mr-2"></i>베팅 금액
+            </h3>
+            <div class="flex justify-center space-x-2">
+              <div class="chip" data-amount="1000">1k</div>
+              <div class="chip" data-amount="5000">5k</div>
+              <div class="chip" data-amount="10000">10k</div>
+              <div class="chip" data-amount="50000">50k</div>
+              <div class="chip" data-amount="100000">100k</div>
+              <button
+                class="chip bg-red-600 hover:bg-red-500 text-white"
+                id="clearBetBtn"
+              >
+                초기화
+              </button>
+            </div>
+          </div>
+
+          <!-- 게임 버튼들 -->
+          <div class="flex flex-col justify-center">
+            <!-- 모든 게임 버튼들을 한 줄에 배치 -->
+            <div
+              class="flex items-center justify-center space-x-2 flex-wrap gap-y-2"
+            >
+              <!-- 기본 게임 버튼들 -->
+              <button
+                id="placeBetBtn"
+                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center"
+              >
+                <span id="betBtnText">베팅</span>
+              </button>
+
+              <button
+                id="startGameBtn"
+                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center"
+                disabled
+              >
+                <span>딜</span>
+              </button>
+
+              <!-- 연속 게임 버튼들 -->
+              <button
+                id="dealDoubleBtn"
+                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
+              >
+                <span>2배딜</span>
+              </button>
+              <button
+                id="dealRebetBtn"
+                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
+              >
+                <span>재딜</span>
+              </button>
+              <button
+                id="newGameBtn"
+                class="bg-gray-600 hover:bg-gray-500 w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
+              >
+                <span>새게임</span>
+              </button>
+              <button
+                id="endGameBtn"
+                class="bg-red-600 hover:bg-red-500 w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
+              >
+                <span>종료</span>
+              </button>
+            </div>
+
+            <!-- 게임 액션 버튼들 (게임 중 표시) - 별도 줄 -->
+            <div id="gameActionButtons" class="hidden mt-3">
+              <div class="flex items-center justify-center space-x-2">
+                <button
+                  id="hitBtn"
+                  class="golden-btn w-12 h-12 rounded-full font-bold text-xs flex items-center justify-center"
+                  disabled
+                >
+                  <span>히트</span>
+                </button>
+                <button
+                  id="standBtn"
+                  class="golden-btn w-12 h-12 rounded-full font-bold text-xs flex items-center justify-center"
+                  disabled
+                >
+                  <span>스탠드</span>
+                </button>
+                <button
+                  id="doubleBtn"
+                  class="bg-orange-600 hover:bg-orange-500 w-12 h-12 rounded-full font-bold text-xs flex items-center justify-center"
+                  disabled
+                >
+                  <span>더블</span>
+                </button>
+                <button
+                  id="splitBtn"
+                  class="bg-purple-600 hover:bg-purple-500 w-12 h-12 rounded-full font-bold text-xs flex items-center justify-center hidden"
+                  disabled
+                >
+                  <span>스플릿</span>
+                </button>
+                <button
+                  id="insuranceBtn"
+                  class="bg-blue-600 hover:bg-blue-500 w-12 h-12 rounded-full font-bold text-xs flex items-center justify-center hidden"
+                  disabled
+                >
+                  <span>보험</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 게임 결과 영역 -->
+      <div
+        id="gameResult"
+        class="mt-4 bg-gray-800 p-4 rounded-lg border border-yellow-600 hidden"
+      >
+        <h3 class="text-base font-bold text-yellow-500 mb-3">
+          <i class="fas fa-trophy mr-2"></i>게임 결과
+        </h3>
+        <div id="resultContent" class="space-y-2">
+          <!-- 게임 결과가 여기에 표시됩니다 -->
+        </div>
+      </div>
+    </main>
+
+    <!-- 알림 토스트 -->
+    <div id="notification" class="notification">
+      메시지가 여기에 표시됩니다.
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div
+      id="loadingOverlay"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
+    >
+      <div
+        class="bg-gray-800 p-6 rounded-lg border border-yellow-600 text-center"
+      >
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <div class="text-white">처리 중...</div>
+      </div>
+    </div>
+
+    <!-- 게임 결과 모달 -->
+    <div
+      id="gameResultModal"
+      class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden"
+    >
+      <div
+        class="bg-gradient-to-br from-yellow-600 to-yellow-800 p-8 rounded-2xl border-4 border-yellow-400 text-center shadow-2xl transform scale-110"
+      >
+        <div
+          id="modalResultText"
+          class="text-4xl font-bold text-white mb-4 text-shadow-lg"
+        >
+          이겼습니다!
+        </div>
+        <div
+          id="modalPayoutText"
+          class="text-2xl text-yellow-200 font-semibold"
+        >
+          +₩0
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 전역 변수
+      let socket;
+      let token = localStorage.getItem("token");
+      let gameSession = null;
+      let selectedChipAmount = 1000;
+      let currentBetAmount = 0; // 현재 누적 베팅 금액
+      let isGameActive = false;
+      let isDealerTurn = false;
+
+      // Phaser 관련 변수
+      let blackjackGame = null; // Phaser 게임 인스턴스
+      let blackjackScene = null; // Phaser Scene 인스턴스
+
+      // 초기화
+      document.addEventListener("DOMContentLoaded", function () {
+        if (!token) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        initializeSocket();
+        initializeEventListeners();
+        updateChipSelection();
+        startBlackjackGame(); // Phaser 게임 시작
+      });
+
+      // 소켓 초기화
+      function initializeSocket() {
+        socket = io("http://127.0.0.1:5000");
+
+        socket.on("connect", () => {
+          console.log("서버에 연결되었습니다.");
+          socket.emit("authenticate", token);
+        });
+
+        socket.on("disconnect", () => {
+          showNotification("서버와의 연결이 끊어졌습니다.", "error");
+        });
+
+        // 인증 결과
+        socket.on("authentication_result", (data) => {
+          if (data.success) {
+            console.log("인증 성공:", data.user);
+            updateBalance(data.user.balance);
+            updateGameSession(data.session);
+            showNotification("게임에 접속했습니다.", "success");
+          } else {
+            showNotification("인증에 실패했습니다.", "error");
+            setTimeout(() => (window.location.href = "index.html"), 2000);
+          }
+        });
+
+        // 베팅 결과
+        socket.on("bet_result", (data) => {
+          hideLoading();
+          if (data.success) {
+            showNotification(data.message, "success");
+            updateGameSession(data.session);
+
+            // 베팅 성공 시 누적 베팅액 초기화
+            currentBetAmount = 0;
+
+            // 베팅이 성공하면 게임 시작 버튼 활성화
+            const startBtn = document.getElementById("startGameBtn");
+            startBtn.disabled = false;
+
+            // 베팅 버튼 비활성화 및 텍스트 변경
+            const placeBetBtn = document.getElementById("placeBetBtn");
+            const betBtnText = document.getElementById("betBtnText");
+            placeBetBtn.disabled = true;
+            betBtnText.textContent = "베팅 완료";
+
+            console.log("베팅 완료 - 게임 시작 버튼 활성화됨");
+          } else {
+            showNotification(data.message, "error");
+          }
+        });
+
+        // 잔액 업데이트
+        socket.on("balance_updated", (data) => {
+          updateBalance(data.balance);
+        });
+
+        // 세션 업데이트
+        socket.on("session_updated", (data) => {
+          updateGameSession(data);
+        });
+
+        // 게임 시작됨
+        socket.on("game_started", (data) => {
+          if (data.success) {
+            updateGameSession(data.session);
+
+            // Phaser Scene이 준비될 때까지 대기
+            const waitForScene = () => {
+              if (blackjackScene && blackjackScene.sys.isActive()) {
+                renderInitialCards();
+
+                // 블랙잭 체크가 필요한 경우
+                if (data.needsBlackjackCheck) {
+                  setTimeout(() => {
+                    socket.emit("check_blackjack");
+                  }, 1500); // 카드 딜링 애니메이션 후
+                }
+              } else {
+                // Scene이 준비되지 않았으면 100ms 후 다시 시도
+                setTimeout(waitForScene, 100);
+              }
+            };
+
+            waitForScene();
+          }
+        });
+
+        // 블랙잭 체크 결과
+        socket.on("blackjack_check_result", (data) => {
+          if (data.success) {
+            if (data.isBlackjack) {
+              // 블랙잭 발생
+              handleGameEnd(data.session);
+            } else {
+              // 정상 게임 진행
+              enableGameActions();
+            }
+          }
+        });
+
+        // 히트 결과
+        socket.on("hit_result", (data) => {
+          if (data.success) {
+            addCardToHand("player", data.newCard);
+            updatePlayerScore(data.handValue);
+
+            if (data.isBust) {
+              handleGameEnd(data.session);
+            }
+          }
+        });
+
+        // 스탠드 결과
+        socket.on("stand_result", (data) => {
+          if (data.success) {
+            disableGameActions();
+            if (data.session.status === "dealer-turn") {
+              showNotification("딜러 턴이 시작됩니다.", "info");
+            }
+          }
+        });
+
+        // 딜러 턴 시작
+        socket.on("dealer_turn_started", (data) => {
+          isDealerTurn = true;
+          updateGameStatus("딜러 턴");
+          showDealerTurnIndicator();
+        });
+
+        // 딜러 숨겨진 카드 공개
+        socket.on("dealer_hidden_card_revealed", (data) => {
+          revealDealerHiddenCard(data.hiddenCard);
+          updateDealerScore();
+        });
+
+        // 딜러 카드 추가
+        socket.on("dealer_card_dealt", (data) => {
+          addCardToHand("dealer", data.newCard);
+          updateDealerScore(data.dealerValue);
+        });
+
+        // 딜러 턴 완료
+        socket.on("dealer_turn_completed", (data) => {
+          isDealerTurn = false;
+          hideDealerTurnIndicator();
+        });
+
+        // 게임 완료
+        socket.on("game_finished", (data) => {
+          handleGameEnd(data.session, data.results);
+
+          // 게임 완료 후 3초 뒤에 베팅 가능 상태로 변경
+          setTimeout(() => {
+            if (gameSession && gameSession.status === "waiting") {
+              updateBetDisplay(); // 베팅 버튼 상태 재확인
+              console.log("게임 완료 후 베팅 상태 재설정");
+            }
+          }, 3000);
+        });
+
+        // 새 게임 결과
+        socket.on("new_game_result", (data) => {
+          if (data.success) {
+            updateGameSession(data.session);
+            showNotification("새 게임이 시작되었습니다.", "success");
+          } else {
+            showNotification(
+              data.message || "새 게임 시작에 실패했습니다.",
+              "error"
+            );
+          }
+        });
+
+        // 에러 처리
+        socket.on("error", (message) => {
+          hideLoading();
+          showNotification(message, "error");
+        });
+      }
+
+      // 이벤트 리스너 초기화
+      function initializeEventListeners() {
+        // 나가기 - 게임 종료
+        document.getElementById("logout").addEventListener("click", () => {
+          endGame();
+        });
+
+        // 칩 선택 - 누적 방식
+        document.querySelectorAll(".chip[data-amount]").forEach((chip) => {
+          chip.addEventListener("click", (e) => {
+            const chipAmount = parseInt(e.target.dataset.amount);
+            currentBetAmount += chipAmount;
+            selectedChipAmount = chipAmount; // 마지막 선택된 칩 금액 저장
+            updateChipSelection();
+            updateBetDisplay();
+            console.log(
+              `칩 추가: +${chipAmount.toLocaleString()}, 총 베팅액: ${currentBetAmount.toLocaleString()}`
+            );
+          });
+        });
+
+        // 베팅 초기화 버튼
+        document.getElementById("clearBetBtn").addEventListener("click", () => {
+          currentBetAmount = 0;
+          updateBetDisplay();
+          console.log("베팅 금액 초기화됨");
+        });
+
+        // 베팅
+        document
+          .getElementById("placeBetBtn")
+          .addEventListener("click", placeBet);
+
+        // 게임 시작
+        document
+          .getElementById("startGameBtn")
+          .addEventListener("click", startGame);
+
+        // 새 게임
+        document
+          .getElementById("newGameBtn")
+          .addEventListener("click", newGame);
+
+        // 게임 종료
+        document
+          .getElementById("endGameBtn")
+          .addEventListener("click", endGame);
+
+        // 2배딜과 재딜 이벤트 리스너 추가
+        document
+          .getElementById("dealDoubleBtn")
+          .addEventListener("click", dealDouble);
+
+        document
+          .getElementById("dealRebetBtn")
+          .addEventListener("click", dealRebet);
+
+        // 게임 액션들
+        document.getElementById("hitBtn").addEventListener("click", () => {
+          socket.emit("hit");
+        });
+
+        document.getElementById("standBtn").addEventListener("click", () => {
+          socket.emit("stand");
+        });
+
+        document.getElementById("doubleBtn").addEventListener("click", () => {
+          socket.emit("double", { token });
+        });
+
+        document.getElementById("splitBtn").addEventListener("click", () => {
+          socket.emit("split", { token });
+        });
+
+        document
+          .getElementById("insuranceBtn")
+          .addEventListener("click", () => {
+            socket.emit("insurance", { token });
+          });
+      }
+
+      // 칩 선택 업데이트
+      function updateChipSelection() {
+        document.querySelectorAll(".chip").forEach((chip) => {
+          chip.classList.remove("active");
+          if (parseInt(chip.dataset.amount) === selectedChipAmount) {
+            chip.classList.add("active");
+          }
+        });
+      }
+
+      // 베팅 표시 업데이트
+      function updateBetDisplay() {
+        const serverBet = gameSession ? gameSession.currentBet : 0;
+        const displayBet = serverBet > 0 ? serverBet : currentBetAmount;
+
+        // 베팅 표시 업데이트
+        document.getElementById(
+          "currentBet"
+        ).textContent = `₩${displayBet.toLocaleString()}`;
+
+        const betBtn = document.getElementById("placeBetBtn");
+        const betBtnText = document.getElementById("betBtnText");
+        const startBtn = document.getElementById("startGameBtn");
+
+        // 게임이 진행 중이면 베팅 관련 버튼 비활성화
+        if (isGameActive) {
+          betBtn.disabled = true;
+          startBtn.disabled = true;
+          return;
+        }
+
+        if (serverBet === 0 && currentBetAmount === 0) {
+          betBtnText.textContent = "베팅";
+          betBtn.disabled = true; // 베팅액이 없으면 비활성화
+          startBtn.disabled = true;
+          console.log("베팅 대기 상태");
+        } else if (serverBet === 0 && currentBetAmount > 0) {
+          betBtnText.textContent = "베팅";
+          betBtn.disabled = false; // 누적 베팅액이 있으면 활성화
+          startBtn.disabled = true;
+          console.log(
+            `누적 베팅액: ₩${currentBetAmount.toLocaleString()} - 베팅 가능`
+          );
+        } else if (serverBet > 0) {
+          betBtnText.textContent = "완료";
+          betBtn.disabled = true;
+          startBtn.disabled = false; // 서버에 베팅이 있으면 딜 버튼 활성화
+          console.log(
+            `서버 베팅 금액: ₩${serverBet.toLocaleString()} - 딜 가능`
+          );
+        }
+      }
+
+      // 연속 게임 버튼들 표시
+      function showContinuousGameButtons() {
+        const dealDoubleBtn = document.getElementById("dealDoubleBtn");
+        const dealRebetBtn = document.getElementById("dealRebetBtn");
+        const newGameBtn = document.getElementById("newGameBtn");
+        const endGameBtn = document.getElementById("endGameBtn");
+        const placeBetBtn = document.getElementById("placeBetBtn");
+        const startGameBtn = document.getElementById("startGameBtn");
+
+        if (dealDoubleBtn) dealDoubleBtn.classList.remove("hidden");
+        if (dealRebetBtn) dealRebetBtn.classList.remove("hidden");
+        if (newGameBtn) newGameBtn.classList.remove("hidden");
+        if (endGameBtn) endGameBtn.classList.remove("hidden");
+
+        // 기본 버튼들 숨기기
+        if (placeBetBtn) placeBetBtn.classList.add("hidden");
+        if (startGameBtn) startGameBtn.classList.add("hidden");
+      }
+
+      // 연속 게임 버튼들 숨기기
+      function hideContinuousGameButtons() {
+        const dealDoubleBtn = document.getElementById("dealDoubleBtn");
+        const dealRebetBtn = document.getElementById("dealRebetBtn");
+        const newGameBtn = document.getElementById("newGameBtn");
+        const endGameBtn = document.getElementById("endGameBtn");
+        const placeBetBtn = document.getElementById("placeBetBtn");
+        const startGameBtn = document.getElementById("startGameBtn");
+
+        if (dealDoubleBtn) dealDoubleBtn.classList.add("hidden");
+        if (dealRebetBtn) dealRebetBtn.classList.add("hidden");
+        if (newGameBtn) newGameBtn.classList.add("hidden");
+        if (endGameBtn) endGameBtn.classList.add("hidden");
+
+        // 기본 버튼들 표시
+        if (placeBetBtn) placeBetBtn.classList.remove("hidden");
+        if (startGameBtn) startGameBtn.classList.remove("hidden");
+      }
+
+      // 베팅 실행
+      function placeBet() {
+        if (!gameSession || currentBetAmount <= 0) {
+          showNotification("베팅 금액을 선택해주세요.", "warning");
+          return;
+        }
+
+        console.log(`베팅 시도: ₩${currentBetAmount.toLocaleString()}`);
+        showLoading();
+        socket.emit("place_bet", {
+          amount: currentBetAmount,
+          token: token,
+        });
+      }
+
+      // 게임 시작
+      function startGame() {
+        if (!gameSession || gameSession.currentBet === 0) {
+          showNotification("먼저 베팅을 해주세요.", "warning");
+          return;
+        }
+
+        clearGameTable();
+        socket.emit("start_game");
+
+        document.getElementById("startGameBtn").disabled = true;
+        document.getElementById("placeBetBtn").disabled = true;
+
+        // 베팅 영역은 유지하고 게임 액션 버튼들만 표시
+        const gameActionButtons = document.getElementById("gameActionButtons");
+        if (gameActionButtons) {
+          gameActionButtons.classList.remove("hidden");
+        }
+
+        // 연속 게임 버튼들 숨기기
+        hideContinuousGameButtons();
+
+        isGameActive = true;
+        updateGameStatus("딜링 중");
+      }
+
+      // 게임 액션 활성화
+      function enableGameActions() {
+        if (!gameSession) return;
+
+        document.getElementById("hitBtn").disabled = false;
+        document.getElementById("standBtn").disabled = false;
+
+        updateActionButtons(gameSession);
+      }
+
+      // 게임 결과 모달 표시
+      function showGameResultModal(result, payout) {
+        const modal = document.getElementById("gameResultModal");
+        const resultText = document.getElementById("modalResultText");
+        const payoutText = document.getElementById("modalPayoutText");
+
+        let message = "";
+        let modalClass = "";
+
+        switch (result) {
+          case "win":
+            message = "이겼습니다!";
+            modalClass = "from-green-600 to-green-800 border-green-400";
+            break;
+          case "lose":
+            message = "졌습니다";
+            modalClass = "from-red-600 to-red-800 border-red-400";
+            break;
+          case "push":
+            message = "무승부";
+            modalClass = "from-blue-600 to-blue-800 border-blue-400";
+            break;
+          case "blackjack":
+            message = "블랙잭!";
+            modalClass = "from-yellow-600 to-yellow-800 border-yellow-400";
+            break;
+          case "bust":
+            message = "버스트!";
+            modalClass = "from-red-600 to-red-800 border-red-400";
+            break;
+          default:
+            message = result;
+            modalClass = "from-gray-600 to-gray-800 border-gray-400";
+        }
+
+        resultText.textContent = message;
+        payoutText.textContent =
+          payout > 0
+            ? `+₩${payout.toLocaleString()}`
+            : payout < 0
+            ? `-₩${Math.abs(payout).toLocaleString()}`
+            : "±₩0";
+
+        // 모달 배경 색상 변경
+        const modalContent = modal.querySelector(".bg-gradient-to-br");
+        modalContent.className = `bg-gradient-to-br ${modalClass} p-8 rounded-2xl border-4 text-center shadow-2xl transform scale-110`;
+
+        modal.classList.remove("hidden");
+
+        // 1.5초 후 모달 숨김
+        setTimeout(() => {
+          modal.classList.add("hidden");
+        }, 1500);
+      }
+
+      // 게임 종료 처리
+      function handleGameEnd(session, results) {
+        updateGameSession(session);
+        disableGameActions();
+
+        if (results && results.length > 0) {
+          const result = results[0];
+
+          // 모달로 결과 표시
+          showGameResultModal(result.result, result.payout);
+
+          // Phaser에서는 간단한 결과만 표시
+          if (blackjackScene) {
+            let message = "";
+            let color = "#FFD700";
+
+            switch (result.result) {
+              case "win":
+                message = "승리!";
+                color = "#00ff00";
+                break;
+              case "lose":
+                message = "패배";
+                color = "#ff4444";
+                break;
+              case "push":
+                message = "무승부";
+                color = "#4444ff";
+                break;
+              case "blackjack":
+                message = "블랙잭!";
+                color = "#ffd700";
+                break;
+              case "bust":
+                message = "버스트!";
+                color = "#ff4444";
+                break;
+              default:
+                message = result.result;
+            }
+
+            blackjackScene.showGameResult(message, color);
+          }
+        }
+
+        isGameActive = false;
+        isDealerTurn = false;
+        updateGameStatus("게임 완료");
+
+        // 게임 액션 버튼들 숨기고 연속 게임 버튼들 표시
+        const gameActionButtons = document.getElementById("gameActionButtons");
+        if (gameActionButtons) {
+          gameActionButtons.classList.add("hidden");
+        }
+        showContinuousGameButtons();
+
+        // 3초 후 베팅 상태로 자동 전환
+        setTimeout(() => {
+          if (gameSession && gameSession.status === "waiting") {
+            isGameActive = false; // 확실히 비활성화
+            updateBetDisplay(); // 베팅 버튼 상태 재설정
+            console.log("게임 종료 후 베팅 상태로 전환 완료");
+          }
+        }, 3000);
+      }
+
+      // 새 게임
+      function newGame() {
+        console.log("새 게임 시작");
+
+        // 상태 초기화
+        isGameActive = false;
+        isDealerTurn = false;
+
+        socket.emit("new_game");
+        clearGameTable();
+        resetGameUI();
+
+        // 모든 게임 버튼들 초기 상태로
+        const gameActionButtons = document.getElementById("gameActionButtons");
+        if (gameActionButtons) {
+          gameActionButtons.classList.add("hidden");
+        }
+        hideContinuousGameButtons();
+
+        // 베팅 상태 재설정
+        setTimeout(() => {
+          updateBetDisplay();
+          console.log("새 게임 초기화 완료");
+        }, 500);
+      }
+
+      // 게임 종료
+      function endGame() {
+        if (confirm("정말로 게임을 종료하시겠습니까?")) {
+          // 게임 세션 정리
+          if (socket && socket.connected) {
+            socket.emit("leave_game");
+            socket.disconnect();
+          }
+
+          // Phaser 게임 정리
+          if (blackjackGame) {
+            blackjackGame.destroy(true);
+            blackjackGame = null;
+          }
+
+          // 로컬 스토리지 정리 (선택사항)
+          // localStorage.removeItem("token");
+
+          // 로비로 이동
+          window.location.href = "index.html";
+        }
+      }
+
+      // 딜 더블 (2배 베팅 후 게임 시작)
+      function dealDouble() {
+        if (!gameSession) {
+          showNotification("게임 세션이 없습니다.", "warning");
+          return;
+        }
+
+        // 이전 베팅 금액의 2배
+        const lastBet = gameSession.currentBet || currentBetAmount;
+        const doubleBet = lastBet * 2;
+
+        // 게임 초기화 후 새로운 베팅으로 게임 시작
+        socket.emit("new_game");
+
+        setTimeout(() => {
+          currentBetAmount = doubleBet; // 누적 베팅액으로 설정
+          updateBetDisplay();
+
+          showLoading();
+          socket.emit("place_bet", {
+            amount: doubleBet,
+            token: token,
+          });
+
+          // 베팅 완료 후 즉시 게임 시작
+          setTimeout(() => {
+            clearGameTable();
+            socket.emit("start_game");
+            updateGameStatus("딜링 중");
+
+            // 게임 액션 버튼들 표시
+            document
+              .getElementById("gameActionButtons")
+              .classList.remove("hidden");
+
+            isGameActive = true;
+          }, 300);
+        }, 200);
+      }
+
+      // 딜 재배팅 (같은 금액으로 베팅 후 게임 시작)
+      function dealRebet() {
+        if (!gameSession) {
+          showNotification("게임 세션이 없습니다.", "warning");
+          return;
+        }
+
+        // 이전 베팅 금액 또는 현재 누적 베팅액
+        const lastBet = gameSession.currentBet || currentBetAmount;
+
+        // 게임 초기화 후 새로운 베팅으로 게임 시작
+        socket.emit("new_game");
+
+        setTimeout(() => {
+          currentBetAmount = lastBet; // 누적 베팅액으로 설정
+          updateBetDisplay();
+
+          showLoading();
+          socket.emit("place_bet", {
+            amount: lastBet,
+            token: token,
+          });
+
+          // 베팅 완료 후 즉시 게임 시작
+          setTimeout(() => {
+            clearGameTable();
+            socket.emit("start_game");
+            updateGameStatus("딜링 중");
+
+            // 게임 액션 버튼들 표시
+            document
+              .getElementById("gameActionButtons")
+              .classList.remove("hidden");
+
+            isGameActive = true;
+          }, 300);
+        }, 200);
+      }
+
+      // 게임 세션 업데이트
+      function updateGameSession(session) {
+        gameSession = session;
+        updateBalance(session.balance);
+        updateBetDisplay();
+        updatePlayerScore(session.playerValue);
+        updateDealerScore(session.dealerValue);
+        updateGameStatus(getStatusText(session.status));
+
+        // 게임 액션 버튼 상태 업데이트
+        if (session.status === "playing") {
+          updateActionButtons(session);
+        }
+      }
+
+      // 잔액 업데이트
+      function updateBalance(balance) {
+        document.getElementById(
+          "balance"
+        ).textContent = `₩${balance.toLocaleString()}`;
+      }
+
+      // 게임 상태 텍스트 반환
+      function getStatusText(status) {
+        const statusMap = {
+          waiting: "대기 중",
+          betting: "베팅 완료",
+          dealing: "딜링 중",
+          playing: "플레이 중",
+          "dealer-turn": "딜러 턴",
+          finished: "게임 완료",
+        };
+        return statusMap[status] || status;
+      }
+
+      // 게임 상태 업데이트
+      function updateGameStatus(status) {
+        document.getElementById("gameStatus").textContent = status;
+      }
+
+      // 초기 카드 렌더링
+      function renderInitialCards() {
+        if (!gameSession) return;
+
+        // 플레이어 카드
+        gameSession.playerHand.forEach((card, index) => {
+          setTimeout(() => {
+            addCardToHand("player", card);
+          }, index * 300);
+        });
+
+        // 딜러 카드
+        gameSession.dealerHand.forEach((card, index) => {
+          setTimeout(() => {
+            if (card.value === "hidden") {
+              addHiddenCard("dealer");
+            } else {
+              addCardToHand("dealer", card);
+            }
+          }, (gameSession.playerHand.length + index) * 300);
+        });
+      }
+
+      // 카드 추가
+      function addCardToHand(handType, card) {
+        // 카드 유효성 검사
+        if (!card) {
+          console.error("카드가 전달되지 않았습니다:", handType, card);
+          return;
+        }
+
+        const handElement = document.getElementById(`${handType}Hand`);
+        if (!handElement) {
+          console.error("핸드 엘리먼트를 찾을 수 없습니다:", handType);
+          return;
+        }
+
+        const cardElement = createCardElement(card);
+        cardElement.classList.add("card-dealing");
+        handElement.appendChild(cardElement);
+
+        // 점수 업데이트
+        if (handType === "player") {
+          updatePlayerScore();
+        } else if (handType === "dealer" && !isDealerTurn) {
+          updateDealerScore();
+        }
+      }
+
+      // 숨겨진 카드 추가
+      function addHiddenCard(handType) {
+        const handElement = document.getElementById(`${handType}Hand`);
+        const cardElement = document.createElement("div");
+        cardElement.className = "card hidden card-dealing";
+        cardElement.innerHTML =
+          '<div class="text-white text-center leading-none">?</div>';
+        handElement.appendChild(cardElement);
+      }
+
+      // 카드 엘리먼트 생성
+      function createCardElement(card) {
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "card";
+
+        // 카드 객체 유효성 검사
+        if (!card || !card.value || !card.suit) {
+          console.error("유효하지 않은 카드 객체:", card);
+          // 기본 카드 이미지 또는 오류 표시
+          cardDiv.innerHTML =
+            '<div class="text-red-500 text-center text-xs">오류</div>';
+          return cardDiv;
+        }
+
+        // Deck of Cards API 이미지 URL 생성
+        const cardCode = `${card.value === "0" ? "10" : card.value}${
+          card.suit
+        }`;
+        const imageUrl = `https://deckofcardsapi.com/static/img/${cardCode}.png`;
+
+        cardDiv.innerHTML = `<img src="${imageUrl}" alt="${card.value}${card.suit}" class="card-image" onerror="this.parentElement.innerHTML='<div class=\\'text-red-500 text-center text-xs\\'>카드<br/>오류</div>'" />`;
+
+        return cardDiv;
+      }
+
+      // 딜러 숨겨진 카드 공개
+      function revealDealerHiddenCard(card) {
+        // 카드 유효성 검사
+        if (!card || !card.value || !card.suit) {
+          console.error("유효하지 않은 카드 객체:", card);
+          return;
+        }
+
+        const dealerHand = document.getElementById("dealerHand");
+        if (!dealerHand) {
+          console.error("딜러 핸드 엘리먼트를 찾을 수 없습니다.");
+          return;
+        }
+
+        const hiddenCard = dealerHand.querySelector(".card.hidden");
+        if (hiddenCard) {
+          const cardCode = `${card.value === "0" ? "10" : card.value}${
+            card.suit
+          }`;
+          const imageUrl = `https://deckofcardsapi.com/static/img/${cardCode}.png`;
+
+          hiddenCard.className = "card";
+          hiddenCard.innerHTML = `<img src="${imageUrl}" alt="${card.value}${card.suit}" class="card-image" onerror="this.parentElement.innerHTML='<div class=\\'text-red-500 text-center text-xs\\'>카드<br/>오류</div>'" />`;
+        } else {
+          console.error("숨겨진 카드를 찾을 수 없습니다.");
+        }
+      }
+
+      // 플레이어 점수 업데이트
+      function updatePlayerScore(score) {
+        const playerScore =
+          score || (gameSession ? gameSession.playerValue : 0);
+        document.getElementById("playerScoreValue").textContent = playerScore;
+
+        // 버스트 표시
+        if (playerScore > 21) {
+          document.getElementById("playerScore").classList.add("text-red-400");
+        } else {
+          document
+            .getElementById("playerScore")
+            .classList.remove("text-red-400");
+        }
+      }
+
+      // 딜러 점수 업데이트
+      function updateDealerScore(score) {
+        const dealerScore =
+          score || (gameSession ? gameSession.dealerValue : 0);
+        document.getElementById("dealerScoreValue").textContent = dealerScore;
+
+        // 버스트 표시
+        if (dealerScore > 21) {
+          document.getElementById("dealerScore").classList.add("text-red-400");
+        } else {
+          document
+            .getElementById("dealerScore")
+            .classList.remove("text-red-400");
+        }
+      }
+
+      // 게임 액션 활성화
+      function enableGameActions() {
+        if (!gameSession) return;
+
+        const hitBtn = document.getElementById("hitBtn");
+        const standBtn = document.getElementById("standBtn");
+
+        if (hitBtn) hitBtn.disabled = false;
+        if (standBtn) standBtn.disabled = false;
+
+        updateActionButtons(gameSession);
+      }
+
+      // 게임 액션 비활성화
+      function disableGameActions() {
+        const hitBtn = document.getElementById("hitBtn");
+        const standBtn = document.getElementById("standBtn");
+        const doubleBtn = document.getElementById("doubleBtn");
+        const splitBtn = document.getElementById("splitBtn");
+        const insuranceBtn = document.getElementById("insuranceBtn");
+
+        if (hitBtn) hitBtn.disabled = true;
+        if (standBtn) standBtn.disabled = true;
+        if (doubleBtn) doubleBtn.disabled = true;
+        if (splitBtn) splitBtn.disabled = true;
+        if (insuranceBtn) insuranceBtn.disabled = true;
+      }
+
+      // 액션 버튼 상태 업데이트
+      function updateActionButtons(session) {
+        const doubleBtn = document.getElementById("doubleBtn");
+        if (doubleBtn) {
+          doubleBtn.disabled = !session.canDouble;
+        }
+
+        // 스플릿 버튼 표시/숨김
+        const splitBtn = document.getElementById("splitBtn");
+        if (splitBtn) {
+          if (session.canSplit) {
+            splitBtn.classList.remove("hidden");
+            splitBtn.disabled = false;
+          } else {
+            splitBtn.classList.add("hidden");
+          }
+        }
+
+        // 보험 버튼 표시/숨김
+        const insuranceBtn = document.getElementById("insuranceBtn");
+        if (insuranceBtn) {
+          if (session.canInsurance) {
+            insuranceBtn.classList.remove("hidden");
+            insuranceBtn.disabled = false;
+          } else {
+            insuranceBtn.classList.add("hidden");
+          }
+        }
+      }
+
+      // 딜러 턴 표시기 표시
+      function showDealerTurnIndicator() {
+        const dealerStatus = document.getElementById("dealerStatus");
+        dealerStatus.textContent = "딜러가 카드를 뽑고 있습니다...";
+        dealerStatus.classList.remove("hidden");
+        dealerStatus.classList.add("dealer-turn-indicator");
+
+        // Phaser에서도 딜러 턴 표시
+        if (blackjackScene) {
+          blackjackScene.showGameResult("딜러 턴", "#ffaa00");
+        }
+      }
+
+      // 딜러 턴 표시기 숨김
+      function hideDealerTurnIndicator() {
+        const dealerStatus = document.getElementById("dealerStatus");
+        dealerStatus.classList.add("hidden");
+        dealerStatus.classList.remove("dealer-turn-indicator");
+
+        // Phaser에서도 메시지 숨김
+        if (blackjackScene && blackjackScene.gameResultText) {
+          blackjackScene.gameResultText.setVisible(false);
+        }
+      }
+
+      // 게임 결과 표시
+      function showGameResults(results) {
+        const resultDiv = document.getElementById("gameResult");
+        const contentDiv = document.getElementById("resultContent");
+
+        contentDiv.innerHTML = "";
+
+        results.forEach((result, index) => {
+          const resultItem = document.createElement("div");
+          resultItem.className =
+            "flex justify-between items-center p-3 bg-gray-700 rounded";
+
+          const resultText = getResultText(result.result);
+          const resultClass = getResultClass(result.result);
+
+          resultItem.innerHTML = `
+            <span class="${resultClass} font-bold">${resultText}</span>
+            <span class="text-yellow-400 font-bold">₩${result.payout.toLocaleString()}</span>
+          `;
+
+          contentDiv.appendChild(resultItem);
+        });
+
+        resultDiv.classList.remove("hidden");
+
+        // 3초 후 결과 숨김
+        setTimeout(() => {
+          resultDiv.classList.add("hidden");
+        }, 5000);
+      }
+
+      // 결과 텍스트 반환
+      function getResultText(result) {
+        const resultMap = {
+          win: "승리",
+          lose: "패배",
+          push: "무승부",
+          blackjack: "블랙잭!",
+          bust: "버스트",
+        };
+        return resultMap[result] || result;
+      }
+
+      // 결과 클래스 반환
+      function getResultClass(result) {
+        if (["win", "blackjack"].includes(result)) {
+          return "text-green-400";
+        } else if (["lose", "bust"].includes(result)) {
+          return "text-red-400";
+        } else {
+          return "text-blue-400";
+        }
+      }
+
+      // 게임 테이블 초기화
+      function clearGameTable() {
+        document.getElementById("playerHand").innerHTML = "";
+        document.getElementById("dealerHand").innerHTML = "";
+        document.getElementById("splitHandsContainer").classList.add("hidden");
+        updatePlayerScore(0);
+        updateDealerScore(0);
+      }
+
+      // 게임 UI 초기화
+      function resetGameUI() {
+        const startGameBtn = document.getElementById("startGameBtn");
+        const placeBetBtn = document.getElementById("placeBetBtn");
+        const gameResult = document.getElementById("gameResult");
+        const betBtnText = document.getElementById("betBtnText");
+        const splitBtn = document.getElementById("splitBtn");
+        const insuranceBtn = document.getElementById("insuranceBtn");
+
+        if (startGameBtn) startGameBtn.disabled = true;
+        if (placeBetBtn) placeBetBtn.disabled = false;
+        if (gameResult) gameResult.classList.add("hidden");
+
+        // 베팅 관련 초기화
+        currentBetAmount = 0; // 누적 베팅액 초기화
+        if (placeBetBtn) placeBetBtn.disabled = false;
+        if (betBtnText) betBtnText.textContent = "베팅";
+
+        // 연속 게임 버튼들 숨기기
+        hideContinuousGameButtons();
+
+        disableGameActions();
+        hideDealerTurnIndicator();
+
+        // 보험, 스플릿 버튼 숨기기
+        if (splitBtn) splitBtn.classList.add("hidden");
+        if (insuranceBtn) insuranceBtn.classList.add("hidden");
+
+        isGameActive = false;
+        isDealerTurn = false;
+
+        updateBetDisplay();
+        updateGameStatus("대기 중");
+
+        // Phaser Scene 초기화
+        if (blackjackScene) {
+          blackjackScene.clearAllCardsAndText();
+        }
+
+        console.log("게임 UI 초기화 완료");
+      }
+
+      // 알림 표시
+      function showNotification(message, type = "info") {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
+
+        setTimeout(() => {
+          notification.classList.remove("show");
+        }, 3000);
+      }
+
+      // 로딩 표시
+      function showLoading() {
+        document.getElementById("loadingOverlay").classList.remove("hidden");
+      }
+
+      // 로딩 숨김
+      function hideLoading() {
+        document.getElementById("loadingOverlay").classList.add("hidden");
+      }
+
+      // ===== PHASER 게임 관련 코드 =====
+
+      // Phaser 블랙잭 Scene 정의
+      class BlackjackScene extends Phaser.Scene {
+        constructor() {
+          super({ key: "BlackjackScene" });
+          this.cardSprites = { player: [], dealer: [] }; // Phaser Image 객체 저장
+          this.handsData = { player: [], dealer: [] }; // 카드 값(문자열) 저장
+          this.socket = socket;
+
+          // 화면 크기에 따른 반응형 설정
+          this.setupResponsiveSettings();
+        }
+
+        setupResponsiveSettings() {
+          const screenWidth = window.innerWidth;
+          const isMobile = screenWidth < 1024; // lg 브레이크포인트
+
+          if (isMobile) {
+            // 모바일 설정 - 카드 크기 축소
+            this.cardScale = 0.25;
+            this.cardSpacing = 35;
+            this.baseFontSize = 14;
+            this.scoreFontSize = 16;
+            this.resultFontSize = 18;
+          } else {
+            // PC 설정 - 화면 크기에 따라 조정 (카드 크기 축소)
+            if (screenWidth >= 1920) {
+              // 큰 PC 화면 (1920px 이상)
+              this.cardScale = 0.4;
+              this.cardSpacing = 55;
+              this.baseFontSize = 18;
+              this.scoreFontSize = 22;
+              this.resultFontSize = 26;
+            } else if (screenWidth >= 1440) {
+              // 중간 PC 화면 (1440px 이상)
+              this.cardScale = 0.35;
+              this.cardSpacing = 50;
+              this.baseFontSize = 16;
+              this.scoreFontSize = 20;
+              this.resultFontSize = 24;
+            } else {
+              // 작은 PC 화면 (1024px 이상)
+              this.cardScale = 0.3;
+              this.cardSpacing = 45;
+              this.baseFontSize = 15;
+              this.scoreFontSize = 18;
+              this.resultFontSize = 22;
+            }
+          }
+        }
+
+        preload() {
+          // 카드 이미지 프리로드 (모든 숫자와 무늬 조합)
+          const suits = ["H", "D", "C", "S"]; // Hearts, Diamonds, Clubs, Spades
+          const values = [
+            "A",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "0", // 0은 10을 의미
+            "J",
+            "Q",
+            "K",
+          ];
+
+          suits.forEach((suit) => {
+            values.forEach((value) => {
+              const cardCode = `${value}${suit}`;
+              const imageUrl = `https://deckofcardsapi.com/static/img/${cardCode}.png`;
+              this.load.image(cardCode, imageUrl);
+
+              this.load.on(`loaderror`, (file) => {
+                if (file.key === cardCode) {
+                  console.error(
+                    `[BlackjackGame] Failed to load: ${cardCode} from ${imageUrl}`
+                  );
+                }
+              });
+            });
+          });
+
+          // 카드 뒷면 이미지
+          this.load.image(
+            "card_back",
+            "https://deckofcardsapi.com/static/img/back.png"
+          );
+        }
+
+        create() {
+          const width = this.cameras.main.width;
+          const height = this.cameras.main.height;
+          const centerX = width / 2;
+          const centerY = height / 2;
+
+          // 블랙잭 테이블 배경 생성
+          this.createBlackjackTable(width, height, centerX, centerY);
+
+          // 텍스트 스타일 정의 (반응형)
+          const textStyle = {
+            fontSize: `${this.baseFontSize}px`,
+            fontFamily: '"Noto Serif KR", serif',
+            color: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 2,
+          };
+          const scoreTextStyle = {
+            ...textStyle,
+            fontSize: `${this.scoreFontSize}px`,
+            color: "#ffd700",
+            fontWeight: "bold",
+          };
+          const resultTextStyle = {
+            ...textStyle,
+            fontSize: `${this.resultFontSize}px`,
+            color: "#FFD700",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            padding: { x: 12, y: 6 },
+            borderRadius: 8,
+            fontWeight: "bold",
+          };
+
+          // 딜러/플레이어 라벨
+          this.add.text(centerX - 100, 30, "DEALER", textStyle).setOrigin(0.5);
+          this.add
+            .text(centerX - 100, height - 30, "PLAYER", textStyle)
+            .setOrigin(0.5);
+
+          // 점수 텍스트 (오른쪽으로 이동)
+          this.dealerScoreText = this.add
+            .text(centerX + 100, 30, "0", scoreTextStyle)
+            .setOrigin(0.5);
+          this.playerScoreText = this.add
+            .text(centerX + 100, height - 30, "0", scoreTextStyle)
+            .setOrigin(0.5);
+
+          // 게임 결과 텍스트
+          this.gameResultText = this.add
+            .text(centerX, centerY, "", resultTextStyle)
+            .setOrigin(0.5)
+            .setVisible(false)
+            .setDepth(10);
+
+          this.clearAllCardsAndText();
+        }
+
+        createBlackjackTable(width, height, centerX, centerY) {
+          const g = this.add.graphics();
+
+          // 테이블 배경: 진한 녹색
+          const feltColor = 0x1a4b3a;
+          g.fillStyle(feltColor, 1);
+          g.fillRoundedRect(0, 0, width, height, 12);
+
+          // 딜러, 플레이어 영역에 은은한 하이라이트
+          g.fillStyle(0xffffff, 0.05);
+          g.fillRoundedRect(10, 10, width - 20, height / 2 - 20, 8); // 딜러 영역
+          g.fillRoundedRect(
+            10,
+            height / 2 + 10,
+            width - 20,
+            height / 2 - 20,
+            8
+          ); // 플레이어 영역
+
+          // 중앙선
+          g.lineStyle(2, 0xb8860b, 0.5);
+          g.lineBetween(20, centerY, width - 20, centerY);
+        }
+
+        // 카드 추가 (애니메이션 포함)
+        addCard(handType, card, isHidden = false) {
+          if (!card || !card.value || !card.suit) {
+            console.error("유효하지 않은 카드:", card);
+            return;
+          }
+
+          const width = this.cameras.main.width;
+          const height = this.cameras.main.height;
+          const centerX = width / 2;
+
+          // 카드 위치 계산
+          const cardIndex = this.cardSprites[handType].length;
+          const startX = centerX - this.cardSpacing * 2; // 중앙에서 시작
+          const cardX = startX + cardIndex * this.cardSpacing;
+
+          let cardY;
+          if (handType === "dealer") {
+            cardY = height * 0.25; // 딜러 영역
+          } else {
+            cardY = height * 0.75; // 플레이어 영역
+          }
+
+          // 카드 이미지 키 생성
+          const cardKey = isHidden ? "card_back" : `${card.value}${card.suit}`;
+
+          // 카드 스프라이트 생성
+          const cardSprite = this.add
+            .image(-100, cardY, cardKey)
+            .setScale(this.cardScale)
+            .setDepth(cardIndex);
+
+          // 카드 딜링 애니메이션
+          this.tweens.add({
+            targets: cardSprite,
+            x: cardX,
+            duration: 500,
+            ease: "Power2",
+            onComplete: () => {
+              // 애니메이션 완료 후 점수 업데이트
+              this.updateScores();
+            },
+          });
+
+          // 카드 정보 저장
+          this.cardSprites[handType].push({
+            sprite: cardSprite,
+            card: card,
+            isHidden: isHidden,
+          });
+
+          if (!isHidden) {
+            this.handsData[handType].push(card.value);
+          }
+        }
+
+        // 숨겨진 카드 공개
+        revealHiddenCard(handType, card) {
+          const hiddenCardInfo = this.cardSprites[handType].find(
+            (cardInfo) => cardInfo.isHidden
+          );
+          if (hiddenCardInfo && card) {
+            const cardKey = `${card.value}${card.suit}`;
+            hiddenCardInfo.sprite.setTexture(cardKey);
+            hiddenCardInfo.card = card;
+            hiddenCardInfo.isHidden = false;
+            this.handsData[handType].unshift(card.value); // 첫 번째 카드로 추가
+            this.updateScores();
+          }
+        }
+
+        // 점수 업데이트
+        updateScores() {
+          const dealerScore = this.calculateHandValue(this.handsData.dealer);
+          const playerScore = this.calculateHandValue(this.handsData.player);
+
+          this.dealerScoreText.setText(`${dealerScore}`);
+          this.playerScoreText.setText(`${playerScore}`);
+
+          // 버스트 표시
+          if (dealerScore > 21) {
+            this.dealerScoreText.setColor("#ff4444");
+          } else {
+            this.dealerScoreText.setColor("#ffd700");
+          }
+
+          if (playerScore > 21) {
+            this.playerScoreText.setColor("#ff4444");
+          } else {
+            this.playerScoreText.setColor("#ffd700");
+          }
+        }
+
+        // 카드 값 계산 (블랙잭 규칙)
+        calculateHandValue(hand) {
+          let value = 0;
+          let aces = 0;
+
+          for (let cardValue of hand) {
+            if (cardValue === "A") {
+              aces++;
+              value += 11;
+            } else if (["J", "Q", "K", "0"].includes(cardValue)) {
+              value += 10;
+            } else {
+              value += parseInt(cardValue) || 0;
+            }
+          }
+
+          // 에이스 처리 (21을 넘지 않도록)
+          while (value > 21 && aces > 0) {
+            value -= 10;
+            aces--;
+          }
+
+          return value;
+        }
+
+        // 게임 결과 표시
+        showGameResult(message, color = "#FFD700") {
+          this.gameResultText.setText(message).setColor(color).setVisible(true);
+
+          // 3초 후 결과 숨김
+          this.time.delayedCall(3000, () => {
+            this.gameResultText.setVisible(false);
+          });
+        }
+
+        // 모든 카드와 텍스트 초기화
+        clearAllCardsAndText() {
+          this.clearCards("player");
+          this.clearCards("dealer");
+          this.dealerScoreText.setText("0").setColor("#ffd700");
+          this.playerScoreText.setText("0").setColor("#ffd700");
+          if (this.gameResultText) {
+            this.gameResultText.setVisible(false);
+          }
+        }
+
+        // 특정 핸드의 카드 제거
+        clearCards(handType) {
+          this.cardSprites[handType].forEach((cardInfo) => {
+            if (cardInfo.sprite) {
+              cardInfo.sprite.destroy();
+            }
+          });
+          this.cardSprites[handType] = [];
+          this.handsData[handType] = [];
+        }
+
+        // 카드 재배치 (화면 크기 변경 시)
+        repositionCards() {
+          const width = this.cameras.main.width;
+          const height = this.cameras.main.height;
+          const centerX = width / 2;
+
+          ["player", "dealer"].forEach((handType) => {
+            this.cardSprites[handType].forEach((cardInfo, index) => {
+              if (cardInfo && cardInfo.sprite) {
+                const startX = centerX - this.cardSpacing * 2;
+                const cardX = startX + index * this.cardSpacing;
+                const cardY =
+                  handType === "dealer" ? height * 0.25 : height * 0.75;
+
+                cardInfo.sprite.setScale(this.cardScale);
+                cardInfo.sprite.setPosition(cardX, cardY);
+              }
+            });
+          });
+
+          // 텍스트 스타일도 업데이트
+          if (this.dealerScoreText) {
+            this.dealerScoreText.setStyle({
+              fontSize: `${this.scoreFontSize}px`,
+            });
+          }
+          if (this.playerScoreText) {
+            this.playerScoreText.setStyle({
+              fontSize: `${this.scoreFontSize}px`,
+            });
+          }
+          if (this.gameResultText) {
+            this.gameResultText.setStyle({
+              fontSize: `${this.resultFontSize}px`,
+            });
+          }
+        }
+      }
+
+      // Phaser 게임 시작 함수
+      function startBlackjackGame() {
+        const container = document.getElementById("blackjackGameContainer");
+        if (!container) {
+          console.error("blackjackGameContainer not found!");
+          return;
+        }
+
+        const config = {
+          type: Phaser.AUTO,
+          parent: "blackjackGameContainer",
+          width: container.clientWidth,
+          height: container.clientHeight,
+          transparent: true,
+          scene: BlackjackScene,
+          scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+          },
+        };
+
+        if (blackjackGame) {
+          blackjackGame.destroy(true);
+        }
+
+        blackjackGame = new Phaser.Game(config);
+
+        blackjackGame.events.on("ready", () => {
+          console.log("Blackjack Phaser Game is READY.");
+          if (blackjackGame && blackjackGame.scene) {
+            blackjackScene = blackjackGame.scene.getScene("BlackjackScene");
+            if (!blackjackScene) {
+              console.error("BlackjackScene 인스턴스를 가져올 수 없습니다.");
+            } else {
+              console.log(
+                "BlackjackScene instance obtained after game READY event."
+              );
+            }
+          }
+        });
+      }
+
+      // 창 크기 변경 시 게임 리사이즈
+      window.addEventListener("resize", () => {
+        if (blackjackGame && blackjackScene) {
+          const container = document.getElementById("blackjackGameContainer");
+          if (container && blackjackScene.sys.isActive()) {
+            blackjackScene.setupResponsiveSettings();
+            blackjackScene.repositionCards();
+          }
+        }
+      });
+
+      // ===== 기존 카드 관련 함수들을 Phaser로 대체 =====
+
+      // 초기 카드 렌더링 (Phaser 버전)
+      function renderInitialCards() {
+        if (!gameSession || !blackjackScene || !blackjackScene.sys.isActive()) {
+          console.log("게임 세션이나 Phaser Scene이 준비되지 않음");
+          return;
+        }
+
+        console.log("초기 카드 렌더링 시작:", gameSession);
+
+        // 기존 카드 제거
+        blackjackScene.clearAllCardsAndText();
+
+        // 플레이어 카드
+        if (gameSession.playerHand && gameSession.playerHand.length > 0) {
+          gameSession.playerHand.forEach((card, index) => {
+            if (card && card.value && card.suit) {
+              setTimeout(() => {
+                console.log(`플레이어 카드 ${index} 추가:`, card);
+                blackjackScene.addCard("player", card);
+              }, index * 300);
+            } else {
+              console.error(`유효하지 않은 플레이어 카드 ${index}:`, card);
+            }
+          });
+        }
+
+        // 딜러 카드 (첫 번째는 숨김)
+        if (gameSession.dealerHand && gameSession.dealerHand.length > 0) {
+          gameSession.dealerHand.forEach((card, index) => {
+            // hidden 카드 처리
+            if (
+              card &&
+              (card.value === "hidden" || (card.value && card.suit))
+            ) {
+              setTimeout(() => {
+                if (index === 0 && card.value !== "hidden") {
+                  // 첫 번째 카드는 숨김 (hidden이 아닌 경우)
+                  console.log(`딜러 카드 ${index} 추가 (숨김):`, card);
+                  blackjackScene.addCard("dealer", card, true);
+                } else if (card.value !== "hidden") {
+                  // 일반 카드
+                  console.log(`딜러 카드 ${index} 추가:`, card);
+                  blackjackScene.addCard("dealer", card);
+                } else {
+                  // hidden 카드는 뒷면으로 표시
+                  console.log(`딜러 카드 ${index} 추가 (hidden):`, card);
+                  blackjackScene.addCard(
+                    "dealer",
+                    { value: "A", suit: "S" },
+                    true
+                  ); // 임시 카드로 뒷면 표시
+                }
+              }, (gameSession.playerHand.length + index) * 300);
+            } else {
+              console.error(`유효하지 않은 딜러 카드 ${index}:`, card);
+            }
+          });
+        }
+      }
+
+      // 카드 추가 (Phaser 버전)
+      function addCardToHand(handType, card) {
+        if (!card) {
+          console.error("카드가 전달되지 않았습니다:", handType, card);
+          return;
+        }
+
+        if (!blackjackScene || !blackjackScene.sys.isActive()) {
+          console.error("Phaser Scene이 준비되지 않았습니다:", handType, card);
+          return;
+        }
+
+        if (!card.value || !card.suit) {
+          console.error("유효하지 않은 카드 데이터:", handType, card);
+          return;
+        }
+
+        console.log(`카드 추가: ${handType}`, card);
+        blackjackScene.addCard(handType, card);
+      }
+
+      // 딜러 숨겨진 카드 공개 (Phaser 버전)
+      function revealDealerHiddenCard(card) {
+        if (!card || !blackjackScene) {
+          console.error(
+            "유효하지 않은 카드 객체이거나 Phaser Scene이 없습니다:",
+            card
+          );
+          return;
+        }
+
+        blackjackScene.revealHiddenCard("dealer", card);
+      }
+
+      // 게임 테이블 초기화 (Phaser 버전)
+      function clearGameTable() {
+        if (blackjackScene) {
+          blackjackScene.clearAllCardsAndText();
+        }
+      }
+
+      // 점수 업데이트 함수들 (Phaser에서 자동 처리되므로 빈 함수로 유지)
+      function updatePlayerScore(score) {
+        // Phaser Scene에서 자동으로 처리됨
+      }
+
+      function updateDealerScore(score) {
+        // Phaser Scene에서 자동으로 처리됨
+      }
+    </script>
+  </body>
+</html>

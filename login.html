@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>회원가입 - 골든 카지노</title>
+    <title>로그인 - 골든 카지노</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap"
@@ -36,7 +36,7 @@
         }
       }
 
-      .register-container {
+      .login-container {
         background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
         border: 1px solid #b8860b;
         box-shadow: 0 0 30px rgba(184, 134, 11, 0.3);
@@ -55,13 +55,13 @@
         outline: none;
       }
 
-      .register-btn {
+      .login-btn {
         background: linear-gradient(to right, #b8860b, #daa520);
         transition: all 0.3s ease;
         box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3);
       }
 
-      .register-btn:hover {
+      .login-btn:hover {
         background: linear-gradient(to right, #daa520, #ffd700);
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
@@ -119,26 +119,26 @@
         >
         <div>
           <a
-            href="login.html"
+            href="register.html"
             class="px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black rounded font-bold hover:from-yellow-500 hover:to-yellow-400 transition"
           >
-            로그인
+            회원가입
           </a>
         </div>
       </div>
     </header>
 
-    <!-- 메인 회원가입 섹션 -->
+    <!-- 메인 로그인 섹션 -->
     <main class="flex-1 flex items-center justify-center p-4">
       <div class="w-full max-w-md">
-        <div class="form-container register-container p-8 rounded-2xl">
+        <div class="form-container login-container p-8 rounded-2xl">
           <!-- 로고 아이콘 -->
           <div class="text-center mb-8">
             <h1 class="text-3xl font-bold golden-text mb-2">GOLDEN CASINO</h1>
           </div>
 
-          <!-- 회원가입 폼 -->
-          <form id="registerForm" class="space-y-6">
+          <!-- 로그인 폼 -->
+          <form id="loginForm" class="space-y-6">
             <div>
               <label class="block text-yellow-500 mb-2 font-medium">
                 <i class="fas fa-user mr-2"></i>
@@ -169,10 +169,10 @@
 
             <button
               type="submit"
-              class="register-btn w-full py-3 rounded-lg text-white text-lg font-bold shadow-lg"
+              class="login-btn w-full py-3 rounded-lg text-white text-lg font-bold shadow-lg"
             >
-              <i class="fas fa-user-plus mr-2"></i>
-              가입하기
+              <i class="fas fa-sign-in-alt mr-2"></i>
+              로그인
             </button>
           </form>
 
@@ -180,12 +180,12 @@
           <div class="mt-8 space-y-4">
             <div class="text-center text-gray-400">
               <p>
-                이미 계정이 있으신가요?
+                계정이 없으신가요?
                 <a
-                  href="login.html"
+                  href="register.html"
                   class="text-yellow-500 hover:text-yellow-400 font-medium transition"
                 >
-                  로그인
+                  회원가입
                 </a>
               </p>
             </div>
@@ -202,9 +202,9 @@
     </footer>
 
     <script>
-      // 회원가입 폼 처리
+      // 로그인 폼 처리
       document
-        .getElementById("registerForm")
+        .getElementById("loginForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
 
@@ -219,11 +219,11 @@
 
           // 로딩 상태 표시
           submitBtn.innerHTML =
-            '<i class="fas fa-spinner fa-spin mr-2"></i>가입 중...';
+            '<i class="fas fa-spinner fa-spin mr-2"></i>로그인 중...';
           submitBtn.disabled = true;
 
           try {
-            const res = await fetch("http://127.0.0.1:5000/api/auth/register", {
+            const res = await fetch("http://127.0.0.1:5000/api/auth/login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username, password }),
@@ -234,18 +234,22 @@
             if (res.ok) {
               // 성공 메시지 표시
               submitBtn.innerHTML =
-                '<i class="fas fa-check mr-2"></i>가입 성공!';
+                '<i class="fas fa-check mr-2"></i>로그인 성공!';
 
-              alert(data.message);
+              // 토큰 저장 후 사용자 페이지로 이동
+              localStorage.setItem("token", data.token);
+
+              // 토큰 디코딩하여 역할 확인
+              const payload = JSON.parse(atob(data.token.split(".")[1]));
 
               setTimeout(() => {
-                window.location.href = "login.html";
+                window.location.href = "index.html";
               }, 1000);
             } else {
               alert(data.message);
               // 버튼 상태 복원
               submitBtn.innerHTML =
-                '<i class="fas fa-user-plus mr-2"></i>가입하기';
+                '<i class="fas fa-sign-in-alt mr-2"></i>로그인';
               submitBtn.disabled = false;
             }
           } catch (err) {
@@ -253,7 +257,7 @@
             alert("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
             // 버튼 상태 복원
             submitBtn.innerHTML =
-              '<i class="fas fa-user-plus mr-2"></i>가입하기';
+              '<i class="fas fa-sign-in-alt mr-2"></i>로그인';
             submitBtn.disabled = false;
           }
         });
