@@ -454,22 +454,10 @@
                 <span>딜</span>
               </button>
 
-              <!-- 연속 게임 버튼들 -->
-              <button
-                id="dealDoubleBtn"
-                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
-              >
-                <span>2배딜</span>
-              </button>
-              <button
-                id="dealRebetBtn"
-                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
-              >
-                <span>재딜</span>
-              </button>
+              <!-- 새게임 버튼만 유지 -->
               <button
                 id="newGameBtn"
-                class="bg-gray-600 hover:bg-gray-500 w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
+                class="golden-btn w-14 h-14 rounded-full font-bold text-sm flex items-center justify-center hidden"
               >
                 <span>새게임</span>
               </button>
@@ -829,14 +817,7 @@
           .getElementById("endGameBtn")
           .addEventListener("click", endGame);
 
-        // 2배딜과 재딜 이벤트 리스너 추가
-        document
-          .getElementById("dealDoubleBtn")
-          .addEventListener("click", dealDouble);
-
-        document
-          .getElementById("dealRebetBtn")
-          .addEventListener("click", dealRebet);
+        // 이벤트 리스너 제거 (2배딜과 재딜 버튼 제거됨)
 
         // 게임 액션들
         document.getElementById("hitBtn").addEventListener("click", () => {
@@ -908,17 +889,13 @@
         }
       }
 
-      // 연속 게임 버튼들 표시
+      // 연속 게임 버튼들 표시 (새게임 버튼만)
       function showContinuousGameButtons() {
-        const dealDoubleBtn = document.getElementById("dealDoubleBtn");
-        const dealRebetBtn = document.getElementById("dealRebetBtn");
         const newGameBtn = document.getElementById("newGameBtn");
         const endGameBtn = document.getElementById("endGameBtn");
         const placeBetBtn = document.getElementById("placeBetBtn");
         const startGameBtn = document.getElementById("startGameBtn");
 
-        if (dealDoubleBtn) dealDoubleBtn.classList.remove("hidden");
-        if (dealRebetBtn) dealRebetBtn.classList.remove("hidden");
         if (newGameBtn) newGameBtn.classList.remove("hidden");
         if (endGameBtn) endGameBtn.classList.remove("hidden");
 
@@ -927,17 +904,13 @@
         if (startGameBtn) startGameBtn.classList.add("hidden");
       }
 
-      // 연속 게임 버튼들 숨기기
+      // 연속 게임 버튼들 숨기기 (새게임 버튼만)
       function hideContinuousGameButtons() {
-        const dealDoubleBtn = document.getElementById("dealDoubleBtn");
-        const dealRebetBtn = document.getElementById("dealRebetBtn");
         const newGameBtn = document.getElementById("newGameBtn");
         const endGameBtn = document.getElementById("endGameBtn");
         const placeBetBtn = document.getElementById("placeBetBtn");
         const startGameBtn = document.getElementById("startGameBtn");
 
-        if (dealDoubleBtn) dealDoubleBtn.classList.add("hidden");
-        if (dealRebetBtn) dealRebetBtn.classList.add("hidden");
         if (newGameBtn) newGameBtn.classList.add("hidden");
         if (endGameBtn) endGameBtn.classList.add("hidden");
 
@@ -1056,18 +1029,29 @@
         updateGameSession(session);
         disableGameActions();
 
+        // results가 있으면 사용, 없으면 게임 상황을 분석해서 결과 추정
+        let gameResult = null;
+        
         if (results && results.length > 0) {
-          const result = results[0];
+          gameResult = results[0];
+        } else {
+          // results가 없을 때 게임 상황 분석
+          console.log("게임 결과 분석 중...", session);
+          gameResult = analyzeGameResult(session);
+          console.log("분석된 결과:", gameResult);
+        }
 
+        if (gameResult) {
           // 모달로 결과 표시
-          showGameResultModal(result.result, result.payout);
+          console.log("결과 모달 표시:", gameResult.result, gameResult.payout);
+          showGameResultModal(gameResult.result, gameResult.payout || 0);
 
           // Phaser에서는 간단한 결과만 표시
           if (blackjackScene) {
             let message = "";
             let color = "#FFD700";
 
-            switch (result.result) {
+            switch (gameResult.result) {
               case "win":
                 message = "승리!";
                 color = "#00ff00";
@@ -1089,11 +1073,15 @@
                 color = "#ff4444";
                 break;
               default:
-                message = result.result;
+                message = gameResult.result;
             }
 
             blackjackScene.showGameResult(message, color);
           }
+        } else {
+          console.log("게임 결과를 분석할 수 없습니다.");
+          // 결과를 분석할 수 없을 때 기본 메시지 표시
+          showNotification("게임이 완료되었습니다.", "info");
         }
 
         isGameActive = false;
@@ -1116,11 +1104,12 @@
         }, 3000);
       }
 
-      // 새 게임
+      // 새 게임 - 베팅부터 시작
       function newGame() {
         // 상태 초기화
         isGameActive = false;
         isDealerTurn = false;
+        currentBetAmount = 0; // 베팅 금액 초기화
 
         socket.emit("new_game");
         clearGameTable();
@@ -1133,9 +1122,10 @@
         }
         hideContinuousGameButtons();
 
-        // 베팅 상태 재설정
+        // 베팅 상태로 완전 초기화
         setTimeout(() => {
           updateBetDisplay();
+          showNotification("새 게임을 시작합니다. 베팅을 선택해주세요.", "info");
         }, 500);
       }
 
@@ -1162,84 +1152,88 @@
         }
       }
 
-      // 딜 더블 (2배 베팅 후 게임 시작)
-      function dealDouble() {
-        if (!gameSession) {
-          showNotification("게임 세션이 없습니다.", "warning");
-          return;
+      // 게임 결과 분석 (results가 없을 때 상황 분석)
+      function analyzeGameResult(session) {
+        if (!session) return null;
+
+        const playerValue = session.playerValue;
+        const dealerValue = session.dealerValue;
+        const playerHand = session.playerHand || [];
+        const dealerHand = session.dealerHand || [];
+
+        // 플레이어 버스트 확인
+        if (playerValue > 21) {
+          return {
+            result: "bust",
+            payout: -session.currentBet
+          };
         }
 
-        // 이전 베팅 금액의 2배
-        const lastBet = gameSession.currentBet || currentBetAmount;
-        const doubleBet = lastBet * 2;
-
-        // 게임 초기화 후 새로운 베팅으로 게임 시작
-        socket.emit("new_game");
-
-        setTimeout(() => {
-          currentBetAmount = doubleBet; // 누적 베팅액으로 설정
-          updateBetDisplay();
-
-          showLoading();
-          socket.emit("place_bet", {
-            amount: doubleBet,
-            token: token,
-          });
-
-          // 베팅 완료 후 즉시 게임 시작
-          setTimeout(() => {
-            clearGameTable();
-            socket.emit("start_game");
-            updateGameStatus("딜링 중");
-
-            // 게임 액션 버튼들 표시
-            document
-              .getElementById("gameActionButtons")
-              .classList.remove("hidden");
-
-            isGameActive = true;
-          }, 300);
-        }, 200);
-      }
-
-      // 딜 재배팅 (같은 금액으로 베팅 후 게임 시작)
-      function dealRebet() {
-        if (!gameSession) {
-          showNotification("게임 세션이 없습니다.", "warning");
-          return;
+        // 블랙잭 확인 (첫 두 카드로 21)
+        if (playerValue === 21 && playerHand.length === 2) {
+          // 딜러도 블랙잭인지 확인
+          if (dealerValue === 21 && dealerHand.length === 2) {
+            return {
+              result: "push",
+              payout: 0
+            };
+          } else {
+            return {
+              result: "blackjack",
+              payout: Math.floor(session.currentBet * 1.5)
+            };
+          }
         }
 
-        // 이전 베팅 금액 또는 현재 누적 베팅액
-        const lastBet = gameSession.currentBet || currentBetAmount;
+        // 21로 승리 (블랙잭이 아닌 경우)
+        if (playerValue === 21) {
+          // 딜러가 아직 턴을 하지 않았거나, 딜러보다 점수가 높을 경우
+          if (dealerValue < 21 || dealerHand.length < 2) {
+            return {
+              result: "win",
+              payout: session.currentBet
+            };
+          } else if (dealerValue === 21) {
+            return {
+              result: "push",
+              payout: 0
+            };
+          } else {
+            return {
+              result: "win",
+              payout: session.currentBet
+            };
+          }
+        }
 
-        // 게임 초기화 후 새로운 베팅으로 게임 시작
-        socket.emit("new_game");
+        // 딜러 버스트
+        if (dealerValue > 21) {
+          return {
+            result: "win",
+            payout: session.currentBet
+          };
+        }
 
-        setTimeout(() => {
-          currentBetAmount = lastBet; // 누적 베팅액으로 설정
-          updateBetDisplay();
-
-          showLoading();
-          socket.emit("place_bet", {
-            amount: lastBet,
-            token: token,
-          });
-
-          // 베팅 완료 후 즉시 게임 시작
-          setTimeout(() => {
-            clearGameTable();
-            socket.emit("start_game");
-            updateGameStatus("딜링 중");
-
-            // 게임 액션 버튼들 표시
-            document
-              .getElementById("gameActionButtons")
-              .classList.remove("hidden");
-
-            isGameActive = true;
-          }, 300);
-        }, 200);
+        // 일반적인 승부 결정
+        if (playerValue > dealerValue) {
+          return {
+            result: "win",
+            payout: session.currentBet
+          };
+        } else if (playerValue < dealerValue) {
+          return {
+            result: "lose",
+            payout: -session.currentBet
+          };
+        } else {
+          return {
+            result: "push",
+            payout: 0
+          };
+        }
       }
+
+      // dealDouble과 dealRebet 함수 제거됨 (버튼 제거로 인해)
 
       // 게임 세션 업데이트
       function updateGameSession(session) {
