@@ -609,7 +609,9 @@
 
       // 소켓 초기화
       function initializeSocket() {
-        socket = io("http://127.0.0.1:5000");
+        socket = io(
+          "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+        );
 
         socket.on("connect", () => {
           console.log("서버에 연결되었습니다.");

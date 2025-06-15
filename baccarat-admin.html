@@ -738,7 +738,9 @@
       }
 
       // 소켓 연결
-      const socket = io("http://127.0.0.1:5000");
+      const socket = io(
+        "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+      );
 
       // 뒤로가기 버튼 기능
       document
@@ -1034,7 +1036,7 @@
       async function fetchLeaderboard() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/leaderboard",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/leaderboard",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1091,7 +1093,7 @@
       async function fetchAllBettingHistory() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/all-betting-history",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/all-betting-history",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1334,7 +1336,7 @@
       async function fetchRecentGames() {
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/recent-games",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/recent-games",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -1466,7 +1468,7 @@
 
         try {
           const res = await fetch(
-            "http://127.0.0.1:5000/api/admin/reset-game-history",
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/admin/reset-game-history",
             {
               method: "DELETE",
               headers: {

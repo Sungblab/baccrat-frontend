@@ -495,7 +495,9 @@
 
     <script>
       const token = localStorage.getItem("token");
-      let socket = io("http://127.0.0.1:5000");
+      let socket = io(
+        "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app"
+      );
       let selectedRoomId = null;
       let rooms = {};
       let leaderboardData = [];
@@ -510,9 +512,12 @@
         }
 
         try {
-          const res = await fetch("http://127.0.0.1:5000/api/auth/user-info", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
 
           if (res.status === 401 || res.status === 403) {
             console.log("토큰이 만료되었거나 유효하지 않습니다.");
