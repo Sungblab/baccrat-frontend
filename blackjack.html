@@ -615,6 +615,11 @@
             updateBalance(data.user.balance);
             updateGameSession(data.session);
             showNotification("게임에 접속했습니다.", "success");
+            
+            // 인증 성공 후 최신 잔액 가져오기
+            setTimeout(() => {
+              fetchUserInfo(true); // 즉시 실행
+            }, 500);
           } else {
             showNotification("인증에 실패했습니다.", "error");
             setTimeout(() => (window.location.href = "index.html"), 2000);
@@ -1095,6 +1100,11 @@
         }
         showContinuousGameButtons();
 
+        // 게임 완료 후 최신 잔액 가져오기 (바카라와 같은 방식)
+        setTimeout(() => {
+          fetchUserInfo(); // 서버에서 최신 잔액 조회
+        }, 1000); // 1초 후 최신 잔액 조회
+
         // 3초 후 베팅 상태로 자동 전환
         setTimeout(() => {
           if (gameSession && gameSession.status === "waiting") {
@@ -1234,6 +1244,59 @@
       }
 
       // dealDouble과 dealRebet 함수 제거됨 (버튼 제거로 인해)
+
+      // fetchUserInfo 함수 추가 (바카라와 동일한 로직)
+      let fetchUserInfoTimer = null;
+      let fetchUserInfoInProgress = false;
+
+      async function fetchUserInfo(immediate = false) {
+        // 즉시 실행이 아닌 경우 디바운싱 적용
+        if (!immediate) {
+          if (fetchUserInfoTimer) {
+            clearTimeout(fetchUserInfoTimer);
+          }
+          fetchUserInfoTimer = setTimeout(() => {
+            fetchUserInfo(true);
+          }, 200); // 200ms 디바운싱
+          return;
+        }
+
+        // 이미 요청 중이면 중복 요청 방지
+        if (fetchUserInfoInProgress) {
+          return;
+        }
+
+        fetchUserInfoInProgress = true;
+
+        try {
+          const res = await fetch(
+            "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          if (res.ok) {
+            const user = await res.json();
+            
+            // 잔액 업데이트
+            const balance = typeof user.balance === "number" && !isNaN(user.balance) ? user.balance : 0;
+            updateBalance(balance);
+            
+            // 게임 세션이 있으면 세션 잔액도 업데이트
+            if (gameSession) {
+              gameSession.balance = balance;
+            }
+            
+            console.log("블랙잭 잔액 업데이트 완료:", balance);
+          } else {
+            console.error("사용자 정보를 가져오는데 실패했습니다.");
+          }
+        } catch (err) {
+          console.error("fetchUserInfo 오류:", err);
+        } finally {
+          fetchUserInfoInProgress = false;
+        }
+      }
 
       // 게임 세션 업데이트
       function updateGameSession(session) {
