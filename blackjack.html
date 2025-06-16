@@ -818,7 +818,7 @@
           console.log("히트 결과 수신:", data);
           
           if (data.success) {
-            // 카드 데이터 검증
+            // 새 카드가 있는 경우에만 카드 추가 (실제 히트 시에만)
             if (data.newCard && data.newCard.value && data.newCard.suit) {
               if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
                 // 스플릿 상태에서는 현재 핸드에 카드 추가
@@ -831,11 +831,17 @@
               } else {
                 addCardToHand("player", data.newCard);
               }
-            } else {
-              console.error("히트 결과에서 유효하지 않은 카드 데이터:", data.newCard);
-              console.error("전체 히트 결과 데이터:", JSON.stringify(data));
             }
+            // newCard가 없는 경우는 정상 (자동 스탠드 등)
             
+            // 게임 세션 업데이트
+            updateGameSession(data.session);
+            
+            // 스플릿 상태인 경우 핸드 데이터 동기화
+            if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
+              blackjackScene.syncSplitHandsWithSession(data.session);
+            }
+
             updatePlayerScore(data.handValue);
 
             // 더블다운 후 히트인 경우 특별 처리
@@ -889,7 +895,19 @@
         // 스탠드 결과
         socket.on("stand_result", (data) => {
           if (data.success) {
-            if (data.isSplit && data.nextHandIndex !== undefined) {
+            // 게임 세션 업데이트
+            updateGameSession(data.session);
+            
+            // 스플릿 상태인 경우 핸드 데이터 동기화
+            if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
+              blackjackScene.syncSplitHandsWithSession(data.session);
+            }
+            
+            // 자동 스탠드인 경우 특별 메시지
+            if (data.autoStand) {
+              showNotification("21! 자동 스탠드하여 딜러 턴을 진행합니다.", "success");
+              disableGameActions();
+            } else if (data.isSplit && data.nextHandIndex !== undefined) {
               showNotification(`핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`, "info");
               // 다음 핸드로 이동하는 경우 액션 버튼 유지
             } else {
@@ -995,8 +1013,9 @@
           
           showNotification(`핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`, "info");
           
-          // Phaser에서 다음 핸드 강조
-          if (blackjackScene) {
+          // Phaser에서 스플릿 핸드 동기화 및 다음 핸드 강조
+          if (blackjackScene && blackjackScene.isSplit) {
+            blackjackScene.syncSplitHandsWithSession(data.session);
             blackjackScene.highlightCurrentHand(data.nextHandIndex);
           }
           
@@ -2418,18 +2437,24 @@
 
         // 모든 카드와 텍스트 초기화
         clearAllCardsAndText() {
+          console.log("모든 카드와 텍스트 초기화 시작");
+          
           this.clearCards("player");
           this.clearCards("dealer");
           
-          // 스플릿 관련 초기화
+          // 스플릿 관련 완전 초기화
           if (this.isSplit) {
+            console.log("스플릿 상태 초기화");
+            
             if (this.splitHandSprites) {
-              this.splitHandSprites.forEach(handSprites => {
-                handSprites.forEach(cardInfo => {
-                  if (cardInfo.sprite) {
-                    cardInfo.sprite.destroy();
-                  }
-                });
+              this.splitHandSprites.forEach((handSprites, handIndex) => {
+                if (handSprites) {
+                  handSprites.forEach(cardInfo => {
+                    if (cardInfo && cardInfo.sprite) {
+                      cardInfo.sprite.destroy();
+                    }
+                  });
+                }
               });
             }
             
@@ -2440,19 +2465,27 @@
                 }
               });
             }
-            
-            this.isSplit = false;
-            this.splitHands = null;
-            this.splitHandSprites = null;
-            this.splitHandScoreTexts = null;
-            this.currentHandIndex = 0;
           }
           
-          this.dealerScoreText.setText("0").setColor("#ffd700");
-          this.playerScoreText.setText("0").setColor("#ffd700");
+          // 스플릿 관련 변수들 완전 초기화
+          this.isSplit = false;
+          this.splitHands = [];
+          this.splitHandSprites = [];
+          this.splitHandScoreTexts = [];
+          this.currentHandIndex = 0;
+          
+          // 점수 텍스트 초기화
+          if (this.dealerScoreText) {
+            this.dealerScoreText.setText("0").setColor("#ffd700");
+          }
+          if (this.playerScoreText) {
+            this.playerScoreText.setText("0").setColor("#ffd700");
+          }
           if (this.gameResultText) {
             this.gameResultText.setVisible(false);
           }
+          
+          console.log("모든 카드와 텍스트 초기화 완료");
         }
 
         // 특정 핸드의 카드 제거
@@ -2470,15 +2503,19 @@
         handleSplit(session) {
           if (!session.isSplit || !session.splitHands) return;
 
+          console.log("스플릿 처리 시작:", session.splitHands);
+
           // 현재 카드들 제거
           this.clearCards("player");
 
           // 스플릿 핸드들을 위한 새로운 변수들 초기화
           this.isSplit = true;
-          this.splitHands = session.splitHands;
+          this.splitHands = JSON.parse(JSON.stringify(session.splitHands)); // 깊은 복사
           this.currentHandIndex = session.currentHandIndex || 0;
           this.splitHandSprites = [[], []]; // 각 핸드의 카드 스프라이트들
           this.splitHandScoreTexts = [];
+
+          console.log("스플릿 핸드 데이터 설정:", this.splitHands);
 
           const width = this.cameras.main.width;
           const height = this.cameras.main.height;
@@ -2566,23 +2603,61 @@
             card: card,
           });
 
+          // 스플릿 핸드 데이터는 서버에서 관리하므로 여기서는 추가하지 않음
+          // (syncSplitHandsWithSession에서 서버 데이터로 동기화됨)
+
           // 점수 업데이트
           this.updateSplitHandScore(handIndex);
         }
 
+        // 스플릿 핸드 데이터 동기화 (서버 세션과 동기화)
+        syncSplitHandsWithSession(session) {
+          if (!session.isSplit || !session.splitHands) return;
+
+          console.log("스플릿 핸드 동기화:", session.splitHands);
+          
+          // 서버 데이터로 스플릿 핸드 업데이트
+          this.splitHands = [...session.splitHands];
+          this.currentHandIndex = session.currentHandIndex || 0;
+
+          // 각 핸드의 점수 업데이트
+          this.splitHands.forEach((hand, handIndex) => {
+            if (hand && this.splitHandScoreTexts[handIndex]) {
+              this.updateSplitHandScore(handIndex);
+            }
+          });
+
+          // 현재 핸드 강조
+          this.highlightCurrentHand(this.currentHandIndex);
+        }
+
         // 스플릿 핸드 점수 업데이트
         updateSplitHandScore(handIndex) {
-          if (!this.splitHands || !this.splitHands[handIndex] || !this.splitHandScoreTexts[handIndex]) return;
+          if (!this.splitHands || !this.splitHands[handIndex] || !this.splitHandScoreTexts[handIndex]) {
+            console.log(`스플릿 핸드 점수 업데이트 실패 - handIndex: ${handIndex}, splitHands:`, this.splitHands, 'scoreTexts:', this.splitHandScoreTexts);
+            return;
+          }
 
           const hand = this.splitHands[handIndex];
-          const handValues = hand.map(card => card.value);
+          console.log(`핸드 ${handIndex} 점수 계산:`, hand);
+          
+          // 카드 값들 추출 (유효한 카드만)
+          const handValues = hand
+            .filter(card => card && card.value && card.value !== 'hidden')
+            .map(card => card.value);
+          
+          console.log(`핸드 ${handIndex} 카드 값들:`, handValues);
+          
           const score = this.calculateHandValue(handValues);
+          console.log(`핸드 ${handIndex} 최종 점수:`, score);
 
           this.splitHandScoreTexts[handIndex].setText(`${score}`);
 
           // 버스트 표시
           if (score > 21) {
             this.splitHandScoreTexts[handIndex].setColor("#ff4444");
+          } else if (score === 21) {
+            this.splitHandScoreTexts[handIndex].setColor("#00ff00");
           } else {
             this.splitHandScoreTexts[handIndex].setColor("#ffd700");
           }
