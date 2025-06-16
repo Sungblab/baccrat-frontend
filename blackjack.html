@@ -740,11 +740,21 @@
               if (blackjackScene && blackjackScene.sys.isActive()) {
                 renderInitialCards();
 
-                // 블랙잭 체크가 필요한 경우
+                // 블랙잭 체크가 필요한 경우 (딜러 블랙잭 우선 확인)
                 if (data.needsBlackjackCheck) {
                   setTimeout(() => {
                     socket.emit("check_blackjack");
                   }, 1500); // 카드 딜링 애니메이션 후
+                }
+                
+                // 딜러 업카드가 A 또는 10가치 카드인 경우 즉시 블랙잭 체크
+                if (data.session && data.session.dealerHand && data.session.dealerHand.length >= 2) {
+                  const dealerUpCard = data.session.dealerHand[1]; // 두 번째 카드가 업카드
+                  if (dealerUpCard && (dealerUpCard.value === 'A' || ['10', 'J', 'Q', 'K'].includes(dealerUpCard.value))) {
+                    setTimeout(() => {
+                      socket.emit("check_dealer_blackjack");
+                    }, 2000); // 카드 딜링 후 딜러 블랙잭 체크
+                  }
                 }
               } else {
                 // Scene이 준비되지 않았으면 100ms 후 다시 시도
@@ -769,10 +779,44 @@
           }
         });
 
+        // 딜러 블랙잭 발생
+        socket.on("dealer_blackjack", (data) => {
+          // 딜러 홀 카드 즉시 공개
+          if (data.holeCard) {
+            revealDealerHiddenCard(data.holeCard);
+            updateDealerScore(21);
+          }
+          
+          // 딜러 블랙잭 알림과 시각적 효과
+          showNotification("딜러 블랙잭! 🃏 딜러 승리!", "info");
+          
+          // Phaser에서 특별한 딜러 블랙잭 효과 표시
+          if (blackjackScene) {
+            blackjackScene.showGameResult("딜러 블랙잭!", "#FFD700");
+          }
+          
+          // 게임 액션 즉시 비활성화
+          disableGameActions();
+          
+          // 게임 즉시 종료
+          setTimeout(() => {
+            handleGameEnd(data.session, data.results);
+          }, 1500);
+        });
+
         // 히트 결과
         socket.on("hit_result", (data) => {
+          console.log("히트 결과 수신:", data);
+          
           if (data.success) {
-            addCardToHand("player", data.newCard);
+            // 카드 데이터 검증
+            if (data.newCard && data.newCard.value && data.newCard.suit) {
+              addCardToHand("player", data.newCard);
+            } else {
+              console.error("히트 결과에서 유효하지 않은 카드 데이터:", data.newCard);
+              console.error("전체 히트 결과 데이터:", JSON.stringify(data));
+            }
+            
             updatePlayerScore(data.handValue);
 
             // 더블다운 후 히트인 경우 특별 처리
@@ -828,12 +872,26 @@
         // 딜러 숨겨진 카드 공개
         socket.on("dealer_hidden_card_revealed", (data) => {
           revealDealerHiddenCard(data.hiddenCard);
-          updateDealerScore();
+          updateDealerScore(data.dealerValue);
+          
+          // 딜러 블랙잭인 경우 즉시 알림
+          if (data.dealerValue === 21 && data.isDealerBlackjack) {
+            showNotification("딜러 블랙잭! 딜러 승리!", "info");
+          }
         });
 
         // 딜러 카드 추가
         socket.on("dealer_card_dealt", (data) => {
-          addCardToHand("dealer", data.newCard);
+          console.log("딜러 카드 추가 수신:", data);
+          
+          // 카드 데이터 검증
+          if (data.newCard && data.newCard.value && data.newCard.suit) {
+            addCardToHand("dealer", data.newCard);
+          } else {
+            console.error("딜러 카드에서 유효하지 않은 카드 데이터:", data.newCard);
+            console.error("전체 딜러 카드 데이터:", JSON.stringify(data));
+          }
+          
           updateDealerScore(data.dealerValue);
         });
 
@@ -1317,20 +1375,28 @@
           };
         }
 
-        // 블랙잭 확인 (첫 두 카드로 21)
-        if (playerValue === 21 && playerHand.length === 2) {
-          // 딜러도 블랙잭인지 확인
-          if (dealerValue === 21 && dealerHand.length === 2) {
+        // 딜러 블랙잭 먼저 확인 (딜러 블랙잭이 우선)
+        if (dealerValue === 21 && dealerHand.length === 2) {
+          // 플레이어도 블랙잭인지 확인
+          if (playerValue === 21 && playerHand.length === 2) {
             return {
               result: "push",
               payout: 0
             };
           } else {
             return {
-              result: "blackjack",
-              payout: Math.floor(session.currentBet * 1.5)
+              result: "lose",
+              payout: -session.currentBet
             };
           }
+        }
+
+        // 플레이어 블랙잭 확인 (딜러가 블랙잭이 아닌 경우)
+        if (playerValue === 21 && playerHand.length === 2) {
+          return {
+            result: "blackjack",
+            payout: Math.floor(session.currentBet * 1.5)
+          };
         }
 
         // 21로 승리 (블랙잭이 아닌 경우)
@@ -2319,15 +2385,20 @@
 
         // 플레이어 카드
         if (gameSession.playerHand && gameSession.playerHand.length > 0) {
+          console.log("플레이어 카드 렌더링:", gameSession.playerHand);
           gameSession.playerHand.forEach((card, index) => {
             if (card && card.value && card.suit) {
               setTimeout(() => {
+                console.log(`플레이어 카드 ${index} 추가:`, card);
                 blackjackScene.addCard("player", card);
               }, index * 300);
             } else {
               console.error(`유효하지 않은 플레이어 카드 ${index}:`, card);
+              console.error("전체 플레이어 핸드:", JSON.stringify(gameSession.playerHand));
             }
           });
+        } else {
+          console.log("플레이어 카드가 없습니다:", gameSession.playerHand);
         }
 
         // 딜러 카드 (첫 번째는 숨김)
@@ -2363,8 +2434,11 @@
 
       // 카드 추가 (Phaser 버전)
       function addCardToHand(handType, card) {
+        console.log("addCardToHand 호출됨:", handType, card);
+        
         if (!card) {
           console.error("카드가 전달되지 않았습니다:", handType, card);
+          console.error("현재 gameSession:", gameSession);
           return;
         }
 
@@ -2375,10 +2449,16 @@
 
         if (!card.value || !card.suit) {
           console.error("유효하지 않은 카드 데이터:", handType, card);
+          console.error("카드 객체 전체:", JSON.stringify(card));
           return;
         }
 
-        blackjackScene.addCard(handType, card);
+        try {
+          blackjackScene.addCard(handType, card);
+          console.log("카드 추가 성공:", handType, card.value, card.suit);
+        } catch (error) {
+          console.error("카드 추가 중 오류:", error);
+        }
       }
 
       // 딜러 숨겨진 카드 공개 (Phaser 버전)
