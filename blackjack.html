@@ -975,21 +975,16 @@
               blackjackScene.syncSplitHandsWithSession(data.session);
             }
 
-            // 자동 스탠드인 경우 특별 메시지
-            if (data.autoStand) {
-              showNotification(
-                "21! 자동 스탠드하여 딜러 턴을 진행합니다.",
-                "success"
-              );
-              disableGameActions();
-            } else if (data.isSplit && data.nextHandIndex !== undefined) {
+            // 자동 스탠드 로직 제거 - 21이 되어도 플레이어가 직접 선택
+            if (data.isSplit && data.nextHandIndex !== undefined) {
               showNotification(
                 `핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`,
                 "info"
               );
               // 다음 핸드로 이동하는 경우 액션 버튼 유지
             } else {
-              disableGameActions();
+              // 21이 되어도 액션 버튼 유지 (플레이어가 직접 스탠드 선택)
+              // disableGameActions() 제거하여 수동 스탠드 가능
             }
           }
         });
