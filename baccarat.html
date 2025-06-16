@@ -2265,20 +2265,187 @@
         let isPageVisible = !document.hidden;
         let hasJoinedGame = false;
 
-        // 소켓 연결 후 인증
+        // 게임 상태 저장을 위한 변수
+        let gameSessionData = null;
+        let wasReconnected = false;
+
+        // 소켓 연결 후 인증 및 게임 참여
         socket.on("connect", () => {
           socket.emit("authenticate", token);
-          // 바카라 게임에 접속했다는 것을 서버에 알림 (중복 방지)
+          // 바카라 게임에 접속 및 세션 복원 요청
           if (!hasJoinedGame) {
-            socket.emit("user_joined_baccarat", token);
+            socket.emit("join_baccarat_game", token);
             hasJoinedGame = true;
           }
         });
 
-        // 소켓 연결 해제 시 서버에 알림
-        socket.on("disconnect", () => {
-          hasJoinedGame = false; // 연결 해제 시 상태 초기화
+        // 게임 상태 복원 이벤트 수신
+        socket.on("game_state_restored", (data) => {
+          gameSessionData = data;
+          
+          if (data.restoredFromSession) {
+            wasReconnected = true;
+            console.log(`세션 복원됨: ${Math.round(data.disconnectDuration/1000)}초 전 연결 해제`);
+            
+            // 사용자에게 세션 복원 알림
+            showNotification(
+              `세션이 복원되었습니다 (${Math.round(data.disconnectDuration/1000)}초 전 상태)`, 
+              'info', 
+              3000
+            );
+            
+            // 게임 상태에 따른 UI 복원
+            if (data.gameState.currentGamePhase === 'betting' && data.bettingActive) {
+              // 베팅 중이었다면 베팅 UI 활성화
+              bettingActive = true;
+              if (data.bettingEndTime) {
+                const remainingTime = new Date(data.bettingEndTime) - new Date();
+                if (remainingTime > 0) {
+                  startCountdown(Math.ceil(remainingTime / 1000));
+                }
+              }
+              
+              // 베팅 버튼들 활성화
+              enableBettingUI();
+              
+              // localStorage에서 이전 베팅 정보 복원
+              const savedBets = JSON.parse(localStorage.getItem('currentBets') || '{}');
+              if (Object.keys(savedBets).length > 0) {
+                currentBets = savedBets;
+                updateBettingDisplay();
+                showNotification('이전 베팅 정보가 복원되었습니다.', 'success', 2000);
+              }
+            }
+          }
+          
+          // 예약 종료 상태 표시
+          if (data.scheduledStop && data.scheduledStop.isScheduled) {
+            showScheduledStopIndicator(data.scheduledStop);
+          }
+          
+          // 사용자 잔액 업데이트
+          if (data.userBalance !== undefined) {
+            updateBalance(data.userBalance);
+          }
         });
+
+        // 소켓 연결 해제 시 상태 저장
+        socket.on("disconnect", () => {
+          hasJoinedGame = false;
+          
+          // 현재 베팅 상태를 localStorage에 저장
+          if (Object.keys(currentBets).length > 0) {
+            localStorage.setItem('currentBets', JSON.stringify(currentBets));
+            localStorage.setItem('lastSaveTime', Date.now().toString());
+          }
+          
+          console.log('소켓 연결 해제 - 세션 정보 저장됨');
+        });
+
+        // 알림 표시 함수
+        function showNotification(message, type = 'info', duration = 3000) {
+          const notification = document.createElement('div');
+          notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+          
+          const colors = {
+            info: 'bg-blue-600 text-white',
+            success: 'bg-green-600 text-white', 
+            warning: 'bg-yellow-600 text-black',
+            error: 'bg-red-600 text-white'
+          };
+          
+          notification.className += ` ${colors[type] || colors.info}`;
+          notification.textContent = message;
+          
+          document.body.appendChild(notification);
+          
+          // 애니메이션으로 나타내기
+          setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+          }, 100);
+          
+          // 지정된 시간 후 제거
+          setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+              if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+              }
+            }, 300);
+          }, duration);
+        }
+        
+        // 베팅 UI 활성화 함수
+        function enableBettingUI() {
+          const choiceButtons = document.querySelectorAll('.choice-button');
+          const coinButtons = document.querySelectorAll('.coin-button');
+          
+          choiceButtons.forEach(button => {
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+          });
+          
+          coinButtons.forEach(button => {
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+          });
+          
+          updateBettingStatus('베팅 진행 중');
+        }
+        
+        // 베팅 UI 비활성화 함수
+        function disableBettingUI() {
+          const choiceButtons = document.querySelectorAll('.choice-button');
+          const coinButtons = document.querySelectorAll('.coin-button');
+          
+          choiceButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+          });
+          
+          coinButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+          });
+        }
+        
+        // 베팅 디스플레이 업데이트 함수
+        function updateBettingDisplay() {
+          for (const [choice, amount] of Object.entries(currentBets)) {
+            const betDisplay = document.getElementById(`${choice}BetAmount`);
+            if (betDisplay) {
+              betDisplay.textContent = amount.toLocaleString();
+              betDisplay.parentElement.style.display = amount > 0 ? 'block' : 'none';
+            }
+          }
+        }
+        
+        // 예약 종료 상태 표시 함수
+        function showScheduledStopIndicator(scheduledStop) {
+          let indicator = document.getElementById('scheduledStopIndicator');
+          
+          if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'scheduledStopIndicator';
+            indicator.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg z-40';
+            document.body.appendChild(indicator);
+          }
+          
+          if (scheduledStop.isScheduled) {
+            indicator.textContent = `${scheduledStop.remainingGames}게임 후 자동 종료 예정`;
+            indicator.style.display = 'block';
+          } else {
+            indicator.style.display = 'none';
+          }
+        }
+        
+        // 잔액 업데이트 함수
+        function updateBalance(balance) {
+          const balanceElements = document.querySelectorAll('.balance-display');
+          balanceElements.forEach(element => {
+            element.textContent = balance.toLocaleString();
+          });
+        }
 
         // 페이지 언로드 시 서버에 알림 (페이지 새로고침, 닫기, 다른 페이지로 이동)
         window.addEventListener("beforeunload", () => {
@@ -2311,6 +2478,11 @@
         socket.on("auto_game_status", (data) => {
           // 필요시 UI에 자동 게임 상태 표시
         });
+        
+        // 예약 종료 상태 업데이트 수신
+        socket.on("scheduled_stop_update", (data) => {
+          showScheduledStopIndicator(data);
+        });
 
         let selectedChoice = null;
         let selectedChipAmount = 0;
@@ -2321,6 +2493,38 @@
         let baccaratSceneMini = null; // Phaser Scene 인스턴스 변수
         let isBettingInProgress = false; // 베팅 처리 중 플래그
         let currentBets = {}; // 현재 베팅 상황 추적
+        
+        // 페이지 로드 시 localStorage에서 베팅 정보 복원 시도
+        function restoreLocalBets() {
+          const savedBets = localStorage.getItem('currentBets');
+          const lastSaveTime = localStorage.getItem('lastSaveTime');
+          
+          if (savedBets && lastSaveTime) {
+            const timeDiff = Date.now() - parseInt(lastSaveTime);
+            // 10분 이내의 베팅 정보만 복원
+            if (timeDiff < 600000) {
+              try {
+                const parsedBets = JSON.parse(savedBets);
+                if (Object.keys(parsedBets).length > 0) {
+                  currentBets = parsedBets;
+                  updateBettingDisplay();
+                  console.log('로컬 베팅 정보 복원됨:', currentBets);
+                  showNotification('이전 베팅 정보가 복원되었습니다.', 'info', 2000);
+                  return true;
+                }
+              } catch (e) {
+                console.error('베팅 정보 복원 중 오류:', e);
+                localStorage.removeItem('currentBets');
+                localStorage.removeItem('lastSaveTime');
+              }
+            } else {
+              // 10분이 지난 베팅 정보는 삭제
+              localStorage.removeItem('currentBets');
+              localStorage.removeItem('lastSaveTime');
+            }
+          }
+          return false;
+        }
 
         // 채팅 관련 변수들
         let isChatOpen = false;
@@ -4815,7 +5019,18 @@
 
         socket.on("betting_started", () => {
           bettingActive = true;
-          currentBets = {}; // 새 게임 시작 시 베팅 상황 초기화
+          
+          // 세션 복원이 아닌 경우에만 베팅 상황 초기화
+          if (!wasReconnected) {
+            currentBets = {}; // 새 게임 시작 시 베팅 상황 초기화
+            // localStorage에서 이전 베팅 정보 제거
+            localStorage.removeItem('currentBets');
+            localStorage.removeItem('lastSaveTime');
+          } else {
+            // 세션 복원 후 첫 베팅 시작이므로 플래그 초기화
+            wasReconnected = false;
+          }
+          
           const timerEl = document.getElementById("timer");
           if (timerEl) timerEl.innerText = "베팅이 시작되었습니다.";
           const bettingStartSound =
@@ -4827,6 +5042,9 @@
           selectedChoice = null;
           // selectedChipAmount = 0; // 베팅 금액은 유지
           updateCurrentBet();
+          
+          // 베팅 UI 활성화
+          enableBettingUI();
         });
 
         socket.on("betting_end_time", (endTime) => {
@@ -4869,6 +5087,12 @@
           bettingActive = false;
           isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
 
+          // 베팅 종료 시 현재 베팅 상태를 localStorage에 저장
+          if (Object.keys(currentBets).length > 0) {
+            localStorage.setItem('currentBets', JSON.stringify(currentBets));
+            localStorage.setItem('lastSaveTime', Date.now().toString());
+          }
+
           // 모든 베팅 버튼의 로딩 상태 해제 (혹시 남아있을 경우)
           document.querySelectorAll(".choice-button").forEach((btn) => {
             btn.classList.remove("opacity-50", "pointer-events-none");
@@ -4888,6 +5112,9 @@
           // selectedChoice = null;
           // selectedChipAmount = 0;
           updateCurrentBet();
+          
+          // 베팅 UI 비활성화
+          disableBettingUI();
         });
 
         socket.on("game_result", (data) => {
@@ -6559,6 +6786,11 @@
 
         // DOMContentLoaded 이후 게임 시작 및 Socket 이벤트 핸들러 수정/추가
         startMiniGame(); // 페이지 로드 시 미니게임 시작
+        
+        // 페이지 로드 완료 후 로컬 베팅 정보 복원 시도
+        setTimeout(() => {
+          restoreLocalBets();
+        }, 1000); // 1초 후 실행 (소켓 연결 완료 대기)
 
         // 기존 카드 표시 이벤트 (game.html 호환)
         socket.on("display_card_on_user_html", (data) => {
