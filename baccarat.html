@@ -2390,7 +2390,12 @@
             button.classList.remove('opacity-50', 'cursor-not-allowed');
           });
           
-          updateBettingStatus('베팅 진행 중');
+          // 타이머 요소에 베팅 상태 표시
+          const timerEl = document.getElementById("timer");
+          if (timerEl && timerEl.textContent === "") {
+            timerEl.textContent = "베팅 진행 중";
+            timerEl.className = "text-base font-semibold text-yellow-400";
+          }
         }
         
         // 베팅 UI 비활성화 함수
