@@ -848,8 +848,13 @@
           // 게임 액션 즉시 비활성화
           disableGameActions();
 
-          // 게임 세션 업데이트
+          // 게임 세션 업데이트 (잔액 포함)
           updateGameSession(data.session);
+
+          // 블랙잭 승리 플래그 설정 (중복 잔액 조회 방지)
+          if (gameSession) {
+            gameSession.blackjackWin = true;
+          }
 
           // 게임 종료 처리
           setTimeout(() => {
@@ -1629,11 +1634,18 @@
         }
         showContinuousGameButtons();
 
-        // 게임 완료 후 즉시 및 지연 잔액 업데이트 (바카라와 같은 방식)
-        fetchUserInfo(true); // 즉시 최신 잔액 조회
-        setTimeout(() => {
-          fetchUserInfo(true); // 한 번 더 최신 잔액 조회 (서버 동기화 보장)
-        }, 1000);
+        // 게임 완료 후 잔액 업데이트 (블랙잭 승리 시 중복 조회 방지)
+        if (gameSession && gameSession.blackjackWin) {
+          // 블랙잭 승리 시에는 이미 서버에서 잔액 업데이트 완료
+          console.log("블랙잭 승리 - 중복 잔액 조회 생략");
+          gameSession.blackjackWin = false; // 플래그 초기화
+        } else {
+          // 일반 게임 완료 시에만 잔액 조회
+          fetchUserInfo(true); // 즉시 최신 잔액 조회
+          setTimeout(() => {
+            fetchUserInfo(true); // 한 번 더 최신 잔액 조회 (서버 동기화 보장)
+          }, 1000);
+        }
 
         // 3초 후 베팅 상태로 자동 전환
         setTimeout(() => {
