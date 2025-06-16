@@ -790,6 +790,12 @@
         .addEventListener("click", () => {
           socket.emit("admin_auto_start");
           showToast("자동 베팅이 시작되었습니다.", "info");
+          adminAutoGameActive = true;
+          // UI 상태 변경
+          document.getElementById("autoStartBetting").style.display = "none";
+          document.getElementById("autoStopBetting").classList.remove("hidden");
+          document.getElementById("autoStopBetting").style.display = "block";
+          document.getElementById("autoStatus").classList.remove("hidden");
         });
 
       document
@@ -797,6 +803,12 @@
         .addEventListener("click", () => {
           socket.emit("admin_auto_stop");
           showToast("자동 베팅이 중지되었습니다.", "info");
+          adminAutoGameActive = false;
+          // UI 상태 변경
+          document.getElementById("autoStartBetting").style.display = "block";
+          document.getElementById("autoStopBetting").classList.add("hidden");
+          document.getElementById("autoStopBetting").style.display = "none";
+          document.getElementById("autoStatus").classList.add("hidden");
         });
 
       // 백그라운드 게임 시작/중지 버튼
@@ -813,6 +825,12 @@
             `백그라운드 게임이 시작되었습니다. (${gameCount}회)`,
             "info"
           );
+          backgroundGameActive = true;
+          // UI 상태 변경
+          document.getElementById("startBackgroundGame").style.display = "none";
+          document.getElementById("stopBackgroundGame").classList.remove("hidden");
+          document.getElementById("stopBackgroundGame").style.display = "block";
+          document.getElementById("backgroundStatus").classList.remove("hidden");
         });
 
       document
@@ -820,6 +838,12 @@
         .addEventListener("click", () => {
           socket.emit("stop_background_game");
           showToast("백그라운드 게임이 중지되었습니다.", "info");
+          backgroundGameActive = false;
+          // UI 상태 변경
+          document.getElementById("startBackgroundGame").style.display = "block";
+          document.getElementById("stopBackgroundGame").classList.add("hidden");
+          document.getElementById("stopBackgroundGame").style.display = "none";
+          document.getElementById("backgroundStatus").classList.add("hidden");
         });
 
       // 덱 셔플 버튼
@@ -834,6 +858,8 @@
       socket.on("connect", () => {
         socket.emit("authenticate", token);
         socket.emit("request_betting_status");
+        // 백그라운드 게임 상태 요청
+        socket.emit("get_background_game_status");
       });
 
       // 베팅 상태 업데이트
@@ -1008,7 +1034,50 @@
         }
       });
 
-      // 사용자 접속 기반 자동 게임 기능 제거됨
+      // 백그라운드 게임 상태 업데이트 이벤트 리스너
+      socket.on("background_game_started", (data) => {
+        showToast(data.message, "success");
+        backgroundGameActive = true;
+        // UI 상태 변경
+        document.getElementById("startBackgroundGame").style.display = "none";
+        document.getElementById("stopBackgroundGame").classList.remove("hidden");
+        document.getElementById("stopBackgroundGame").style.display = "block";
+        document.getElementById("backgroundStatus").classList.remove("hidden");
+        document.getElementById("backgroundProgress").textContent = `${data.gameCount}/${data.maxGames}`;
+      });
+
+      socket.on("background_game_stopped", (data) => {
+        showToast(data.message, "info");
+        backgroundGameActive = false;
+        // UI 상태 변경
+        document.getElementById("startBackgroundGame").style.display = "block";
+        document.getElementById("stopBackgroundGame").classList.add("hidden");
+        document.getElementById("stopBackgroundGame").style.display = "none";
+        document.getElementById("backgroundStatus").classList.add("hidden");
+      });
+
+      socket.on("background_game_status", (data) => {
+        backgroundGameActive = data.isActive;
+        if (data.isActive) {
+          // 백그라운드 게임이 활성 상태인 경우
+          document.getElementById("startBackgroundGame").style.display = "none";
+          document.getElementById("stopBackgroundGame").classList.remove("hidden");
+          document.getElementById("stopBackgroundGame").style.display = "block";
+          document.getElementById("backgroundStatus").classList.remove("hidden");
+          document.getElementById("backgroundProgress").textContent = `${data.gameCount}/${data.maxGames}`;
+        } else {
+          // 백그라운드 게임이 비활성 상태인 경우
+          document.getElementById("startBackgroundGame").style.display = "block";
+          document.getElementById("stopBackgroundGame").classList.add("hidden");
+          document.getElementById("stopBackgroundGame").style.display = "none";
+          document.getElementById("backgroundStatus").classList.add("hidden");
+        }
+      });
+
+      // 관리자 자동 게임 결과 처리 이벤트
+      socket.on("admin_result_approved", (data) => {
+        showToast(data.message, "success");
+      });
 
       // 리더보드 로드
       async function fetchLeaderboard() {
@@ -1287,6 +1356,8 @@
 
       // 베팅 상태 전역 변수
       let bettingActive = false;
+      let adminAutoGameActive = false;
+      let backgroundGameActive = false;
 
       // 초기 데이터 로드
       fetchLeaderboard();

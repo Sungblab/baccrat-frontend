@@ -2515,14 +2515,12 @@
           }
         });
 
-        // 페이지 숨김/표시 처리 (탭 전환, 앱 전환 등) - 게임 중지하지 않음
+        // 페이지 숨김/표시 처리 (탭 전환, 앱 전환 등) - Phaser 게임 메모리 절약용
         document.addEventListener("visibilitychange", () => {
           if (document.hidden && isPageVisible) {
-            // 페이지가 숨겨짐 - 게임은 계속 진행
+            // 페이지가 숨겨짐 - Phaser 게임 일시정지 (메모리 절약)
             isPageVisible = false;
-            console.log('페이지 숨김 (게임은 계속 진행)');
             
-            // Phaser 게임 일시정지 (메모리 절약)
             if (miniGame && miniGame.scene && miniGame.scene.scenes.length > 0) {
               try {
                 miniGame.scene.scenes.forEach(scene => {
@@ -2531,15 +2529,13 @@
                   }
                 });
               } catch (error) {
-                console.warn('[MiniGame] Error pausing scenes:', error);
+                // 에러 무시
               }
             }
           } else if (!document.hidden && !isPageVisible) {
-            // 페이지가 다시 보임 - 게임 상태 재동기화
+            // 페이지가 다시 보임 - Phaser 게임 재개
             isPageVisible = true;
-            console.log('페이지 표시 - 게임 상태 재동기화');
             
-            // Phaser 게임 재개
             if (miniGame && miniGame.scene && miniGame.scene.scenes.length > 0) {
               try {
                 miniGame.scene.scenes.forEach(scene => {
@@ -2547,26 +2543,9 @@
                     scene.scene.resume();
                   }
                 });
-                
-                // Phaser 씬 상태 검증 및 복구
-                setTimeout(() => {
-                  if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive()) {
-                    // 씬이 활성화되어 있으면 안전성 확인
-                    console.log('[MiniGame] Scene resumed successfully');
-                  }
-                }, 100);
               } catch (error) {
-                console.warn('[MiniGame] Error resuming scenes:', error);
+                // 에러 무시
               }
-            }
-            
-            // 세션 복원 시도 (페이지 가시성 변경 시에만)
-            if (socket && socket.connected && !hasJoinedGame) {
-              console.log('페이지 가시성 변경으로 인한 세션 복원 요청');
-              socket.emit("join_baccarat_game", token);
-              hasJoinedGame = true;
-            } else {
-              console.log('재접속 조건 불충족 또는 이미 참여함');
             }
           }
         });
