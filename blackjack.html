@@ -1075,10 +1075,15 @@
             showNotification(`서렌더했습니다. ${data.surrenderAmount.toLocaleString()}원이 반환됩니다.`, "warning");
             
             // 모든 액션 버튼 비활성화
-            disableAllActionButtons();
+            disableGameActions();
             
             // 잔액 업데이트
             fetchUserInfo(true);
+            
+            // 게임 상태 초기화
+            isGameActive = false;
+            isDealerTurn = false;
+            updateGameStatus("서렌더");
             
             // 게임 종료 처리
             setTimeout(() => {
@@ -1087,6 +1092,11 @@
                 payout: data.surrenderAmount,
                 lossAmount: data.lossAmount
               }]);
+              
+              // 서렌더 후 게임 완전 초기화
+              setTimeout(() => {
+                resetGameAfterSurrender();
+              }, 2000);
             }, 1500);
           } else {
             showNotification("서렌더에 실패했습니다.", "error");
@@ -2099,6 +2109,56 @@
         if (blackjackScene) {
           blackjackScene.clearAllCardsAndText();
         }
+      }
+
+      // 서렌더 후 게임 초기화
+      function resetGameAfterSurrender() {
+        console.log("서렌더 후 게임 초기화 시작");
+        
+        // 게임 상태 완전 초기화
+        isGameActive = false;
+        isDealerTurn = false;
+        currentBetAmount = 0;
+        gameSession = null;
+        
+        // UI 완전 초기화
+        clearGameTable();
+        resetGameUI();
+        
+        // 게임 액션 버튼들 숨기기
+        const gameActionButtons = document.getElementById("gameActionButtons");
+        if (gameActionButtons) {
+          gameActionButtons.classList.add("hidden");
+        }
+        
+        // 연속 게임 버튼들도 숨기기 (새로 베팅부터 시작하도록)
+        hideContinuousGameButtons();
+        
+        // 베팅 상태로 되돌리기
+        const placeBetBtn = document.getElementById("placeBetBtn");
+        const betBtnText = document.getElementById("betBtnText");
+        const startGameBtn = document.getElementById("startGameBtn");
+        
+        if (placeBetBtn) {
+          placeBetBtn.classList.remove("hidden");
+          placeBetBtn.disabled = false;
+        }
+        if (betBtnText) {
+          betBtnText.textContent = "베팅";
+        }
+        if (startGameBtn) {
+          startGameBtn.classList.remove("hidden");
+          startGameBtn.disabled = true;
+        }
+        
+        // 베팅 표시 초기화
+        updateBetDisplay();
+        updateGameStatus("대기 중");
+        
+        // 알림 표시
+        showNotification("새로운 게임을 시작할 수 있습니다. 베팅을 선택해주세요.", "info");
+        
+        console.log("서렌더 후 게임 초기화 완료");
       }
 
       // 알림 표시

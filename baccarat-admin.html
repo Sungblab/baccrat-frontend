@@ -238,13 +238,13 @@
               </div>
             </div>
 
-            <!-- 자동화 및 사용자 게임 관리 -->
+            <!-- 관리자 자동 베팅 관리 -->
             <div class="space-y-3 mb-4">
-              <!-- 2. 자동화 및 덱 관리 -->
+              <!-- 관리자 자동 베팅 컨트롤 -->
               <div class="bg-gray-700/50 p-3 rounded-lg">
                 <div class="flex flex-col gap-3">
                   <div>
-                    <h4 class="font-semibold text-gray-300">사용자 자동 게임 (백그라운드 방식)</h4>
+                    <h4 class="font-semibold text-gray-300">관리자 자동 베팅</h4>
                     <div
                       id="autoStatus"
                       class="text-sm font-medium text-gray-400 hidden"
@@ -252,58 +252,21 @@
                       자동 베팅 대기 중... <span id="autoCountdown"></span>
                     </div>
                   </div>
-
-                  <!-- 사용자 접속 기반 자동 게임 상태 -->
-                  <div class="bg-gray-800/50 p-2 rounded border border-blue-600">
-                    <div class="text-xs font-semibold text-blue-400 mb-1">
-                      사용자 자동 게임 (백그라운드 방식)
-                    </div>
-                    <div id="userAutoGameStatus" class="text-xs text-gray-400">
-                      대기 중 (접속자 없음)
-                    </div>
-                    <div id="gameCountStatus" class="text-xs text-gray-500 mt-1 hidden">
-                      게임 수: 0회
-                    </div>
-                    <!-- 예약 종료 상태 표시 -->
-                    <div id="scheduledStopStatus" class="text-xs text-orange-400 mt-1 hidden">
-                      <!-- 예약 종료 정보가 여기에 표시됩니다 -->
-                    </div>
-                  </div>
-                  <!-- 사용자 자동 게임 제어 버튼 -->
-                  <div class="flex flex-col space-y-2">
-                    <!-- 시작 버튼 -->
-                    <button
-                      onclick="startUserAutoGame()"
-                      class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                    >
-                      사용자 게임 시작
-                    </button>
-                    <!-- 수동 종료 버튼 -->
-                    <button
-                      onclick="stopUserAutoGame()"
-                      class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                    >
-                      사용자 게임 종료
-                    </button>
-                  </div>
                   
-                  <!-- 일반 자동 베팅 컨트롤 -->
-                  <div class="mt-4 pt-3 border-t border-gray-600">
-                    <h5 class="text-sm font-medium text-gray-400 mb-2">일반 자동 베팅</h5>
-                    <div class="flex flex-col space-y-2">
-                      <button
-                        id="autoStartBetting"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                      >
-                        자동 시작
-                      </button>
-                      <button
-                        id="autoStopBetting"
-                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
-                      >
-                        자동 중지
-                      </button>
-                    </div>
+                  <!-- 관리자 자동 베팅 컨트롤 -->
+                  <div class="flex flex-col space-y-2">
+                    <button
+                      id="autoStartBetting"
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      자동 베팅 시작
+                    </button>
+                    <button
+                      id="autoStopBetting"
+                      class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
+                    >
+                      자동 베팅 중지
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1045,20 +1008,7 @@
         }
       });
 
-      // 사용자 접속 기반 자동 게임 상태 업데이트
-      socket.on("user_auto_game_status_update", (status) => {
-        const userAutoGameStatus =
-          document.getElementById("userAutoGameStatus");
-        if (userAutoGameStatus) {
-          if (status.isActive) {
-            userAutoGameStatus.textContent = `활성화 (접속자 ${status.connectedUsers}명)`;
-            userAutoGameStatus.className = "text-xs text-green-400";
-          } else {
-            userAutoGameStatus.textContent = `대기 중 (접속자 ${status.connectedUsers}명)`;
-            userAutoGameStatus.className = "text-xs text-gray-400";
-          }
-        }
-      });
+      // 사용자 접속 기반 자동 게임 기능 제거됨
 
       // 리더보드 로드
       async function fetchLeaderboard() {
@@ -1691,119 +1641,7 @@
         fetchRecentGames();
       });
 
-      // 사용자 자동 게임 제어 함수들
-      function startUserAutoGame() {
-        if (!socket) {
-          showToast("소켓 연결이 없습니다.", "error");
-          return;
-        }
-        
-        socket.emit("start_user_auto_game");
-        showToast("사용자 자동 게임을 시작합니다.", "info");
-      }
-
-      function stopUserAutoGame() {
-        if (!socket) {
-          showToast("소켓 연결이 없습니다.", "error");  
-          return;
-        }
-        
-        if (confirm("사용자 자동 게임을 중지하시겠습니까?")) {
-          socket.emit("stop_auto_game");
-          showToast("사용자 자동 게임을 중지합니다.", "warning");
-        }
-      }
-
-      // 새로운 소켓 이벤트 리스너들 추가
-      socket.on("user_auto_game_started", (data) => {
-        const statusElement = document.getElementById("userAutoGameStatus");
-        const gameCountElement = document.getElementById("gameCountStatus");
-        
-        if (statusElement) {
-          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
-          statusElement.className = "text-xs text-green-400";
-        }
-        
-        if (gameCountElement) {
-          gameCountElement.textContent = `게임 수: ${data.gameCount || 0}회`;
-          gameCountElement.classList.remove("hidden");
-        }
-        
-        showToast("사용자 자동 게임이 시작되었습니다.", "success"); 
-      });
-
-      socket.on("user_auto_game_stopped", (data) => {
-        const statusElement = document.getElementById("userAutoGameStatus");
-        const gameCountElement = document.getElementById("gameCountStatus");
-        const scheduledStopElement = document.getElementById("scheduledStopStatus");
-        
-        if (statusElement) {
-          statusElement.textContent = "대기 중 (게임 종료됨)";
-          statusElement.className = "text-xs text-gray-400";
-        }
-        
-        if (gameCountElement) {
-          gameCountElement.classList.add("hidden");
-        }
-        
-        if (scheduledStopElement) {
-          scheduledStopElement.classList.add("hidden");
-        }
-        
-        showToast(data.message || "사용자 자동 게임이 종료되었습니다.", "warning");
-      });
-
-      socket.on("auto_game_status_update", (data) => {
-        const statusElement = document.getElementById("userAutoGameStatus");
-        const gameCountElement = document.getElementById("gameCountStatus");
-        
-        if (statusElement) {
-          if (data.isRunning) {
-            statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
-            statusElement.className = "text-xs text-green-400";
-          } else {
-            statusElement.textContent = "대기 중 (접속자 없음)";
-            statusElement.className = "text-xs text-gray-400";
-          }
-        }
-        
-        if (gameCountElement) {
-          if (data.isRunning && data.gameCount !== undefined) {
-            gameCountElement.textContent = `게임 수: ${data.gameCount}회`;
-            gameCountElement.classList.remove("hidden");
-          } else {
-            gameCountElement.classList.add("hidden");
-          }
-        }
-      });
-
-      socket.on("scheduled_stop_update", (data) => {
-        const scheduledStopElement = document.getElementById("scheduledStopStatus");
-        
-        if (scheduledStopElement) {
-          if (data.remainingGames > 0) {
-            scheduledStopElement.textContent = `예약 종료: ${data.remainingGames}게임 후`;
-            scheduledStopElement.classList.remove("hidden");
-          } else {
-            scheduledStopElement.classList.add("hidden");
-          }
-        }
-      });
-
-      // 사용자 접속/해제 시 상태 업데이트
-      socket.on("user_joined", (data) => {
-        const statusElement = document.getElementById("userAutoGameStatus");
-        if (statusElement && data.isGameActive) {
-          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
-        }
-      });
-
-      socket.on("user_left", (data) => {
-        const statusElement = document.getElementById("userAutoGameStatus");
-        if (statusElement && data.isGameActive) {
-          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
-        }
-      });
+      // 사용자 자동 게임 제어 함수들 및 이벤트 리스너 제거됨 - 관리자만 게임 제어 가능
 
       // 자동 새로고침 대신 실시간 업데이트 확인
       setTimeout(() => {
