@@ -2312,6 +2312,12 @@
           
           console.log('게임 상태 수신:', data);
           
+          // 재연결인지 확인
+          if (data.isReconnecting) {
+            console.log('재연결 감지됨 - 기존 게임 상태 유지');
+            showNotification('재연결되었습니다.', 'success', 2000);
+          }
+          
           // 현재 게임 상태에 따른 UI 동기화
           if (data.gameState.currentGamePhase === 'betting' && data.bettingActive) {
             // 베팅 중이라면 베팅 UI 활성화 (중복 방지)
