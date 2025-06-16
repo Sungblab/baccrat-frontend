@@ -5006,6 +5006,13 @@
 
         // 관리자 잔액 조정 시 실시간 업데이트
         socket.on("balance_updated", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.newBalance === 'undefined' || data.newBalance === null) {
+            console.error('Invalid balance_updated data:', data);
+            showNotification("잔액 업데이트 중 오류가 발생했습니다.");
+            return;
+          }
+
           const coinBalanceEl = document.getElementById("coinBalance");
           if (coinBalanceEl) {
             coinBalanceEl.textContent = `잔액: ${data.newBalance.toLocaleString()}원`;
@@ -5025,6 +5032,13 @@
 
         // 충전 요청 처리 알림
         socket.on("deposit_request_processed", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null) {
+            console.error('Invalid deposit_request_processed data:', data);
+            showNotification("충전 처리 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           if (data.status === "approved") {
             showNotification(
               `충전이 승인되었습니다! +${data.amount.toLocaleString()}원`
@@ -5042,23 +5056,39 @@
 
         // 환전 요청 처리 알림
         socket.on("exchange_request_processed", (data) => {
+          // 데이터 유효성 검사
+          if (!data) {
+            console.error('Invalid exchange_request_processed data:', data);
+            showNotification("환전 처리 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           if (data.status === "approved") {
+            const actualAmount = data.actualAmount || 0;
             showNotification(
-              `환전이 승인되었습니다! 실수령액: ${data.actualAmount.toLocaleString()}원`
+              `환전이 승인되었습니다! 실수령액: ${actualAmount.toLocaleString()}원`
             );
             // 내 정보 모달이 열려있다면 새로고침
             if (!myInfoModal.classList.contains("hidden")) {
               fetchDetailedUserInfo();
             }
           } else {
+            const requestAmount = data.requestAmount || 0;
             showNotification(
-              `환전 요청이 거절되었습니다. (신청액: ${data.requestAmount.toLocaleString()}원)`
+              `환전 요청이 거절되었습니다. (신청액: ${requestAmount.toLocaleString()}원)`
             );
           }
         });
 
         // 송금 받았을 때 알림
         socket.on("money_received", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.fromUsername) {
+            console.error('Invalid money_received data:', data);
+            showNotification("송금 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.fromUsername
@@ -5069,10 +5099,18 @@
 
         // 송금 보냈을 때 알림
         socket.on("money_sent", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.toUsername) {
+            console.error('Invalid money_sent data:', data);
+            showNotification("송금 완료 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
+          const fee = data.fee || 0;
           showNotification(
             `${
               data.toUsername
-            }님에게 ${data.amount.toLocaleString()}원을 송금했습니다. (수수료: ${data.fee.toLocaleString()}원)`
+            }님에게 ${data.amount.toLocaleString()}원을 송금했습니다. (수수료: ${fee.toLocaleString()}원)`
           );
         });
 
@@ -5101,6 +5139,13 @@
 
         // 머니 요청 받았을 때 알림
         socket.on("money_request_received", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.fromUsername) {
+            console.error('Invalid money_request_received data:', data);
+            showNotification("머니 요청 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.fromUsername
@@ -5110,6 +5155,13 @@
 
         // 머니 요청 보냈을 때 알림
         socket.on("money_request_sent", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.toUsername) {
+            console.error('Invalid money_request_sent data:', data);
+            showNotification("머니 요청 전송 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.toUsername
@@ -5134,6 +5186,13 @@
 
         // 머니 요청이 수락되었을 때 알림
         socket.on("money_request_accepted", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.acceptedByUsername) {
+            console.error('Invalid money_request_accepted data:', data);
+            showNotification("머니 요청 수락 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.acceptedByUsername
@@ -5144,15 +5203,30 @@
 
         // 머니 요청 수락 완료 알림
         socket.on("money_request_accept_completed", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.toUsername) {
+            console.error('Invalid money_request_accept_completed data:', data);
+            showNotification("머니 요청 수락 완료 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
+          const fee = data.fee || 0;
           showNotification(
             `${
               data.toUsername
-            }님의 ${data.amount.toLocaleString()}원 요청을 수락했습니다. (수수료: ${data.fee.toLocaleString()}원)`
+            }님의 ${data.amount.toLocaleString()}원 요청을 수락했습니다. (수수료: ${fee.toLocaleString()}원)`
           );
         });
 
         // 머니 요청이 거절되었을 때 알림
         socket.on("money_request_rejected", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.rejectedByUsername) {
+            console.error('Invalid money_request_rejected data:', data);
+            showNotification("머니 요청 거절 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.rejectedByUsername
@@ -5162,6 +5236,13 @@
 
         // 머니 요청 거절 완료 알림
         socket.on("money_request_reject_completed", (data) => {
+          // 데이터 유효성 검사
+          if (!data || typeof data.amount === 'undefined' || data.amount === null || !data.fromUsername) {
+            console.error('Invalid money_request_reject_completed data:', data);
+            showNotification("머니 요청 거절 완료 알림을 받는 중 오류가 발생했습니다.");
+            return;
+          }
+
           showNotification(
             `${
               data.fromUsername
