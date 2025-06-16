@@ -195,182 +195,179 @@
         </div>
       </header>
 
-      <!-- 게임 관리, 리더보드, 최근 기록 3개 섹션 -->
-      <div class="mb-4 md:mb-6 grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
-        <!-- 게임 관리 (왼쪽) -->
-        <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow">
+      <!-- 게임 관리 상단 전체 폭 -->
+      <div class="mb-4 md:mb-6">
+        <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6">
           <h3 class="text-lg font-semibold mb-4 text-purple-400">게임 관리</h3>
-
-          <!-- 컨트롤 패널 -->
-          <div class="space-y-3 mb-4">
-            <!-- 1. 상태 및 기본 컨트롤 -->
-            <div class="bg-gray-700/50 p-3 rounded-lg">
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center space-x-3">
-                  <div
-                    id="bettingStatus"
-                    class="text-base font-semibold text-yellow-400"
-                  >
-                    현재 상태: 대기중
+          
+          <!-- 게임 관리 컴포넌트들을 가로로 배치 -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-6">
+            
+            <!-- 컨트롤 패널 -->
+            <div class="space-y-3 mb-4">
+              <!-- 1. 상태 및 기본 컨트롤 -->
+              <div class="bg-gray-700/50 p-3 rounded-lg">
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center space-x-3">
+                    <div
+                      id="bettingStatus"
+                      class="text-base font-semibold text-yellow-400"
+                    >
+                      현재 상태: 대기중
+                    </div>
+                    <div
+                      id="timer"
+                      class="text-xl font-bold text-blue-400 min-w-[50px]"
+                    ></div>
                   </div>
-                  <div
-                    id="timer"
-                    class="text-xl font-bold text-blue-400 min-w-[50px]"
-                  ></div>
-                </div>
-                <div class="flex flex-col space-y-2">
-                  <button
-                    id="startBetting"
-                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                  >
-                    베팅 시작
-                  </button>
-                  <button
-                    id="adminStartGame"
-                    class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                  >
-                    게임 시작
-                  </button>
+                  <div class="flex flex-col space-y-2">
+                    <button
+                      id="startBetting"
+                      class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      베팅 시작
+                    </button>
+                    <button
+                      id="adminStartGame"
+                      class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      게임 시작
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2. 자동화 및 덱 관리 -->
-            <div class="bg-gray-700/50 p-3 rounded-lg">
-              <div class="flex flex-col gap-3">
-                <div>
-                  <h4 class="font-semibold text-gray-300">자동 베팅</h4>
-                  <div
-                    id="autoStatus"
-                    class="text-sm font-medium text-gray-400 hidden"
-                  >
-                    자동 베팅 대기 중... <span id="autoCountdown"></span>
-                  </div>
-                </div>
-
-                <!-- 접속 상태 -->
-                <div class="bg-gray-800/50 p-2 rounded border border-green-600">
-                  <div class="text-xs font-semibold text-green-400 mb-1">
-                    접속 상태
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span class="text-xs text-gray-400">바카라:</span>
-                    <span id="baccaratUsers" class="text-xs text-white font-bold">0</span>
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span class="text-xs text-gray-400">블랙잭:</span>
-                    <span id="blackjackUsers" class="text-xs text-white font-bold">0</span>
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span class="text-xs text-gray-400">총 접속자:</span>
-                    <span id="totalUsers" class="text-xs text-white font-bold">0</span>
-                  </div>
-                  <!-- 자동 게임 참여자 수 추가 -->
-                  <div class="flex justify-between items-center mt-1 pt-1 border-t border-gray-600">
-                    <span class="text-xs text-blue-400">자동게임 참여:</span>
-                    <span id="autoGameParticipants" class="text-xs text-blue-300 font-bold">0</span>
-                  </div>
-                </div>
-
-                <!-- 사용자 접속 기반 자동 게임 상태 -->
-                <div class="bg-gray-800/50 p-2 rounded border border-blue-600">
-                  <div class="text-xs font-semibold text-blue-400 mb-1">
-                    사용자 자동 게임
-                  </div>
-                  <div id="userAutoGameStatus" class="text-xs text-gray-400">
-                    대기 중 (접속자 없음)
-                  </div>
-                  <!-- 예약 종료 상태 표시 -->
-                  <div id="scheduledStopStatus" class="text-xs text-orange-400 mt-1 hidden">
-                    게임 종료 예약됨
-                  </div>
-                  <!-- 게임 통계 표시 -->
-                  <div id="gameStatsDisplay" class="text-xs text-gray-500 mt-1 hidden">
-                    진행된 게임: <span id="gameCount">0</span>회
-                  </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                  <button
-                    id="autoStartBetting"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                  >
-                    자동 시작
-                  </button>
-                  <button
-                    id="autoStopBetting"
-                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
-                  >
-                    자동 중지
-                  </button>
-                  <!-- 수동 게임 중지 버튼 추가 -->
-                  <button
-                    id="stopUserAutoGame"
-                    class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
-                  >
-                    게임 강제 중지
-                  </button>
-                </div>
-
-                  <hr class="border-gray-600 my-3" />
-
-                  <!-- 백그라운드 게임 섹션 -->
-                  <div class="flex flex-col gap-3">
-                    <div>
-                      <h4 class="font-semibold text-gray-300">백그라운드 게임</h4>
-                      <div
-                        id="backgroundStatus"
-                        class="text-sm font-medium text-gray-400 hidden"
-                      >
-                        백그라운드 게임 진행 중...
-                        <span id="backgroundProgress"></span>
-                      </div>
-                    </div>
-
-                    <!-- 게임 횟수 선택 -->
-                    <div>
-                      <label class="block text-sm font-medium text-gray-400 mb-2"
-                        >게임 횟수 선택</label
-                      >
-                      <select
-                        id="backgroundGameCount"
-                        class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500"
-                      >
-                        <option value="50">50회</option>
-                        <option value="100">100회</option>
-                        <option value="200">200회</option>
-                        <option value="500">500회</option>
-                      </select>
-                    </div>
-
-                    <div class="flex flex-col space-y-2">
-                      <button
-                        id="startBackgroundGame"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-bold transition"
-                      >
-                        백그라운드 시작
-                      </button>
-                      <button
-                        id="stopBackgroundGame"
-                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
-                      >
-                        백그라운드 중지
-                      </button>
-                    </div>
-                  </div>
-
-                  <hr class="border-gray-600 my-3" />
-                  <div class="flex flex-col gap-2">
-                    <div id="deckInfo" class="text-sm text-gray-400">
-                      덱 정보: 로딩 중...
-                    </div>
-                    <button
-                      id="adminShuffleDeck"
-                      class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg font-bold transition"
+            <!-- 자동화 및 사용자 게임 관리 -->
+            <div class="space-y-3 mb-4">
+              <!-- 2. 자동화 및 덱 관리 -->
+              <div class="bg-gray-700/50 p-3 rounded-lg">
+                <div class="flex flex-col gap-3">
+                  <div>
+                    <h4 class="font-semibold text-gray-300">사용자 자동 게임 (백그라운드 방식)</h4>
+                    <div
+                      id="autoStatus"
+                      class="text-sm font-medium text-gray-400 hidden"
                     >
-                      덱 셔플
+                      자동 베팅 대기 중... <span id="autoCountdown"></span>
+                    </div>
+                  </div>
+
+                  <!-- 사용자 접속 기반 자동 게임 상태 -->
+                  <div class="bg-gray-800/50 p-2 rounded border border-blue-600">
+                    <div class="text-xs font-semibold text-blue-400 mb-1">
+                      사용자 자동 게임 (백그라운드 방식)
+                    </div>
+                    <div id="userAutoGameStatus" class="text-xs text-gray-400">
+                      대기 중 (접속자 없음)
+                    </div>
+                    <div id="gameCountStatus" class="text-xs text-gray-500 mt-1 hidden">
+                      게임 수: 0회
+                    </div>
+                    <!-- 예약 종료 상태 표시 -->
+                    <div id="scheduledStopStatus" class="text-xs text-orange-400 mt-1 hidden">
+                      <!-- 예약 종료 정보가 여기에 표시됩니다 -->
+                    </div>
+                  </div>
+                  <!-- 사용자 자동 게임 제어 버튼 -->
+                  <div class="flex flex-col space-y-2">
+                    <!-- 시작 버튼 -->
+                    <button
+                      onclick="startUserAutoGame()"
+                      class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      사용자 게임 시작
+                    </button>
+                    <!-- 수동 종료 버튼 -->
+                    <button
+                      onclick="stopUserAutoGame()"
+                      class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      사용자 게임 종료
                     </button>
                   </div>
+                  
+                  <!-- 일반 자동 베팅 컨트롤 -->
+                  <div class="mt-4 pt-3 border-t border-gray-600">
+                    <h5 class="text-sm font-medium text-gray-400 mb-2">일반 자동 베팅</h5>
+                    <div class="flex flex-col space-y-2">
+                      <button
+                        id="autoStartBetting"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                      >
+                        자동 시작
+                      </button>
+                      <button
+                        id="autoStopBetting"
+                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
+                      >
+                        자동 중지
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 백그라운드 게임 및 덱 관리 -->
+            <div class="space-y-3 mb-4">
+              <!-- 백그라운드 게임 섹션 -->
+              <div class="bg-gray-700/50 p-3 rounded-lg">
+                <div class="flex flex-col gap-3">
+                  <div>
+                    <h4 class="font-semibold text-gray-300">백그라운드 게임</h4>
+                    <div
+                      id="backgroundStatus"
+                      class="text-sm font-medium text-gray-400 hidden"
+                    >
+                      백그라운드 게임 진행 중...
+                      <span id="backgroundProgress"></span>
+                    </div>
+                  </div>
+
+                  <!-- 게임 횟수 선택 -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2"
+                      >게임 횟수 선택</label
+                    >
+                    <select
+                      id="backgroundGameCount"
+                      class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="50">50회</option>
+                      <option value="100">100회</option>
+                      <option value="200">200회</option>
+                      <option value="500">500회</option>
+                    </select>
+                  </div>
+
+                  <div class="flex flex-col space-y-2">
+                    <button
+                      id="startBackgroundGame"
+                      class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                    >
+                      백그라운드 시작
+                    </button>
+                    <button
+                      id="stopBackgroundGame"
+                      class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-bold transition hidden"
+                    >
+                      백그라운드 중지
+                    </button>
+                  </div>
+                </div>
+
+                <hr class="border-gray-600 my-3" />
+                <div class="flex flex-col gap-2">
+                  <div id="deckInfo" class="text-sm text-gray-400">
+                    덱 정보: 로딩 중...
+                  </div>
+                  <button
+                    id="adminShuffleDeck"
+                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg font-bold transition"
+                  >
+                    덱 셔플
+                  </button>
                 </div>
               </div>
             </div>
@@ -449,7 +446,9 @@
                   </tr>
                   <!-- Player Pair -->
                   <tr class="hover:bg-gray-800/50">
-                    <td class="py-2 px-3 font-bold text-sky-400">P 페어</td>
+                    <td class="py-2 px-3 font-bold text-yellow-400">
+                      플레이어 페어
+                    </td>
                     <td
                       id="adminPlayerPairBetAmount"
                       class="py-2 px-3 text-right font-mono"
@@ -465,7 +464,9 @@
                   </tr>
                   <!-- Banker Pair -->
                   <tr class="hover:bg-gray-800/50">
-                    <td class="py-2 px-3 font-bold text-pink-400">B 페어</td>
+                    <td class="py-2 px-3 font-bold text-orange-400">
+                      뱅커 페어
+                    </td>
                     <td
                       id="adminBankerPairBetAmount"
                       class="py-2 px-3 text-right font-mono"
@@ -480,144 +481,130 @@
                     </td>
                   </tr>
                 </tbody>
-                <tfoot class="bg-gray-700">
-                  <tr>
-                    <td class="py-2 px-3 font-bold">총계</td>
-                    <td
-                      id="adminTotalBetAmount"
-                      class="py-2 px-3 text-right font-bold font-mono"
-                    >
-                      0 원
-                    </td>
-                    <td
-                      id="adminTotalBetCount"
-                      class="py-2 px-3 text-right font-bold font-mono"
-                    >
-                      0명
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- 리더보드 (가운데) -->
-        <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow">
-          <h3 class="text-lg font-semibold mb-4 text-purple-400">리더보드</h3>
-          <div
-            class="bg-gray-900 rounded-lg overflow-hidden border border-gray-700"
-          >
-            <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-700 sticky top-0">
-                  <tr>
-                    <th class="py-2 px-3 text-left">순위</th>
-                    <th class="py-2 px-3 text-left">사용자</th>
-                    <th class="py-2 px-3 text-right">보유액</th>
-                    <th class="py-2 px-3 text-right">승률</th>
-                    <th class="py-2 px-3 text-right">총 베팅</th>
-                  </tr>
-                </thead>
-                <tbody id="leaderboardTable" class="divide-y divide-gray-700">
-                  <!-- 리더보드 목록이 여기에 추가됩니다 -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 최근 게임 기록 (오른쪽) -->
-        <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-purple-400">게임 기록</h3>
-            <button
-              onclick="resetGameHistory()"
-              class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
+        <!-- 리더보드와 게임 기록을 2그리드로 배치 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
+          <!-- 리더보드 -->
+          <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow">
+            <h3 class="text-lg font-semibold mb-4 text-purple-400">리더보드</h3>
+            <div
+              class="bg-gray-900 rounded-lg overflow-hidden border border-gray-700"
             >
-              초기화
-            </button>
-          </div>
-
-          <!-- 게임 결과 표시 섹션 -->
-          <div
-            id="gameResultDisplay"
-            class="mb-4 bg-gray-900 p-3 rounded-lg border border-gray-700"
-          >
-            <h4 class="text-base font-semibold mb-2 text-gray-300">
-              게임 결과
-            </h4>
-            <div class="grid grid-cols-1 gap-2">
-              <div>
-                <h5 class="text-sm font-semibold mb-1 text-blue-400">
-                  플레이어
-                </h5>
-                <div id="playerCards" class="mb-1 text-gray-500 text-sm">
-                  카드가 없습니다
-                </div>
-                <div id="playerScore" class="text-sm font-bold"></div>
-              </div>
-              <div>
-                <h5 class="text-sm font-semibold mb-1 text-red-400">뱅커</h5>
-                <div id="bankerCards" class="mb-1 text-gray-500 text-sm">
-                  카드가 없습니다
-                </div>
-                <div id="bankerScore" class="text-sm font-bold"></div>
+              <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-700 sticky top-0">
+                    <tr>
+                      <th class="py-2 px-3 text-left">순위</th>
+                      <th class="py-2 px-3 text-left">사용자</th>
+                      <th class="py-2 px-3 text-right">보유액</th>
+                      <th class="py-2 px-3 text-right">승률</th>
+                      <th class="py-2 px-3 text-right">총 베팅</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leaderboardTable" class="divide-y divide-gray-700">
+                    <!-- 리더보드 목록이 여기에 추가됩니다 -->
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div class="mt-2">
-              <div
-                id="gameWinner"
-                class="text-base font-bold text-center mb-1 text-gray-500"
+          </div>
+
+          <!-- 최근 게임 기록 -->
+          <div class="bg-gray-800 p-3 md:p-4 rounded-lg shadow">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold text-purple-400">게임 기록</h3>
+              <button
+                onclick="resetGameHistory()"
+                class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm font-medium transition-colors"
               >
-                게임 결과 대기 중...
-              </div>
-              <div
-                id="pairResults"
-                class="text-center text-sm text-gray-400"
-              ></div>
+                초기화
+              </button>
             </div>
-          </div>
 
-          <!-- 결과 패턴 -->
-          <div class="bg-gray-900 p-3 rounded-lg mb-4 border border-gray-700">
-            <div class="flex justify-between items-center mb-2">
-              <h4 class="text-base font-semibold text-gray-300">패턴</h4>
-              <!-- 간단한 통계 (오른쪽) -->
-              <div class="flex items-center gap-3 text-sm">
-                <span class="text-blue-400 font-semibold"
-                  >P: <span id="playerWins">0</span></span
+            <!-- 게임 결과 표시 섹션 -->
+            <div
+              id="gameResultDisplay"
+              class="mb-4 bg-gray-900 p-3 rounded-lg border border-gray-700"
+            >
+              <h4 class="text-base font-semibold mb-2 text-gray-300">
+                게임 결과
+              </h4>
+              <div class="grid grid-cols-1 gap-2">
+                <div>
+                  <h5 class="text-sm font-semibold mb-1 text-blue-400">
+                    플레이어
+                  </h5>
+                  <div id="playerCards" class="mb-1 text-gray-500 text-sm">
+                    카드가 없습니다
+                  </div>
+                  <div id="playerScore" class="text-sm font-bold"></div>
+                </div>
+                <div>
+                  <h5 class="text-sm font-semibold mb-1 text-red-400">뱅커</h5>
+                  <div id="bankerCards" class="mb-1 text-gray-500 text-sm">
+                    카드가 없습니다
+                  </div>
+                  <div id="bankerScore" class="text-sm font-bold"></div>
+                </div>
+              </div>
+              <div class="mt-2">
+                <div
+                  id="gameWinner"
+                  class="text-base font-bold text-center mb-1 text-gray-500"
                 >
-                <span class="text-red-400 font-semibold"
-                  >B: <span id="bankerWins">0</span></span
-                >
-                <span class="text-green-400 font-semibold"
-                  >T: <span id="tieWins">0</span></span
-                >
+                  게임 결과 대기 중...
+                </div>
+                <div
+                  id="pairResults"
+                  class="text-center text-sm text-gray-400"
+                ></div>
               </div>
             </div>
-            <div class="grid grid-cols-6 gap-1" id="recentResults">
-              <!-- 최근 결과가 여기에 추가됩니다 -->
-            </div>
-          </div>
 
-          <!-- 간단한 기록 테이블 -->
-          <div
-            class="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 mb-4"
-          >
-            <div class="overflow-x-auto max-h-[500px] custom-scrollbar">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-700 sticky top-0 z-10">
-                  <tr>
-                    <th class="py-2 px-3 text-left">#</th>
-                    <th class="py-2 px-3 text-left">결과</th>
-                    <th class="py-2 px-3 text-right">인원</th>
-                  </tr>
-                </thead>
-                <tbody id="recentGamesTable" class="divide-y divide-gray-700">
-                  <!-- 게임 기록이 여기 추가 됩니다 -->
-                </tbody>
-              </table>
+            <!-- 결과 패턴 -->
+            <div class="bg-gray-900 p-3 rounded-lg mb-4 border border-gray-700">
+              <div class="flex justify-between items-center mb-2">
+                <h4 class="text-base font-semibold text-gray-300">패턴</h4>
+                <!-- 간단한 통계 (오른쪽) -->
+                <div class="flex items-center gap-3 text-sm">
+                  <span class="text-blue-400 font-semibold"
+                    >P: <span id="playerWins">0</span></span
+                  >
+                  <span class="text-red-400 font-semibold"
+                    >B: <span id="bankerWins">0</span></span
+                  >
+                  <span class="text-green-400 font-semibold"
+                    >T: <span id="tieWins">0</span></span
+                  >
+                </div>
+              </div>
+              <div class="grid grid-cols-6 gap-1" id="recentResults">
+                <!-- 최근 결과가 여기에 추가됩니다 -->
+              </div>
+            </div>
+
+            <!-- 간단한 기록 테이블 -->
+            <div
+              class="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 mb-4"
+            >
+              <div class="overflow-x-auto max-h-[200px] custom-scrollbar">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-700 sticky top-0 z-10">
+                    <tr>
+                      <th class="py-2 px-3 text-left">#</th>
+                      <th class="py-2 px-3 text-left">결과</th>
+                      <th class="py-2 px-3 text-right">인원</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentGamesTable" class="divide-y divide-gray-700">
+                    <!-- 게임 기록이 여기 추가 됩니다 -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -834,28 +821,20 @@
           showToast("게임이 시작되었습니다.", "info");
         });
 
-      // 사용자 자동 게임 시작
-      document.getElementById('autoStartBetting').addEventListener('click', function() {
-        socket.emit('start_auto_betting');
-        document.getElementById('autoStartBetting').style.display = 'none';
-        document.getElementById('autoStopBetting').style.display = 'block';
-        document.getElementById('stopUserAutoGame').classList.remove('hidden');
-        showToast('사용자 자동 게임이 시작되었습니다.', 'success');
-      });
+      // 자동 베팅 시작/중지 버튼
+      document
+        .getElementById("autoStartBetting")
+        .addEventListener("click", () => {
+          socket.emit("admin_auto_start");
+          showToast("자동 베팅이 시작되었습니다.", "info");
+        });
 
-      // 사용자 자동 게임 중지 (예약 종료)
-      document.getElementById('autoStopBetting').addEventListener('click', function() {
-        socket.emit('stop_auto_betting');
-        document.getElementById('autoStopBetting').classList.add('hidden');
-        showToast('자동 게임 예약 종료가 설정되었습니다. 현재 게임 완료 후 종료됩니다.', 'info');
-      });
-
-      // 사용자 자동 게임 강제 중지
-      document.getElementById('stopUserAutoGame').addEventListener('click', function() {
-        if (confirm('정말로 진행 중인 게임을 강제로 중지하시겠습니까?')) {
-          socket.emit('stop_auto_game');
-        }
-      });
+      document
+        .getElementById("autoStopBetting")
+        .addEventListener("click", () => {
+          socket.emit("admin_auto_stop");
+          showToast("자동 베팅이 중지되었습니다.", "info");
+        });
 
       // 백그라운드 게임 시작/중지 버튼
       document
@@ -1712,82 +1691,124 @@
         fetchRecentGames();
       });
 
+      // 사용자 자동 게임 제어 함수들
+      function startUserAutoGame() {
+        if (!socket) {
+          showToast("소켓 연결이 없습니다.", "error");
+          return;
+        }
+        
+        socket.emit("start_user_auto_game");
+        showToast("사용자 자동 게임을 시작합니다.", "info");
+      }
+
+      function stopUserAutoGame() {
+        if (!socket) {
+          showToast("소켓 연결이 없습니다.", "error");  
+          return;
+        }
+        
+        if (confirm("사용자 자동 게임을 중지하시겠습니까?")) {
+          socket.emit("stop_auto_game");
+          showToast("사용자 자동 게임을 중지합니다.", "warning");
+        }
+      }
+
+      // 새로운 소켓 이벤트 리스너들 추가
+      socket.on("user_auto_game_started", (data) => {
+        const statusElement = document.getElementById("userAutoGameStatus");
+        const gameCountElement = document.getElementById("gameCountStatus");
+        
+        if (statusElement) {
+          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
+          statusElement.className = "text-xs text-green-400";
+        }
+        
+        if (gameCountElement) {
+          gameCountElement.textContent = `게임 수: ${data.gameCount || 0}회`;
+          gameCountElement.classList.remove("hidden");
+        }
+        
+        showToast("사용자 자동 게임이 시작되었습니다.", "success"); 
+      });
+
+      socket.on("user_auto_game_stopped", (data) => {
+        const statusElement = document.getElementById("userAutoGameStatus");
+        const gameCountElement = document.getElementById("gameCountStatus");
+        const scheduledStopElement = document.getElementById("scheduledStopStatus");
+        
+        if (statusElement) {
+          statusElement.textContent = "대기 중 (게임 종료됨)";
+          statusElement.className = "text-xs text-gray-400";
+        }
+        
+        if (gameCountElement) {
+          gameCountElement.classList.add("hidden");
+        }
+        
+        if (scheduledStopElement) {
+          scheduledStopElement.classList.add("hidden");
+        }
+        
+        showToast(data.message || "사용자 자동 게임이 종료되었습니다.", "warning");
+      });
+
+      socket.on("auto_game_status_update", (data) => {
+        const statusElement = document.getElementById("userAutoGameStatus");
+        const gameCountElement = document.getElementById("gameCountStatus");
+        
+        if (statusElement) {
+          if (data.isRunning) {
+            statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
+            statusElement.className = "text-xs text-green-400";
+          } else {
+            statusElement.textContent = "대기 중 (접속자 없음)";
+            statusElement.className = "text-xs text-gray-400";
+          }
+        }
+        
+        if (gameCountElement) {
+          if (data.isRunning && data.gameCount !== undefined) {
+            gameCountElement.textContent = `게임 수: ${data.gameCount}회`;
+            gameCountElement.classList.remove("hidden");
+          } else {
+            gameCountElement.classList.add("hidden");
+          }
+        }
+      });
+
+      socket.on("scheduled_stop_update", (data) => {
+        const scheduledStopElement = document.getElementById("scheduledStopStatus");
+        
+        if (scheduledStopElement) {
+          if (data.remainingGames > 0) {
+            scheduledStopElement.textContent = `예약 종료: ${data.remainingGames}게임 후`;
+            scheduledStopElement.classList.remove("hidden");
+          } else {
+            scheduledStopElement.classList.add("hidden");
+          }
+        }
+      });
+
+      // 사용자 접속/해제 시 상태 업데이트
+      socket.on("user_joined", (data) => {
+        const statusElement = document.getElementById("userAutoGameStatus");
+        if (statusElement && data.isGameActive) {
+          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
+        }
+      });
+
+      socket.on("user_left", (data) => {
+        const statusElement = document.getElementById("userAutoGameStatus");
+        if (statusElement && data.isGameActive) {
+          statusElement.textContent = `게임 진행 중 (사용자 ${data.userCount}명)`;
+        }
+      });
+
       // 자동 새로고침 대신 실시간 업데이트 확인
       setTimeout(() => {
         fetchRecentGames();
       }, 500);
-
-      // 사용자 자동 게임 상태 업데이트
-      socket.on('auto_game_status', function(data) {
-        updateUserAutoGameStatus(data);
-      });
-
-      // 자동 게임 완전 중지됨
-      socket.on('auto_game_stopped', function() {
-        document.getElementById('autoStartBetting').style.display = 'block';
-        document.getElementById('autoStopBetting').classList.add('hidden');
-        document.getElementById('stopUserAutoGame').classList.add('hidden');
-        document.getElementById('scheduledStopStatus').classList.add('hidden');
-        document.getElementById('gameStatsDisplay').classList.add('hidden');
-        document.getElementById('userAutoGameStatus').textContent = '대기 중 (접속자 없음)';
-        showToast('자동 게임이 완전히 중지되었습니다.', 'info');
-      });
-
-      // 예약 종료 상태 업데이트
-      socket.on('scheduled_stop_update', function(data) {
-        const scheduledStopEl = document.getElementById('scheduledStopStatus');
-        if (data.scheduled) {
-          scheduledStopEl.textContent = `남은 게임: ${data.remainingGames}회`;
-          scheduledStopEl.classList.remove('hidden');
-        } else {
-          scheduledStopEl.classList.add('hidden');
-        }
-      });
-
-      // 게임 상태 업데이트 함수
-      function updateUserAutoGameStatus(data) {
-        const statusEl = document.getElementById('userAutoGameStatus');
-        const gameStatsEl = document.getElementById('gameStatsDisplay');
-        const gameCountEl = document.getElementById('gameCount');
-        
-        if (data.isActive) {
-          const phaseText = {
-            'waiting': '다음 게임 대기 중',
-            'betting': '베팅 진행 중',
-            'playing': '게임 진행 중',
-            'showing_result': '결과 표시 중'
-          };
-          
-          statusEl.textContent = `진행 중 - ${phaseText[data.phase] || data.phase}`;
-          statusEl.className = 'text-xs text-green-400';
-          
-          // 게임 통계 표시
-          if (data.gameNumber !== undefined) {
-            gameCountEl.textContent = data.gameNumber;
-            gameStatsEl.classList.remove('hidden');
-            
-            // 참여자 수 업데이트
-            if (data.participants !== undefined) {
-              document.getElementById('autoGameParticipants').textContent = data.participants;
-            }
-          }
-        } else {
-          statusEl.textContent = '대기 중 (접속자 없음)';
-          statusEl.className = 'text-xs text-gray-400';
-          gameStatsEl.classList.add('hidden');
-          document.getElementById('autoGameParticipants').textContent = '0';
-        }
-      }
-
-      // 접속자 수 업데이트
-      socket.on("user_count_update", (data) => {
-        document.getElementById("baccaratUsers").textContent = data.baccarat || 0;
-        document.getElementById("blackjackUsers").textContent = data.blackjack || 0;
-        document.getElementById("totalUsers").textContent = data.total || 0;
-        
-        // 자동 게임 참여자 수 업데이트 (임시로 바카라 접속자와 동일하게 표시)
-        document.getElementById("autoGameParticipants").textContent = data.baccarat || 0;
-      });
     </script>
   </body>
 </html>
