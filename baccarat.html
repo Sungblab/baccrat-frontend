@@ -2293,10 +2293,13 @@
         // 소켓 연결 후 인증 및 게임 참여
         socket.on("connect", () => {
           socket.emit("authenticate", token);
-          // 바카라 게임에 접속 및 세션 복원 요청
-          if (!hasJoinedGame) {
+          // 바카라 게임에 접속 및 세션 복원 요청 (중복 방지)
+          if (!hasJoinedGame && socket.connected) {
+            console.log('소켓 연결됨 - 게임 참여 요청');
             socket.emit("join_baccarat_game", token);
             hasJoinedGame = true;
+          } else {
+            console.log('이미 게임에 참여했거나 소켓이 연결되지 않음');
           }
         });
 
@@ -2304,24 +2307,43 @@
         socket.on("game_state_restored", (data) => {
           gameSessionData = data;
           
+          // 게임 상태 복원이 성공했으므로 참여 플래그 설정
+          hasJoinedGame = true;
+          
           console.log('게임 상태 수신:', data);
           
           // 현재 게임 상태에 따른 UI 동기화
           if (data.gameState.currentGamePhase === 'betting' && data.bettingActive) {
-            // 베팅 중이라면 베팅 UI 활성화
-            bettingActive = true;
-            if (data.bettingEndTime) {
-              const remainingTime = new Date(data.bettingEndTime) - new Date();
-              if (remainingTime > 0) {
-                startTimer(new Date(data.bettingEndTime));
-                showNotification(`베팅 시간이 ${Math.ceil(remainingTime/1000)}초 남았습니다.`, 'info', 2000);
+            // 베팅 중이라면 베팅 UI 활성화 (중복 방지)
+            if (!bettingActive) {
+              bettingActive = true;
+              
+              if (data.bettingEndTime) {
+                const remainingTime = new Date(data.bettingEndTime) - new Date();
+                if (remainingTime > 0) {
+                  // 기존 타이머가 실행 중이 아닐 때만 새 타이머 시작
+                  if (!window.bettingTimerInterval) {
+                    startTimer(new Date(data.bettingEndTime));
+                  }
+                  showNotification(`베팅 시간이 ${Math.ceil(remainingTime/1000)}초 남았습니다.`, 'info', 2000);
+                }
               }
+              
+              // 베팅 버튼들 활성화
+              enableBettingUI();
+            } else {
+              console.log('베팅이 이미 활성화되어 있어 중복 처리를 건너뜁니다.');
             }
-            
-            // 베팅 버튼들 활성화
-            enableBettingUI();
           } else {
             // 베팅 중이 아니라면 베팅 UI 비활성화
+            if (bettingActive) {
+              bettingActive = false;
+              // 기존 타이머 정리
+              if (window.bettingTimerInterval) {
+                clearInterval(window.bettingTimerInterval);
+                window.bettingTimerInterval = null;
+              }
+            }
             disableBettingUI();
           }
           
@@ -2550,10 +2572,13 @@
               }
             }
             
-            // 게임 재접속 시도
+            // 게임 재접속 시도 (페이지 가시성 변경 시에만)
             if (socket && socket.connected && !hasJoinedGame) {
+              console.log('페이지 가시성 변경으로 인한 게임 재참여 요청');
               socket.emit("join_baccarat_game", token);
               hasJoinedGame = true;
+            } else {
+              console.log('재접속 조건 불충족 또는 이미 참여함');
             }
           }
         });
@@ -5072,6 +5097,12 @@
         });
 
         socket.on("betting_started", () => {
+          // 이미 베팅이 활성화되어 있으면 중복 처리 방지
+          if (bettingActive) {
+            console.log('베팅이 이미 활성화되어 있습니다. 중복 처리 방지');
+            return;
+          }
+          
           bettingActive = true;
           
           // 새 게임 시작 시 베팅 상황 초기화
@@ -5099,6 +5130,12 @@
         function startTimer(endTime) {
           const timerElement = document.getElementById("timer");
           if (!timerElement) return;
+
+          // 이미 베팅이 활성화되어 있고 타이머가 실행 중이면 중복 실행 방지
+          if (bettingActive && window.bettingTimerInterval) {
+            console.log('타이머가 이미 실행 중입니다. 중복 실행 방지');
+            return;
+          }
 
           // 기존 타이머가 있으면 정리
           if (window.bettingTimerInterval) {
