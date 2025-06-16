@@ -666,13 +666,10 @@
           }
         });
 
-        // 관리자 잔액 조정 시 실시간 업데이트 (바카라와 동일한 포괄적 구현)
+        // 관리자 잔액 조정 시 실시간 업데이트 (알림 없이 조용히 처리)
         socket.on("balance_updated", (data) => {
-          // 메인 잔액 표시 업데이트
+          // 메인 잔액 표시 업데이트 (알림 없음)
           updateBalance(data.newBalance || data.balance);
-          
-          // 알림 표시
-          showNotification("관리자가 잔액을 조정했습니다.", "info");
         });
 
         // 충전/환전 처리 알림 (바카라와 동일)
@@ -780,7 +777,7 @@
 
             // 더블다운 후 히트인 경우 특별 처리
             if (data.wasDoubled) {
-              showNotification("더블다운으로 카드 1장 받았습니다! 자동 스탠드합니다.", "success");
+              showNotification("더블다운으로 카드 1장 받았습니다! 딜러 턴 시작!", "success");
               
               // 모든 액션 버튼 비활성화
               disableGameActions();
@@ -789,12 +786,21 @@
               if (data.isBust) {
                 handleGameEnd(data.session);
               } else {
-                // 딜러 턴 시작 대기
+                // 딜러 턴 강제 시작
                 setTimeout(() => {
-                  if (gameSession && gameSession.status === "dealer-turn") {
-                    showNotification("딜러 턴이 시작됩니다.", "info");
+                  updateGameSession(data.session);
+                  
+                  // 딜러 턴 상태로 강제 변경 및 시작
+                  if (gameSession) {
+                    gameSession.status = "dealer-turn";
+                    isDealerTurn = true;
+                    updateGameStatus("딜러 턴");
+                    showDealerTurnIndicator();
+                    
+                    // 딜러 턴 프로세스 시작 요청
+                    socket.emit("start_dealer_turn");
                   }
-                }, 1500);
+                }, 800);
               }
             } else {
               // 일반 히트
@@ -809,9 +815,6 @@
         socket.on("stand_result", (data) => {
           if (data.success) {
             disableGameActions();
-            if (data.session.status === "dealer-turn") {
-              showNotification("딜러 턴이 시작됩니다.", "info");
-            }
           }
         });
 
@@ -1261,7 +1264,6 @@
         // 베팅 상태로 완전 초기화
         setTimeout(() => {
           updateBetDisplay();
-          showNotification("새 게임을 시작합니다. 베팅을 선택해주세요.", "info");
         }, 500);
       }
 
