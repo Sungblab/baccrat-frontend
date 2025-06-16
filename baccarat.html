@@ -2267,7 +2267,6 @@
 
         // 게임 상태 저장을 위한 변수
         let gameSessionData = null;
-        let wasReconnected = false;
 
         // 소켓 연결 후 인증 및 게임 참여
         socket.on("connect", () => {
@@ -2283,63 +2282,38 @@
         socket.on("game_state_restored", (data) => {
           gameSessionData = data;
           
-          if (data.restoredFromSession) {
-            wasReconnected = true;
-            console.log(`세션 복원됨: ${Math.round(data.disconnectDuration/1000)}초 전 연결 해제`);
-            
-            // 사용자에게 세션 복원 알림
-            showNotification(
-              `세션이 복원되었습니다 (${Math.round(data.disconnectDuration/1000)}초 전 상태)`, 
-              'info', 
-              3000
-            );
-            
-            // 게임 상태에 따른 UI 복원
-            if (data.gameState.currentGamePhase === 'betting' && data.bettingActive) {
-              // 베팅 중이었다면 베팅 UI 활성화
-              bettingActive = true;
-              if (data.bettingEndTime) {
-                const remainingTime = new Date(data.bettingEndTime) - new Date();
-                if (remainingTime > 0) {
-                  startCountdown(Math.ceil(remainingTime / 1000));
-                }
-              }
-              
-              // 베팅 버튼들 활성화
-              enableBettingUI();
-              
-              // localStorage에서 이전 베팅 정보 복원
-              const savedBets = JSON.parse(localStorage.getItem('currentBets') || '{}');
-              if (Object.keys(savedBets).length > 0) {
-                currentBets = savedBets;
-                updateBettingDisplay();
-                showNotification('이전 베팅 정보가 복원되었습니다.', 'success', 2000);
+          console.log('게임 상태 수신:', data);
+          
+          // 현재 게임 상태에 따른 UI 동기화
+          if (data.gameState.currentGamePhase === 'betting' && data.bettingActive) {
+            // 베팅 중이라면 베팅 UI 활성화
+            bettingActive = true;
+            if (data.bettingEndTime) {
+              const remainingTime = new Date(data.bettingEndTime) - new Date();
+              if (remainingTime > 0) {
+                startTimer(new Date(data.bettingEndTime));
               }
             }
-          }
-          
-          // 예약 종료 상태 표시
-          if (data.scheduledStop && data.scheduledStop.isScheduled) {
-            showScheduledStopIndicator(data.scheduledStop);
+            
+            // 베팅 버튼들 활성화
+            enableBettingUI();
           }
           
           // 사용자 잔액 업데이트
           if (data.userBalance !== undefined) {
             updateBalance(data.userBalance);
           }
+          
+          // 자동 게임 상태 표시
+          if (data.autoGameActive) {
+            showNotification('자동 게임이 진행 중입니다.', 'info', 2000);
+          }
         });
 
         // 소켓 연결 해제 시 상태 저장
         socket.on("disconnect", () => {
           hasJoinedGame = false;
-          
-          // 현재 베팅 상태를 localStorage에 저장
-          if (Object.keys(currentBets).length > 0) {
-            localStorage.setItem('currentBets', JSON.stringify(currentBets));
-            localStorage.setItem('lastSaveTime', Date.now().toString());
-          }
-          
-          console.log('소켓 연결 해제 - 세션 정보 저장됨');
+          console.log('소켓 연결 해제');
         });
 
         // 알림 표시 함수
@@ -2452,28 +2426,38 @@
           });
         }
 
-        // 페이지 언로드 시 서버에 알림 (페이지 새로고침, 닫기, 다른 페이지로 이동)
-        window.addEventListener("beforeunload", () => {
-          if (socket && socket.connected && hasJoinedGame) {
+        // 실제 페이지 나가기만 처리 (새로고침/탭 전환은 무시)
+        let isRealPageUnload = false;
+        
+        // 실제 페이지 나가기 감지 (브라우저 닫기, 다른 사이트 이동)
+        window.addEventListener("beforeunload", (e) => {
+          // 실제 페이지 나가기인지 확인
+          const navigation = performance.getEntriesByType('navigation')[0];
+          if (navigation && navigation.type === 'navigate') {
+            isRealPageUnload = true;
+          }
+          
+          // 페이지 새로고침이나 내부 네비게이션이 아닌 경우만 서버에 알림
+          if (isRealPageUnload && socket && socket.connected && hasJoinedGame) {
             socket.emit("user_left_baccarat", token);
             hasJoinedGame = false;
           }
         });
 
-        // 페이지 숨김 처리 (모바일에서 앱 전환 등)
+        // 페이지 숨김/표시 처리 (탭 전환, 앱 전환 등) - 게임 중지하지 않음
         document.addEventListener("visibilitychange", () => {
           if (document.hidden && isPageVisible) {
-            // 페이지가 보이는 상태에서 숨겨졌을 때만
+            // 페이지가 숨겨짐 - 게임은 계속 진행
             isPageVisible = false;
-            if (socket && socket.connected && hasJoinedGame) {
-              socket.emit("user_left_baccarat", token);
-              hasJoinedGame = false;
-            }
+            console.log('페이지 숨김 (게임은 계속 진행)');
           } else if (!document.hidden && !isPageVisible) {
-            // 페이지가 숨겨진 상태에서 다시 보여졌을 때만
+            // 페이지가 다시 보임 - 게임 상태 재동기화
             isPageVisible = true;
+            console.log('페이지 표시 - 게임 상태 재동기화');
+            
+            // 게임 재접속 시도
             if (socket && socket.connected && !hasJoinedGame) {
-              socket.emit("user_joined_baccarat", token);
+              socket.emit("join_baccarat_game", token);
               hasJoinedGame = true;
             }
           }
@@ -2499,37 +2483,7 @@
         let isBettingInProgress = false; // 베팅 처리 중 플래그
         let currentBets = {}; // 현재 베팅 상황 추적
         
-        // 페이지 로드 시 localStorage에서 베팅 정보 복원 시도
-        function restoreLocalBets() {
-          const savedBets = localStorage.getItem('currentBets');
-          const lastSaveTime = localStorage.getItem('lastSaveTime');
-          
-          if (savedBets && lastSaveTime) {
-            const timeDiff = Date.now() - parseInt(lastSaveTime);
-            // 10분 이내의 베팅 정보만 복원
-            if (timeDiff < 600000) {
-              try {
-                const parsedBets = JSON.parse(savedBets);
-                if (Object.keys(parsedBets).length > 0) {
-                  currentBets = parsedBets;
-                  updateBettingDisplay();
-                  console.log('로컬 베팅 정보 복원됨:', currentBets);
-                  showNotification('이전 베팅 정보가 복원되었습니다.', 'info', 2000);
-                  return true;
-                }
-              } catch (e) {
-                console.error('베팅 정보 복원 중 오류:', e);
-                localStorage.removeItem('currentBets');
-                localStorage.removeItem('lastSaveTime');
-              }
-            } else {
-              // 10분이 지난 베팅 정보는 삭제
-              localStorage.removeItem('currentBets');
-              localStorage.removeItem('lastSaveTime');
-            }
-          }
-          return false;
-        }
+
 
         // 채팅 관련 변수들
         let isChatOpen = false;
@@ -5025,16 +4979,8 @@
         socket.on("betting_started", () => {
           bettingActive = true;
           
-          // 세션 복원이 아닌 경우에만 베팅 상황 초기화
-          if (!wasReconnected) {
-            currentBets = {}; // 새 게임 시작 시 베팅 상황 초기화
-            // localStorage에서 이전 베팅 정보 제거
-            localStorage.removeItem('currentBets');
-            localStorage.removeItem('lastSaveTime');
-          } else {
-            // 세션 복원 후 첫 베팅 시작이므로 플래그 초기화
-            wasReconnected = false;
-          }
+          // 새 게임 시작 시 베팅 상황 초기화
+          currentBets = {};
           
           const timerEl = document.getElementById("timer");
           if (timerEl) timerEl.innerText = "베팅이 시작되었습니다.";
@@ -5042,7 +4988,6 @@
             document.getElementById("bettingStartSound");
           bettingStartSound?.play().catch((err) => {});
 
-          // 게임 상태 업데이트 (gameStatus 제거됨)
           // 새 베팅 라운드 시작시에만 UI 선택 초기화 (마지막 베팅 정보는 유지)
           selectedChoice = null;
           // selectedChipAmount = 0; // 베팅 금액은 유지
@@ -5091,12 +5036,6 @@
         socket.on("betting_closed", () => {
           bettingActive = false;
           isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
-
-          // 베팅 종료 시 현재 베팅 상태를 localStorage에 저장
-          if (Object.keys(currentBets).length > 0) {
-            localStorage.setItem('currentBets', JSON.stringify(currentBets));
-            localStorage.setItem('lastSaveTime', Date.now().toString());
-          }
 
           // 모든 베팅 버튼의 로딩 상태 해제 (혹시 남아있을 경우)
           document.querySelectorAll(".choice-button").forEach((btn) => {
@@ -6792,10 +6731,7 @@
         // DOMContentLoaded 이후 게임 시작 및 Socket 이벤트 핸들러 수정/추가
         startMiniGame(); // 페이지 로드 시 미니게임 시작
         
-        // 페이지 로드 완료 후 로컬 베팅 정보 복원 시도
-        setTimeout(() => {
-          restoreLocalBets();
-        }, 1000); // 1초 후 실행 (소켓 연결 완료 대기)
+
 
         // 기존 카드 표시 이벤트 (game.html 호환)
         socket.on("display_card_on_user_html", (data) => {
