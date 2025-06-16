@@ -887,7 +887,6 @@
         socket.on("new_game_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            showNotification("새 게임이 시작되었습니다.", "success");
             
             // 새 게임 시작 시 잔액 동기화 (바카라와 동일)
             fetchUserInfo(true);
@@ -902,7 +901,18 @@
         // 에러 처리
         socket.on("error", (message) => {
           hideLoading();
-          showNotification(message, "error");
+          
+          // 불필요한 알림 메시지들 필터링
+          const filteredMessages = [
+            "현재 베팅이 진행 중이지 않습니다.",
+            "현재 베팅이 진행중이지 않습니다.",
+            "딜러 턴이 시작됩니다.",
+            "새 게임을 시작합니다. 베팅을 선택해주세요."
+          ];
+          
+          if (!filteredMessages.includes(message)) {
+            showNotification(message, "error");
+          }
         });
       }
 
