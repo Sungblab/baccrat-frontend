@@ -643,6 +643,7 @@
         );
 
         socket.on("connect", () => {
+          console.log("[블랙잭] 소켓 연결됨");
           socket.emit("authenticate", token);
         });
 
@@ -652,13 +653,16 @@
 
         // 인증 결과
         socket.on("authentication_result", (data) => {
+          console.log("[블랙잭] 인증 결과 수신:", data);
           if (data.success) {
+            console.log("[블랙잭] 인증 성공 - 초기 잔액:", data.user.balance);
             updateBalance(data.user.balance);
             updateGameSession(data.session);
             showNotification("게임에 접속했습니다.", "success");
 
             // 인증 성공 후 최신 잔액 가져오기
             setTimeout(() => {
+              console.log("[블랙잭] 인증 후 잔액 재조회");
               fetchUserInfo(true); // 즉시 실행
             }, 500);
           } else {
@@ -687,17 +691,60 @@
             placeBetBtn.disabled = true;
             betBtnText.textContent = "베팅 완료";
 
-            // 베팅 성공 후 잔액 즉시 동기화 (바카라와 동일)
-            fetchUserInfo(true);
+            // 베팅 성공 후 즉시 잔액 업데이트 (서버에서 전송된 잔액이 있으면 사용)
+            if (data.session && data.session.balance !== undefined) {
+              console.log(
+                "[블랙잭] 베팅 성공 - 세션 잔액 업데이트:",
+                data.session.balance
+              );
+              updateBalance(data.session.balance);
+            }
+
+            // 추가로 서버에서 최신 잔액 조회 (바카라와 동일)
+            setTimeout(() => {
+              fetchUserInfo(true);
+            }, 300);
           } else {
             showNotification(data.message, "error");
           }
         });
 
-        // 관리자 잔액 조정 시 실시간 업데이트 (알림 없이 조용히 처리)
+        // 관리자 잔액 조정 시 실시간 업데이트 (바카라와 동일한 강력한 처리)
         socket.on("balance_updated", (data) => {
-          // 메인 잔액 표시 업데이트 (알림 없음)
-          updateBalance(data.newBalance || data.balance);
+          console.log("[블랙잭] balance_updated 이벤트 수신:", data);
+
+          // 데이터 유효성 검사
+          if (
+            !data ||
+            (typeof data.newBalance === "undefined" &&
+              typeof data.balance === "undefined")
+          ) {
+            console.error(
+              "balance_updated 이벤트에서 유효하지 않은 데이터:",
+              data
+            );
+            fetchUserInfo(true); // 강제로 최신 잔액 조회
+            return;
+          }
+
+          const newBalance =
+            data.newBalance !== undefined ? data.newBalance : data.balance;
+
+          if (newBalance !== null && newBalance !== undefined) {
+            updateBalance(newBalance);
+            console.log("[블랙잭] 잔액 업데이트 완료:", newBalance);
+
+            // 게임 완료로 인한 잔액 업데이트인 경우 알림 없음
+            if (data.reason === "admin_adjustment") {
+              showNotification("관리자가 잔액을 조정했습니다.", "info");
+            }
+          } else {
+            console.error(
+              "balance_updated에서 잔액 값이 null/undefined:",
+              data
+            );
+            fetchUserInfo(true); // 강제로 최신 잔액 조회
+          }
         });
 
         // 충전/환전 처리 알림 (바카라와 동일)
@@ -1171,6 +1218,8 @@
 
         // 게임 완료
         socket.on("game_finished", (data) => {
+          console.log("[블랙잭] game_finished 이벤트 수신:", data);
+
           // 보험 결과가 있으면 표시
           if (data.insuranceResult) {
             const insuranceMsg = data.insuranceResult.won
@@ -1184,6 +1233,21 @@
           }
 
           handleGameEnd(data.session, data.results);
+
+          // 게임 완료 후 즉시 최신 잔액 조회 (여러 번 시도)
+          if (data.session && data.session.balance !== undefined) {
+            console.log(
+              "[블랙잭] 게임 완료 - 세션 잔액 업데이트:",
+              data.session.balance
+            );
+            updateBalance(data.session.balance);
+          }
+
+          // 추가로 서버에서 최신 잔액 조회 (중복 방지)
+          setTimeout(() => {
+            console.log("[블랙잭] 게임 완료 후 잔액 재동기화");
+            fetchUserInfo(true);
+          }, 500);
 
           // 게임 완료 후 3초 뒤에 베팅 가능 상태로 변경
           setTimeout(() => {
@@ -1629,17 +1693,49 @@
         }
         showContinuousGameButtons();
 
-        // 게임 완료 후 잔액 업데이트 (블랙잭 승리 시 중복 조회 방지)
+        // 게임 완료 후 잔액 업데이트 강화 (바카라와 동일한 로직)
         if (gameSession && gameSession.blackjackWin) {
           // 블랙잭 승리 시에는 이미 서버에서 잔액 업데이트 완료
-          console.log("블랙잭 승리 - 중복 잔액 조회 생략");
+          console.log("[블랙잭] 블랙잭 승리 - 중복 잔액 조회 생략");
           gameSession.blackjackWin = false; // 플래그 초기화
         } else {
-          // 일반 게임 완료 시에만 잔액 조회
-          fetchUserInfo(true); // 즉시 최신 잔액 조회
-          setTimeout(() => {
-            fetchUserInfo(true); // 한 번 더 최신 잔액 조회 (서버 동기화 보장)
-          }, 1000);
+          // 일반 게임 완료 시 강화된 잔액 동기화
+          console.log("[블랙잭] 일반 게임 완료 - 잔액 동기화 시작");
+
+          // 세션에서 최신 잔액이 있으면 즉시 반영
+          if (session && session.balance !== undefined) {
+            console.log(
+              "[블랙잭] 세션 잔액으로 즉시 업데이트:",
+              session.balance
+            );
+            updateBalance(session.balance);
+          }
+
+          // 서버에서 최신 잔액 조회 (다중 시도)
+          const syncBalance = async () => {
+            try {
+              await fetchUserInfo(true); // 첫 번째 시도
+              console.log("[블랙잭] 첫 번째 잔액 동기화 완료");
+
+              // 1초 후 한 번 더 시도 (서버 동기화 보장)
+              setTimeout(async () => {
+                try {
+                  await fetchUserInfo(true);
+                  console.log("[블랙잭] 두 번째 잔액 동기화 완료");
+                } catch (error) {
+                  console.error("[블랙잭] 두 번째 잔액 동기화 실패:", error);
+                }
+              }, 1000);
+            } catch (error) {
+              console.error("[블랙잭] 첫 번째 잔액 동기화 실패:", error);
+              // 실패 시 다시 시도
+              setTimeout(() => {
+                fetchUserInfo(true);
+              }, 2000);
+            }
+          };
+
+          syncBalance();
         }
 
         // 3초 후 베팅 상태로 자동 전환
@@ -1834,7 +1930,15 @@
               gameSession.balance = balance;
             }
 
-            console.log("블랙잭 잔액 업데이트 완료:", balance);
+            console.log("[블랙잭] fetchUserInfo 잔액 업데이트 완료:", balance);
+
+            // 현재 화면에 표시되는 잔액과 비교
+            const currentDisplayBalance = getCurrentBalance();
+            if (currentDisplayBalance !== balance) {
+              console.log(
+                `[블랙잭] 잔액 차이 발견 - 화면: ${currentDisplayBalance}, 서버: ${balance}`
+              );
+            }
           } else {
             console.error("사용자 정보를 가져오는데 실패했습니다.");
           }
@@ -1860,28 +1964,47 @@
         }
       }
 
-      // 잔액 업데이트 (바카라와 동일한 고급 기능)
+      // 잔액 업데이트 (바카라와 동일한 고급 기능 + 강화된 로깅)
       function updateBalance(balance) {
         const balanceElement = document.getElementById("balance");
-        if (!balanceElement) return;
+        if (!balanceElement) {
+          console.error("[블랙잭] 잔액 엘리먼트를 찾을 수 없습니다.");
+          return;
+        }
 
         const currentBalance =
           parseInt(balanceElement.textContent.replace(/[₩,]/g, "")) || 0;
         const newBalance = parseInt(balance) || 0;
 
+        console.log(
+          `[블랙잭] 잔액 업데이트: ${currentBalance} → ${newBalance} (변화: ${
+            newBalance - currentBalance
+          })`
+        );
+
         // 잔액 변화 감지 및 시각적 효과
         if (currentBalance !== newBalance) {
+          const change = newBalance - currentBalance;
+
           // 잔액 증가/감소에 따른 색상 효과
           if (newBalance > currentBalance) {
             balanceElement.style.color = "#10b981"; // 녹색 (증가)
             balanceElement.style.transform = "scale(1.1)";
+            console.log(`[블랙잭] 잔액 증가: +${change.toLocaleString()}원`);
           } else if (newBalance < currentBalance) {
             balanceElement.style.color = "#ef4444"; // 빨간색 (감소)
             balanceElement.style.transform = "scale(1.1)";
+            console.log(`[블랙잭] 잔액 감소: ${change.toLocaleString()}원`);
           }
 
           // 잔액 업데이트
           balanceElement.textContent = `₩${newBalance.toLocaleString()}`;
+
+          // 게임 세션 잔액도 동기화
+          if (gameSession) {
+            gameSession.balance = newBalance;
+            console.log(`[블랙잭] 게임 세션 잔액 동기화: ${newBalance}`);
+          }
 
           // 원래 스타일로 복원
           setTimeout(() => {
@@ -1891,6 +2014,9 @@
         } else {
           // 변화가 없어도 업데이트 (초기 로드 등)
           balanceElement.textContent = `₩${newBalance.toLocaleString()}`;
+          console.log(
+            `[블랙잭] 잔액 변화 없음: ${newBalance.toLocaleString()}원`
+          );
         }
 
         // 잔액이 업데이트될 때마다 베팅 상태 재확인
