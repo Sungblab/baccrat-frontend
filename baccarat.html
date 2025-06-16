@@ -2290,12 +2290,12 @@
         // 게임 상태 저장을 위한 변수
         let gameSessionData = null;
 
-        // 소켓 연결 후 인증 및 게임 참여
+        // 소켓 연결 후 인증만 수행 (자동 게임 시작 제거됨)
         socket.on("connect", () => {
           socket.emit("authenticate", token);
-          // 바카라 게임에 접속 및 세션 복원 요청 (중복 방지)
+          // 세션 복원만 요청 (자동 게임 시작하지 않음)
           if (!hasJoinedGame && socket.connected) {
-            console.log('소켓 연결됨 - 게임 참여 요청');
+            console.log('소켓 연결됨 - 세션 복원 요청');
             socket.emit("join_baccarat_game", token);
             hasJoinedGame = true;
           } else {
@@ -2370,14 +2370,14 @@
             updateBalance(data.userBalance);
           }
           
-          // 자동 게임 상태 표시
-          if (data.autoGameActive) {
-            showNotification('자동 게임이 진행 중입니다.', 'info', 2000);
+          // 관리자 자동 게임 상태 표시
+          if (data.adminAutoGameActive) {
+            showNotification('관리자 자동 게임이 진행 중입니다.', 'info', 2000);
           }
           
-          // 예약 종료 상태 표시
-          if (data.scheduledStop && data.scheduledStop.isScheduled) {
-            showScheduledStopIndicator(data.scheduledStop);
+          // 백그라운드 게임 상태 표시
+          if (data.backgroundGameActive) {
+            showNotification('백그라운드 게임이 진행 중입니다.', 'info', 2000);
           }
         });
 
@@ -2470,24 +2470,7 @@
           }
         }
         
-        // 예약 종료 상태 표시 함수
-        function showScheduledStopIndicator(scheduledStop) {
-          let indicator = document.getElementById('scheduledStopIndicator');
-          
-          if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'scheduledStopIndicator';
-            indicator.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg z-40';
-            document.body.appendChild(indicator);
-          }
-          
-          if (scheduledStop.isScheduled) {
-            indicator.textContent = `${scheduledStop.remainingGames}게임 후 자동 종료 예정`;
-            indicator.style.display = 'block';
-          } else {
-            indicator.style.display = 'none';
-          }
-        }
+        // 예약 종료 상태 표시 함수 제거됨 - 관리자만 게임 제어 가능
         
         // 잔액 업데이트 함수
         function updateBalance(balance) {
@@ -2518,7 +2501,7 @@
         // 실제 페이지 나가기만 처리 (새로고침/탭 전환은 무시)
         let isRealPageUnload = false;
         
-        // 실제 페이지 나가기 감지 (브라우저 닫기, 다른 사이트 이동)
+        // 실제 페이지 나가기 감지 (브라우저 닫기, 다른 사이트 이동) - 자동 게임 시작 제거됨
         window.addEventListener("beforeunload", (e) => {
           // 실제 페이지 나가기인지 확인
           const navigation = performance.getEntriesByType('navigation')[0];
@@ -2526,9 +2509,8 @@
             isRealPageUnload = true;
           }
           
-          // 페이지 새로고침이나 내부 네비게이션이 아닌 경우만 서버에 알림
-          if (isRealPageUnload && socket && socket.connected && hasJoinedGame) {
-            socket.emit("user_left_baccarat", token);
+          // 페이지 새로고침이나 내부 네비게이션이 아닌 경우 상태 정리
+          if (isRealPageUnload && hasJoinedGame) {
             hasJoinedGame = false;
           }
         });
@@ -2578,9 +2560,9 @@
               }
             }
             
-            // 게임 재접속 시도 (페이지 가시성 변경 시에만)
+            // 세션 복원 시도 (페이지 가시성 변경 시에만)
             if (socket && socket.connected && !hasJoinedGame) {
-              console.log('페이지 가시성 변경으로 인한 게임 재참여 요청');
+              console.log('페이지 가시성 변경으로 인한 세션 복원 요청');
               socket.emit("join_baccarat_game", token);
               hasJoinedGame = true;
             } else {
@@ -2589,15 +2571,7 @@
           }
         });
 
-        // 자동 게임 상태 수신
-        socket.on("auto_game_status", (data) => {
-          // 필요시 UI에 자동 게임 상태 표시
-        });
-        
-        // 예약 종료 상태 업데이트 수신
-        socket.on("scheduled_stop_update", (data) => {
-          showScheduledStopIndicator(data);
-        });
+        // 사용자 자동 게임 관련 이벤트들 제거됨 - 관리자만 게임 제어 가능
 
         let selectedChoice = null;
         let selectedChipAmount = 0;
