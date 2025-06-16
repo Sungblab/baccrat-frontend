@@ -813,6 +813,35 @@
           }, 1500);
         });
 
+        // 플레이어 블랙잭 승리
+        socket.on("player_blackjack_win", (data) => {
+          console.log("플레이어 블랙잭 승리:", data);
+          
+          // 플레이어 블랙잭 승리 알림
+          showNotification("플레이어 블랙잭! 🃏 승리!", "success");
+          
+          // Phaser에서 플레이어 블랙잭 효과 표시
+          if (blackjackScene) {
+            blackjackScene.showGameResult("플레이어 블랙잭!", "#FFD700");
+          }
+          
+          // 게임 액션 즉시 비활성화
+          disableGameActions();
+          
+          // 게임 세션 업데이트
+          updateGameSession(data.session);
+          
+          // 게임 종료 처리
+          setTimeout(() => {
+            // 블랙잭 결과로 게임 종료
+            const results = [{
+              result: "blackjack",
+              payout: data.payout
+            }];
+            handleGameEnd(data.session, results);
+          }, 1500);
+        });
+
         // 히트 결과
         socket.on("hit_result", (data) => {
           console.log("히트 결과 수신:", data);
