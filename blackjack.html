@@ -778,8 +778,29 @@
             addCardToHand("player", data.newCard);
             updatePlayerScore(data.handValue);
 
-            if (data.isBust) {
-              handleGameEnd(data.session);
+            // 더블다운 후 히트인 경우 특별 처리
+            if (data.wasDoubled) {
+              showNotification("더블다운으로 카드 1장 받았습니다! 자동 스탠드합니다.", "success");
+              
+              // 모든 액션 버튼 비활성화
+              disableGameActions();
+              
+              // 게임 상태에 따라 처리
+              if (data.isBust) {
+                handleGameEnd(data.session);
+              } else {
+                // 딜러 턴 시작 대기
+                setTimeout(() => {
+                  if (gameSession && gameSession.status === "dealer-turn") {
+                    showNotification("딜러 턴이 시작됩니다.", "info");
+                  }
+                }, 1500);
+              }
+            } else {
+              // 일반 히트
+              if (data.isBust) {
+                handleGameEnd(data.session);
+              }
             }
           }
         });
@@ -819,7 +840,7 @@
           hideDealerTurnIndicator();
         });
 
-        // 더블다운 결과
+                // 더블다운 결과
         socket.on("double_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
@@ -830,32 +851,18 @@
               currentBetElement.innerHTML = `₩${data.session.currentBet.toLocaleString()} <span class="text-orange-400 text-sm">(더블다운)</span>`;
             }
             
-            // 더블다운 시 받은 카드가 있으면 추가
-            if (data.newCard) {
-              setTimeout(() => {
-                addCardToHand("player", data.newCard);
-                updatePlayerScore(data.session.playerValue);
-                
-                // 카드 딜링 후 알림 표시
-                showNotification("더블다운! 베팅액 2배 + 카드 1장 추가", "info");
-              }, 300); // 카드 딜링 애니메이션을 위한 딜레이
-            } else {
-              showNotification("더블다운! 베팅액 2배", "info");
-            }
+            showNotification("더블다운! 베팅액 2배. 이제 카드 1장만 더 받을 수 있습니다.", "info");
             
-            // 모든 액션 버튼 비활성화 (더블다운 후에는 다른 액션 불가)
-            disableGameActions();
+            // 더블다운 버튼만 비활성화, 히트와 스탠드는 유지
+            document.getElementById("doubleBtn").disabled = true;
+            document.getElementById("splitBtn").disabled = true;
+            document.getElementById("insuranceBtn").disabled = true;
             
-            // 게임이 종료된 경우 처리 (딜러 턴으로 자동 진행)
-            if (data.session.status === "finished") {
-              setTimeout(() => {
-                handleGameEnd(data.session);
-              }, 800); // 카드 딜링 후 결과 처리
-            } else if (data.session.status === "dealer-turn") {
-              setTimeout(() => {
-                showNotification("딜러 턴이 시작됩니다.", "info");
-              }, 600);
-            }
+            // 0.5초 후 자동으로 히트 버튼 클릭
+            setTimeout(() => {
+              showNotification("자동으로 카드 1장을 받습니다...", "info");
+              socket.emit("hit"); // 자동 히트
+            }, 1000);
           } else {
             showNotification("더블다운에 실패했습니다.", "error");
           }
