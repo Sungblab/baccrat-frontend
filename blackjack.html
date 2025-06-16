@@ -1711,7 +1711,7 @@
         if (playerValue > 21) {
           return {
             result: "bust",
-            payout: -session.currentBet,
+            payout: 0, // 버스트 시 환급 없음
           };
         }
 
@@ -1721,12 +1721,12 @@
           if (playerValue === 21 && playerHand.length === 2) {
             return {
               result: "push",
-              payout: 0,
+              payout: session.currentBet, // 무승부 시 베팅액 반환
             };
           } else {
             return {
               result: "lose",
-              payout: -session.currentBet,
+              payout: 0, // 패배 시 환급 없음
             };
           }
         }
@@ -1735,7 +1735,7 @@
         if (playerValue === 21 && playerHand.length === 2) {
           return {
             result: "blackjack",
-            payout: Math.floor(session.currentBet * 1.5),
+            payout: session.currentBet + Math.floor(session.currentBet * 1.5), // 베팅액 + 1.5배 배당
           };
         }
 
@@ -1745,17 +1745,17 @@
           if (dealerValue < 21 || dealerHand.length < 2) {
             return {
               result: "win",
-              payout: session.currentBet,
+              payout: session.currentBet * 2, // 베팅액 + 승리금
             };
           } else if (dealerValue === 21) {
             return {
               result: "push",
-              payout: 0,
+              payout: session.currentBet, // 무승부 시 베팅액 반환
             };
           } else {
             return {
               result: "win",
-              payout: session.currentBet,
+              payout: session.currentBet * 2, // 베팅액 + 승리금
             };
           }
         }
@@ -1764,7 +1764,7 @@
         if (dealerValue > 21) {
           return {
             result: "win",
-            payout: session.currentBet,
+            payout: session.currentBet * 2, // 베팅액 + 승리금
           };
         }
 
@@ -1772,17 +1772,17 @@
         if (playerValue > dealerValue) {
           return {
             result: "win",
-            payout: session.currentBet,
+            payout: session.currentBet * 2, // 베팅액 + 승리금
           };
         } else if (playerValue < dealerValue) {
           return {
             result: "lose",
-            payout: -session.currentBet,
+            payout: 0, // 패배 시 환급 없음
           };
         } else {
           return {
             result: "push",
-            payout: 0,
+            payout: session.currentBet, // 무승부 시 베팅액 반환
           };
         }
       }
