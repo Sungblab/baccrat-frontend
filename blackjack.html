@@ -172,6 +172,19 @@
         background: linear-gradient(135deg, #f39c12, #e67e22);
       }
 
+      /* 잔액 부족 칩 스타일 */
+      .chip.insufficient-balance {
+        background: linear-gradient(135deg, #666, #555) !important;
+        opacity: 0.4 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+      }
+
+      .chip.insufficient-balance:hover {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
       #clearBetBtn {
         background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
       }
@@ -643,7 +656,7 @@
             updateBalance(data.user.balance);
             updateGameSession(data.session);
             showNotification("게임에 접속했습니다.", "success");
-            
+
             // 인증 성공 후 최신 잔액 가져오기
             setTimeout(() => {
               fetchUserInfo(true); // 즉시 실행
@@ -721,7 +734,9 @@
         // 송금 관련 실시간 알림 (바카라와 동일)
         socket.on("money_received", (data) => {
           showNotification(
-            `${data.fromUsername}님으로부터 ${data.amount.toLocaleString()}원을 받았습니다!`,
+            `${
+              data.fromUsername
+            }님으로부터 ${data.amount.toLocaleString()}원을 받았습니다!`,
             "success"
           );
           fetchUserInfo();
@@ -729,7 +744,9 @@
 
         socket.on("money_sent", (data) => {
           showNotification(
-            `${data.toUsername}님에게 ${data.amount.toLocaleString()}원을 송금했습니다. (수수료: ${data.fee.toLocaleString()}원)`,
+            `${
+              data.toUsername
+            }님에게 ${data.amount.toLocaleString()}원을 송금했습니다. (수수료: ${data.fee.toLocaleString()}원)`,
             "info"
           );
           fetchUserInfo();
@@ -761,7 +778,7 @@
                     socket.emit("check_blackjack");
                   }, 1500); // 카드 딜링 애니메이션 후
                 }
-                
+
                 // 딜러 업카드 체크는 제거 - 플레이어가 행동을 완료한 후에만 딜러 블랙잭 체크
               } else {
                 // Scene이 준비되지 않았으면 100ms 후 다시 시도
@@ -778,7 +795,10 @@
           if (data.success) {
             if (data.isBlackjack && data.needsDealerCheck) {
               // 플레이어 블랙잭 - 딜러 턴으로 진행
-              showNotification("플레이어 블랙잭! 딜러 카드를 확인합니다...", "success");
+              showNotification(
+                "플레이어 블랙잭! 딜러 카드를 확인합니다...",
+                "success"
+              );
               disableGameActions();
               // 딜러 턴은 서버에서 자동으로 시작됨
             } else if (!data.isBlackjack) {
@@ -795,18 +815,18 @@
             revealDealerHiddenCard(data.holeCard);
             updateDealerScore(21);
           }
-          
+
           // 딜러 블랙잭 알림과 시각적 효과
           showNotification("딜러 블랙잭! 🃏 딜러 승리!", "info");
-          
+
           // Phaser에서 특별한 딜러 블랙잭 효과 표시
           if (blackjackScene) {
             blackjackScene.showGameResult("딜러 블랙잭!", "#FFD700");
           }
-          
+
           // 게임 액션 즉시 비활성화
           disableGameActions();
-          
+
           // 게임 즉시 종료
           setTimeout(() => {
             handleGameEnd(data.session, data.results);
@@ -816,28 +836,30 @@
         // 플레이어 블랙잭 승리
         socket.on("player_blackjack_win", (data) => {
           console.log("플레이어 블랙잭 승리:", data);
-          
+
           // 플레이어 블랙잭 승리 알림
           showNotification("플레이어 블랙잭! 🃏 승리!", "success");
-          
+
           // Phaser에서 플레이어 블랙잭 효과 표시
           if (blackjackScene) {
             blackjackScene.showGameResult("플레이어 블랙잭!", "#FFD700");
           }
-          
+
           // 게임 액션 즉시 비활성화
           disableGameActions();
-          
+
           // 게임 세션 업데이트
           updateGameSession(data.session);
-          
+
           // 게임 종료 처리
           setTimeout(() => {
             // 블랙잭 결과로 게임 종료
-            const results = [{
-              result: "blackjack",
-              payout: data.payout
-            }];
+            const results = [
+              {
+                result: "blackjack",
+                payout: data.payout,
+              },
+            ];
             handleGameEnd(data.session, results);
           }, 1500);
         });
@@ -845,15 +867,19 @@
         // 히트 결과
         socket.on("hit_result", (data) => {
           console.log("히트 결과 수신:", data);
-          
+
           if (data.success) {
             // 새 카드가 있는 경우에만 카드 추가 (실제 히트 시에만)
             if (data.newCard && data.newCard.value && data.newCard.suit) {
               if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
                 // 스플릿 상태에서는 현재 핸드에 카드 추가
                 const currentHandIndex = data.currentHandIndex || 0;
-                blackjackScene.addSplitCard(currentHandIndex, data.newCard, 
-                  currentHandIndex === 0 ? blackjackScene.cameras.main.width / 2 - 120 : blackjackScene.cameras.main.width / 2 + 120,
+                blackjackScene.addSplitCard(
+                  currentHandIndex,
+                  data.newCard,
+                  currentHandIndex === 0
+                    ? blackjackScene.cameras.main.width / 2 - 120
+                    : blackjackScene.cameras.main.width / 2 + 120,
                   blackjackScene.cameras.main.height * 0.75,
                   blackjackScene.splitHandSprites[currentHandIndex].length
                 );
@@ -862,10 +888,10 @@
               }
             }
             // newCard가 없는 경우는 정상 (자동 스탠드 등)
-            
+
             // 게임 세션 업데이트
             updateGameSession(data.session);
-            
+
             // 스플릿 상태인 경우 핸드 데이터 동기화
             if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
               blackjackScene.syncSplitHandsWithSession(data.session);
@@ -875,15 +901,21 @@
 
             // 더블다운 후 히트인 경우 특별 처리
             if (data.wasDoubled) {
-              showNotification("더블다운으로 카드 1장 받았습니다! 딜러 턴 시작!", "success");
-              
+              showNotification(
+                "더블다운으로 카드 1장 받았습니다! 딜러 턴 시작!",
+                "success"
+              );
+
               // 모든 액션 버튼 비활성화
               disableGameActions();
-              
+
               // 게임 상태에 따라 처리
               if (data.isBust) {
                 if (data.isSplit && !data.allHandsComplete) {
-                  showNotification("버스트! 다음 핸드로 이동합니다.", "warning");
+                  showNotification(
+                    "버스트! 다음 핸드로 이동합니다.",
+                    "warning"
+                  );
                 } else {
                   handleGameEnd(data.session);
                 }
@@ -891,14 +923,14 @@
                 // 딜러 턴 강제 시작
                 setTimeout(() => {
                   updateGameSession(data.session);
-                  
+
                   // 딜러 턴 상태로 강제 변경 및 시작
                   if (gameSession) {
                     gameSession.status = "dealer-turn";
                     isDealerTurn = true;
                     updateGameStatus("딜러 턴");
                     showDealerTurnIndicator();
-                    
+
                     // 딜러 턴 프로세스 시작 요청
                     socket.emit("start_dealer_turn");
                   }
@@ -908,12 +940,18 @@
               // 일반 히트
               if (data.isBust) {
                 if (data.isSplit && !data.allHandsComplete) {
-                  showNotification("버스트! 다음 핸드로 이동합니다.", "warning");
+                  showNotification(
+                    "버스트! 다음 핸드로 이동합니다.",
+                    "warning"
+                  );
                 } else {
                   handleGameEnd(data.session);
                 }
               } else if (data.isSplit && data.nextHandIndex !== undefined) {
-                showNotification(`핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`, "info");
+                showNotification(
+                  `핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`,
+                  "info"
+                );
               } else {
                 showNotification("카드를 받았습니다.", "info");
               }
@@ -926,18 +964,24 @@
           if (data.success) {
             // 게임 세션 업데이트
             updateGameSession(data.session);
-            
+
             // 스플릿 상태인 경우 핸드 데이터 동기화
             if (data.isSplit && blackjackScene && blackjackScene.isSplit) {
               blackjackScene.syncSplitHandsWithSession(data.session);
             }
-            
+
             // 자동 스탠드인 경우 특별 메시지
             if (data.autoStand) {
-              showNotification("21! 자동 스탠드하여 딜러 턴을 진행합니다.", "success");
+              showNotification(
+                "21! 자동 스탠드하여 딜러 턴을 진행합니다.",
+                "success"
+              );
               disableGameActions();
             } else if (data.isSplit && data.nextHandIndex !== undefined) {
-              showNotification(`핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`, "info");
+              showNotification(
+                `핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`,
+                "info"
+              );
               // 다음 핸드로 이동하는 경우 액션 버튼 유지
             } else {
               disableGameActions();
@@ -956,22 +1000,30 @@
         socket.on("dealer_hidden_card_revealed", (data) => {
           revealDealerHiddenCard(data.hiddenCard);
           updateDealerScore(data.dealerValue);
-          
-          console.log("딜러 홀 카드 공개:", data.hiddenCard, "딜러 점수:", data.dealerValue);
+
+          console.log(
+            "딜러 홀 카드 공개:",
+            data.hiddenCard,
+            "딜러 점수:",
+            data.dealerValue
+          );
         });
 
         // 딜러 카드 추가
         socket.on("dealer_card_dealt", (data) => {
           console.log("딜러 카드 추가 수신:", data);
-          
+
           // 카드 데이터 검증
           if (data.newCard && data.newCard.value && data.newCard.suit) {
             addCardToHand("dealer", data.newCard);
           } else {
-            console.error("딜러 카드에서 유효하지 않은 카드 데이터:", data.newCard);
+            console.error(
+              "딜러 카드에서 유효하지 않은 카드 데이터:",
+              data.newCard
+            );
             console.error("전체 딜러 카드 데이터:", JSON.stringify(data));
           }
-          
+
           updateDealerScore(data.dealerValue);
         });
 
@@ -981,24 +1033,27 @@
           hideDealerTurnIndicator();
         });
 
-                // 더블다운 결과
+        // 더블다운 결과
         socket.on("double_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            
+
             // 베팅 표시 업데이트 (2배된 베팅액 강조)
             const currentBetElement = document.getElementById("currentBet");
             if (currentBetElement) {
               currentBetElement.innerHTML = `₩${data.session.currentBet.toLocaleString()} <span class="text-orange-400 text-sm">(더블다운)</span>`;
             }
-            
-            showNotification("더블다운! 베팅액 2배. 이제 카드 1장만 더 받을 수 있습니다.", "info");
-            
+
+            showNotification(
+              "더블다운! 베팅액 2배. 이제 카드 1장만 더 받을 수 있습니다.",
+              "info"
+            );
+
             // 더블다운 버튼만 비활성화, 히트와 스탠드는 유지
             document.getElementById("doubleBtn").disabled = true;
             document.getElementById("splitBtn").disabled = true;
             document.getElementById("insuranceBtn").disabled = true;
-            
+
             // 0.5초 후 자동으로 히트 버튼 클릭
             setTimeout(() => {
               showNotification("자동으로 카드 1장을 받습니다...", "info");
@@ -1013,20 +1068,20 @@
         socket.on("split_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            
+
             // 베팅 표시 업데이트 (2배된 베팅액 표시)
             const currentBetElement = document.getElementById("currentBet");
             if (currentBetElement) {
               currentBetElement.innerHTML = `₩${data.session.currentBet.toLocaleString()} <span class="text-purple-400 text-sm">(스플릿)</span>`;
             }
-            
+
             showNotification("스플릿! 첫 번째 핸드부터 플레이합니다.", "info");
-            
+
             // Phaser에서 스플릿 시각화
             if (blackjackScene) {
               blackjackScene.handleSplit(data.session);
             }
-            
+
             // 스플릿 버튼 비활성화
             document.getElementById("splitBtn").disabled = true;
             document.getElementById("doubleBtn").disabled = true;
@@ -1039,15 +1094,18 @@
         // 스플릿 다음 핸드로 이동
         socket.on("split_next_hand", (data) => {
           updateGameSession(data.session);
-          
-          showNotification(`핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`, "info");
-          
+
+          showNotification(
+            `핸드 ${data.nextHandIndex + 1}번으로 이동합니다.`,
+            "info"
+          );
+
           // Phaser에서 스플릿 핸드 동기화 및 다음 핸드 강조
           if (blackjackScene && blackjackScene.isSplit) {
             blackjackScene.syncSplitHandsWithSession(data.session);
             blackjackScene.highlightCurrentHand(data.nextHandIndex);
           }
-          
+
           // 게임 액션 버튼들 다시 활성화
           enableGameActions();
         });
@@ -1056,11 +1114,14 @@
         socket.on("insurance_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            showNotification(`보험에 가입했습니다. (${data.insuranceAmount.toLocaleString()}원)`, "info");
-            
+            showNotification(
+              `보험에 가입했습니다. (${data.insuranceAmount.toLocaleString()}원)`,
+              "info"
+            );
+
             // 보험 버튼 비활성화
             document.getElementById("insuranceBtn").disabled = true;
-            
+
             // 잔액 업데이트
             fetchUserInfo(true);
           } else {
@@ -1072,27 +1133,32 @@
         socket.on("surrender_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            showNotification(`서렌더했습니다. ${data.surrenderAmount.toLocaleString()}원이 반환됩니다.`, "warning");
-            
+            showNotification(
+              `서렌더했습니다. ${data.surrenderAmount.toLocaleString()}원이 반환됩니다.`,
+              "warning"
+            );
+
             // 모든 액션 버튼 비활성화
             disableGameActions();
-            
+
             // 잔액 업데이트
             fetchUserInfo(true);
-            
+
             // 게임 상태 초기화
             isGameActive = false;
             isDealerTurn = false;
             updateGameStatus("서렌더");
-            
+
             // 게임 종료 처리
             setTimeout(() => {
-              handleGameEnd(data.session, [{
-                result: "surrender",
-                payout: data.surrenderAmount,
-                lossAmount: data.lossAmount
-              }]);
-              
+              handleGameEnd(data.session, [
+                {
+                  result: "surrender",
+                  payout: data.surrenderAmount,
+                  lossAmount: data.lossAmount,
+                },
+              ]);
+
               // 서렌더 후 게임 완전 초기화
               setTimeout(() => {
                 resetGameAfterSurrender();
@@ -1107,11 +1173,14 @@
         socket.on("game_finished", (data) => {
           // 보험 결과가 있으면 표시
           if (data.insuranceResult) {
-            const insuranceMsg = data.insuranceResult.won 
+            const insuranceMsg = data.insuranceResult.won
               ? `보험 승리! +${data.insuranceResult.payout.toLocaleString()}원`
               : `보험 패배! -${data.insuranceResult.amount.toLocaleString()}원`;
-            
-            showNotification(insuranceMsg, data.insuranceResult.won ? "success" : "error");
+
+            showNotification(
+              insuranceMsg,
+              data.insuranceResult.won ? "success" : "error"
+            );
           }
 
           handleGameEnd(data.session, data.results);
@@ -1128,7 +1197,7 @@
         socket.on("new_game_result", (data) => {
           if (data.success) {
             updateGameSession(data.session);
-            
+
             // 새 게임 시작 시 잔액 동기화 (바카라와 동일)
             fetchUserInfo(true);
           } else {
@@ -1142,15 +1211,15 @@
         // 에러 처리
         socket.on("error", (message) => {
           hideLoading();
-          
+
           // 불필요한 알림 메시지들 필터링
           const filteredMessages = [
             "현재 베팅이 진행 중이지 않습니다.",
             "현재 베팅이 진행중이지 않습니다.",
             "딜러 턴이 시작됩니다.",
-            "새 게임을 시작합니다. 베팅을 선택해주세요."
+            "새 게임을 시작합니다. 베팅을 선택해주세요.",
           ];
-          
+
           if (!filteredMessages.includes(message)) {
             showNotification(message, "error");
           }
@@ -1164,10 +1233,36 @@
           endGame();
         });
 
-        // 칩 선택 - 누적 방식
+        // 칩 선택 - 누적 방식 (잔액 체크 포함)
         document.querySelectorAll(".chip[data-amount]").forEach((chip) => {
           chip.addEventListener("click", (e) => {
+            // 잔액 부족으로 비활성화된 칩은 클릭 무시
+            if (chip.classList.contains("insufficient-balance")) {
+              const currentBalance = getCurrentBalance();
+              const chipAmount = parseInt(e.target.dataset.amount);
+              showNotification(
+                `잔액이 부족합니다. (필요: ${(
+                  currentBetAmount + chipAmount
+                ).toLocaleString()}원, 보유: ${currentBalance.toLocaleString()}원)`,
+                "warning"
+              );
+              return;
+            }
+
             const chipAmount = parseInt(e.target.dataset.amount);
+            const currentBalance = getCurrentBalance();
+
+            // 잔액 체크
+            if (currentBetAmount + chipAmount > currentBalance) {
+              showNotification(
+                `잔액이 부족합니다. (필요: ${(
+                  currentBetAmount + chipAmount
+                ).toLocaleString()}원, 보유: ${currentBalance.toLocaleString()}원)`,
+                "warning"
+              );
+              return;
+            }
+
             currentBetAmount += chipAmount;
             selectedChipAmount = chipAmount; // 마지막 선택된 칩 금액 저장
             updateChipSelection();
@@ -1179,6 +1274,7 @@
         document.getElementById("clearBetBtn").addEventListener("click", () => {
           currentBetAmount = 0;
           updateBetDisplay();
+          updateChipSelection(); // 칩 선택 상태도 초기화
         });
 
         // 베팅
@@ -1229,7 +1325,11 @@
         document
           .getElementById("surrenderBtn")
           .addEventListener("click", () => {
-            if (confirm("정말로 서렌더하시겠습니까? 베팅액의 절반만 돌려받습니다.")) {
+            if (
+              confirm(
+                "정말로 서렌더하시겠습니까? 베팅액의 절반만 돌려받습니다."
+              )
+            ) {
               socket.emit("surrender");
             }
           });
@@ -1245,10 +1345,11 @@
         });
       }
 
-      // 베팅 표시 업데이트
+      // 베팅 표시 업데이트 (잔액 체크 포함)
       function updateBetDisplay() {
         const serverBet = gameSession ? gameSession.currentBet : 0;
         const displayBet = serverBet > 0 ? serverBet : currentBetAmount;
+        const currentBalance = getCurrentBalance();
 
         // 베팅 표시 업데이트
         document.getElementById(
@@ -1266,19 +1367,60 @@
           return;
         }
 
+        // 잔액 부족 체크
+        const isInsufficientBalance = currentBetAmount > currentBalance;
+
         if (serverBet === 0 && currentBetAmount === 0) {
           betBtnText.textContent = "베팅";
           betBtn.disabled = true; // 베팅액이 없으면 비활성화
           startBtn.disabled = true;
         } else if (serverBet === 0 && currentBetAmount > 0) {
-          betBtnText.textContent = "베팅";
-          betBtn.disabled = false; // 누적 베팅액이 있으면 활성화
+          if (isInsufficientBalance) {
+            betBtnText.textContent = "잔액 부족";
+            betBtn.disabled = true; // 잔액 부족시 비활성화
+            betBtn.style.background = "#666"; // 회색으로 변경
+          } else {
+            betBtnText.textContent = "베팅";
+            betBtn.disabled = false; // 누적 베팅액이 있고 잔액 충분하면 활성화
+            betBtn.style.background = ""; // 원래 스타일로 복원
+          }
           startBtn.disabled = true;
         } else if (serverBet > 0) {
           betBtnText.textContent = "완료";
           betBtn.disabled = true;
+          betBtn.style.background = ""; // 원래 스타일로 복원
           startBtn.disabled = false; // 서버에 베팅이 있으면 딜 버튼 활성화
         }
+
+        // 칩 버튼들의 활성화 상태 업데이트
+        updateChipButtonStates(currentBalance);
+      }
+
+      // 현재 잔액 가져오기
+      function getCurrentBalance() {
+        const balanceElement = document.getElementById("balance");
+        if (!balanceElement) return 0;
+        const balanceText = balanceElement.textContent.replace(/[₩,]/g, "");
+        return parseInt(balanceText) || 0;
+      }
+
+      // 칩 버튼들의 상태 업데이트 (잔액에 따라)
+      function updateChipButtonStates(currentBalance) {
+        document.querySelectorAll(".chip[data-amount]").forEach((chip) => {
+          const chipAmount = parseInt(chip.dataset.amount);
+          const wouldExceedBalance =
+            currentBetAmount + chipAmount > currentBalance;
+
+          if (wouldExceedBalance) {
+            chip.style.opacity = "0.4";
+            chip.style.cursor = "not-allowed";
+            chip.classList.add("insufficient-balance");
+          } else {
+            chip.style.opacity = "1";
+            chip.style.cursor = "pointer";
+            chip.classList.remove("insufficient-balance");
+          }
+        });
       }
 
       // 연속 게임 버튼들 표시 (새게임 버튼만)
@@ -1423,7 +1565,7 @@
 
         // results가 있으면 사용, 없으면 게임 상황을 분석해서 결과 추정
         let gameResult = null;
-        
+
         if (results && results.length > 0) {
           gameResult = results[0];
         } else {
@@ -1562,7 +1704,7 @@
         if (playerValue > 21) {
           return {
             result: "bust",
-            payout: -session.currentBet
+            payout: -session.currentBet,
           };
         }
 
@@ -1572,12 +1714,12 @@
           if (playerValue === 21 && playerHand.length === 2) {
             return {
               result: "push",
-              payout: 0
+              payout: 0,
             };
           } else {
             return {
               result: "lose",
-              payout: -session.currentBet
+              payout: -session.currentBet,
             };
           }
         }
@@ -1586,7 +1728,7 @@
         if (playerValue === 21 && playerHand.length === 2) {
           return {
             result: "blackjack",
-            payout: Math.floor(session.currentBet * 1.5)
+            payout: Math.floor(session.currentBet * 1.5),
           };
         }
 
@@ -1596,17 +1738,17 @@
           if (dealerValue < 21 || dealerHand.length < 2) {
             return {
               result: "win",
-              payout: session.currentBet
+              payout: session.currentBet,
             };
           } else if (dealerValue === 21) {
             return {
               result: "push",
-              payout: 0
+              payout: 0,
             };
           } else {
             return {
               result: "win",
-              payout: session.currentBet
+              payout: session.currentBet,
             };
           }
         }
@@ -1615,7 +1757,7 @@
         if (dealerValue > 21) {
           return {
             result: "win",
-            payout: session.currentBet
+            payout: session.currentBet,
           };
         }
 
@@ -1623,17 +1765,17 @@
         if (playerValue > dealerValue) {
           return {
             result: "win",
-            payout: session.currentBet
+            payout: session.currentBet,
           };
         } else if (playerValue < dealerValue) {
           return {
             result: "lose",
-            payout: -session.currentBet
+            payout: -session.currentBet,
           };
         } else {
           return {
             result: "push",
-            payout: 0
+            payout: 0,
           };
         }
       }
@@ -1672,16 +1814,19 @@
           );
           if (res.ok) {
             const user = await res.json();
-            
+
             // 잔액 업데이트
-            const balance = typeof user.balance === "number" && !isNaN(user.balance) ? user.balance : 0;
+            const balance =
+              typeof user.balance === "number" && !isNaN(user.balance)
+                ? user.balance
+                : 0;
             updateBalance(balance);
-            
+
             // 게임 세션이 있으면 세션 잔액도 업데이트
             if (gameSession) {
               gameSession.balance = balance;
             }
-            
+
             console.log("블랙잭 잔액 업데이트 완료:", balance);
           } else {
             console.error("사용자 정보를 가져오는데 실패했습니다.");
@@ -1713,32 +1858,36 @@
         const balanceElement = document.getElementById("balance");
         if (!balanceElement) return;
 
-        const currentBalance = parseInt(balanceElement.textContent.replace(/[₩,]/g, '')) || 0;
+        const currentBalance =
+          parseInt(balanceElement.textContent.replace(/[₩,]/g, "")) || 0;
         const newBalance = parseInt(balance) || 0;
-        
+
         // 잔액 변화 감지 및 시각적 효과
         if (currentBalance !== newBalance) {
           // 잔액 증가/감소에 따른 색상 효과
           if (newBalance > currentBalance) {
-            balanceElement.style.color = '#10b981'; // 녹색 (증가)
-            balanceElement.style.transform = 'scale(1.1)';
+            balanceElement.style.color = "#10b981"; // 녹색 (증가)
+            balanceElement.style.transform = "scale(1.1)";
           } else if (newBalance < currentBalance) {
-            balanceElement.style.color = '#ef4444'; // 빨간색 (감소)
-            balanceElement.style.transform = 'scale(1.1)';
+            balanceElement.style.color = "#ef4444"; // 빨간색 (감소)
+            balanceElement.style.transform = "scale(1.1)";
           }
-          
+
           // 잔액 업데이트
           balanceElement.textContent = `₩${newBalance.toLocaleString()}`;
-          
+
           // 원래 스타일로 복원
           setTimeout(() => {
-            balanceElement.style.color = '#fbbf24'; // 원래 노란색
-            balanceElement.style.transform = 'scale(1)';
+            balanceElement.style.color = "#fbbf24"; // 원래 노란색
+            balanceElement.style.transform = "scale(1)";
           }, 800);
         } else {
           // 변화가 없어도 업데이트 (초기 로드 등)
           balanceElement.textContent = `₩${newBalance.toLocaleString()}`;
         }
+
+        // 잔액이 업데이트될 때마다 베팅 상태 재확인
+        updateBetDisplay();
       }
 
       // 게임 상태 텍스트 반환
@@ -1967,10 +2116,12 @@
         const surrenderBtn = document.getElementById("surrenderBtn");
         if (surrenderBtn) {
           // 처음 2장만 받은 상태이고, 스플릿 상태가 아니며, 딜러가 블랙잭이 아닐 때만 표시
-          const canSurrender = session.playerHand && session.playerHand.length === 2 && 
-                              !session.isSplit && 
-                              session.status === "playing";
-          
+          const canSurrender =
+            session.playerHand &&
+            session.playerHand.length === 2 &&
+            !session.isSplit &&
+            session.status === "playing";
+
           if (canSurrender) {
             surrenderBtn.classList.remove("hidden");
             surrenderBtn.disabled = false;
@@ -2095,7 +2246,7 @@
         // 보험, 스플릿, 서렌더 버튼 숨기기
         if (splitBtn) splitBtn.classList.add("hidden");
         if (insuranceBtn) insuranceBtn.classList.add("hidden");
-        
+
         const surrenderBtn = document.getElementById("surrenderBtn");
         if (surrenderBtn) surrenderBtn.classList.add("hidden");
 
@@ -2114,27 +2265,27 @@
       // 서렌더 후 게임 초기화
       function resetGameAfterSurrender() {
         console.log("서렌더 후 게임 초기화 시작");
-        
+
         // 게임 상태 완전 초기화
         isGameActive = false;
         isDealerTurn = false;
         currentBetAmount = 0;
         gameSession = null;
-        
+
         // UI 완전 초기화
         clearGameTable();
         resetGameUI();
-        
+
         // 게임 액션 버튼들 숨기기
         const gameActionButtons = document.getElementById("gameActionButtons");
         if (gameActionButtons) {
           gameActionButtons.classList.add("hidden");
         }
-        
+
         // 기본 베팅 버튼들 숨기기 (서렌더 후에는 바로 베팅 불가)
         const placeBetBtn = document.getElementById("placeBetBtn");
         const startGameBtn = document.getElementById("startGameBtn");
-        
+
         if (placeBetBtn) {
           placeBetBtn.classList.add("hidden");
           placeBetBtn.disabled = true;
@@ -2143,17 +2294,20 @@
           startGameBtn.classList.add("hidden");
           startGameBtn.disabled = true;
         }
-        
+
         // 연속 게임 버튼들 표시 (새게임, 종료만 가능)
         showContinuousGameButtons();
-        
+
         // 베팅 표시 초기화
         updateBetDisplay();
         updateGameStatus("서렌더 완료");
-        
+
         // 알림 표시
-        showNotification("서렌더되었습니다. 새게임 버튼을 눌러 다시 시작하세요.", "warning");
-        
+        showNotification(
+          "서렌더되었습니다. 새게임 버튼을 눌러 다시 시작하세요.",
+          "warning"
+        );
+
         console.log("서렌더 후 게임 초기화 완료");
       }
 
@@ -2401,7 +2555,7 @@
               if (!isHidden) {
                 this.flipCard(cardSprite, cardKey);
               }
-              
+
               // 점수 업데이트
               this.updateScores();
             },
@@ -2448,14 +2602,14 @@
           );
           if (hiddenCardInfo && card) {
             const cardKey = `${card.value}${card.suit}`;
-            
+
             // 카드 뒤집기 애니메이션 적용
             this.flipCard(hiddenCardInfo.sprite, cardKey);
-            
+
             hiddenCardInfo.card = card;
             hiddenCardInfo.isHidden = false;
             this.handsData[handType].unshift(card.value); // 첫 번째 카드로 추가
-            
+
             // 애니메이션 완료 후 점수 업데이트
             this.time.delayedCall(300, () => {
               this.updateScores();
@@ -2523,18 +2677,18 @@
         // 모든 카드와 텍스트 초기화
         clearAllCardsAndText() {
           console.log("모든 카드와 텍스트 초기화 시작");
-          
+
           this.clearCards("player");
           this.clearCards("dealer");
-          
+
           // 스플릿 관련 완전 초기화
           if (this.isSplit) {
             console.log("스플릿 상태 초기화");
-            
+
             if (this.splitHandSprites) {
               this.splitHandSprites.forEach((handSprites, handIndex) => {
                 if (handSprites) {
-                  handSprites.forEach(cardInfo => {
+                  handSprites.forEach((cardInfo) => {
                     if (cardInfo && cardInfo.sprite) {
                       cardInfo.sprite.destroy();
                     }
@@ -2542,23 +2696,23 @@
                 }
               });
             }
-            
+
             if (this.splitHandScoreTexts) {
-              this.splitHandScoreTexts.forEach(scoreText => {
+              this.splitHandScoreTexts.forEach((scoreText) => {
                 if (scoreText) {
                   scoreText.destroy();
                 }
               });
             }
           }
-          
+
           // 스플릿 관련 변수들 완전 초기화
           this.isSplit = false;
           this.splitHands = [];
           this.splitHandSprites = [];
           this.splitHandScoreTexts = [];
           this.currentHandIndex = 0;
-          
+
           // 점수 텍스트 초기화
           if (this.dealerScoreText) {
             this.dealerScoreText.setText("0").setColor("#ffd700");
@@ -2569,7 +2723,7 @@
           if (this.gameResultText) {
             this.gameResultText.setVisible(false);
           }
-          
+
           console.log("모든 카드와 텍스트 초기화 완료");
         }
 
@@ -2612,37 +2766,45 @@
           const playerY = height * 0.75;
 
           // 각 핸드의 점수 텍스트 생성
-          this.splitHandScoreTexts[0] = this.add.text(leftHandX, playerY + 80, "0", {
-            fontSize: `${this.scoreFontSize}px`,
-            color: "#ffd700",
-            fontFamily: "Arial",
-            fontStyle: "bold",
-          }).setOrigin(0.5);
+          this.splitHandScoreTexts[0] = this.add
+            .text(leftHandX, playerY + 80, "0", {
+              fontSize: `${this.scoreFontSize}px`,
+              color: "#ffd700",
+              fontFamily: "Arial",
+              fontStyle: "bold",
+            })
+            .setOrigin(0.5);
 
-          this.splitHandScoreTexts[1] = this.add.text(rightHandX, playerY + 80, "0", {
-            fontSize: `${this.scoreFontSize}px`,
-            color: "#ffd700",
-            fontFamily: "Arial",
-            fontStyle: "bold",
-          }).setOrigin(0.5);
+          this.splitHandScoreTexts[1] = this.add
+            .text(rightHandX, playerY + 80, "0", {
+              fontSize: `${this.scoreFontSize}px`,
+              color: "#ffd700",
+              fontFamily: "Arial",
+              fontStyle: "bold",
+            })
+            .setOrigin(0.5);
 
           // 핸드 라벨 생성
-          this.add.text(leftHandX, playerY - 70, "핸드 1", {
-            fontSize: `${this.baseFontSize}px`,
-            color: "#ffffff",
-            fontFamily: "Arial",
-          }).setOrigin(0.5);
+          this.add
+            .text(leftHandX, playerY - 70, "핸드 1", {
+              fontSize: `${this.baseFontSize}px`,
+              color: "#ffffff",
+              fontFamily: "Arial",
+            })
+            .setOrigin(0.5);
 
-          this.add.text(rightHandX, playerY - 70, "핸드 2", {
-            fontSize: `${this.baseFontSize}px`,
-            color: "#ffffff", 
-            fontFamily: "Arial",
-          }).setOrigin(0.5);
+          this.add
+            .text(rightHandX, playerY - 70, "핸드 2", {
+              fontSize: `${this.baseFontSize}px`,
+              color: "#ffffff",
+              fontFamily: "Arial",
+            })
+            .setOrigin(0.5);
 
           // 각 핸드의 카드들 렌더링
           session.splitHands.forEach((hand, handIndex) => {
             const handX = handIndex === 0 ? leftHandX : rightHandX;
-            
+
             hand.forEach((card, cardIndex) => {
               if (card && card.value && card.suit) {
                 setTimeout(() => {
@@ -2658,8 +2820,10 @@
 
         // 스플릿 카드 추가
         addSplitCard(handIndex, card, baseX, baseY, cardIndex) {
-          const cardKey = `${card.value === "0" ? "10" : card.value}${card.suit}`;
-          
+          const cardKey = `${card.value === "0" ? "10" : card.value}${
+            card.suit
+          }`;
+
           if (!this.textures.exists(cardKey)) {
             console.error(`카드 텍스처가 없습니다: ${cardKey}`);
             return;
@@ -2700,7 +2864,7 @@
           if (!session.isSplit || !session.splitHands) return;
 
           console.log("스플릿 핸드 동기화:", session.splitHands);
-          
+
           // 서버 데이터로 스플릿 핸드 업데이트
           this.splitHands = [...session.splitHands];
           this.currentHandIndex = session.currentHandIndex || 0;
@@ -2718,21 +2882,30 @@
 
         // 스플릿 핸드 점수 업데이트
         updateSplitHandScore(handIndex) {
-          if (!this.splitHands || !this.splitHands[handIndex] || !this.splitHandScoreTexts[handIndex]) {
-            console.log(`스플릿 핸드 점수 업데이트 실패 - handIndex: ${handIndex}, splitHands:`, this.splitHands, 'scoreTexts:', this.splitHandScoreTexts);
+          if (
+            !this.splitHands ||
+            !this.splitHands[handIndex] ||
+            !this.splitHandScoreTexts[handIndex]
+          ) {
+            console.log(
+              `스플릿 핸드 점수 업데이트 실패 - handIndex: ${handIndex}, splitHands:`,
+              this.splitHands,
+              "scoreTexts:",
+              this.splitHandScoreTexts
+            );
             return;
           }
 
           const hand = this.splitHands[handIndex];
           console.log(`핸드 ${handIndex} 점수 계산:`, hand);
-          
+
           // 카드 값들 추출 (유효한 카드만)
           const handValues = hand
-            .filter(card => card && card.value && card.value !== 'hidden')
-            .map(card => card.value);
-          
+            .filter((card) => card && card.value && card.value !== "hidden")
+            .map((card) => card.value);
+
           console.log(`핸드 ${handIndex} 카드 값들:`, handValues);
-          
+
           const score = this.calculateHandValue(handValues);
           console.log(`핸드 ${handIndex} 최종 점수:`, score);
 
@@ -2755,7 +2928,7 @@
           // 모든 핸드 불투명하게
           if (this.splitHandSprites) {
             this.splitHandSprites.forEach((handSprites, index) => {
-              handSprites.forEach(cardInfo => {
+              handSprites.forEach((cardInfo) => {
                 if (cardInfo.sprite) {
                   cardInfo.sprite.setAlpha(index === handIndex ? 1.0 : 0.6);
                 }
@@ -2788,10 +2961,11 @@
 
             this.splitHandSprites.forEach((handSprites, handIndex) => {
               const baseX = handIndex === 0 ? leftHandX : rightHandX;
-              
+
               handSprites.forEach((cardInfo, cardIndex) => {
                 if (cardInfo && cardInfo.sprite) {
-                  const cardX = baseX + (cardIndex - 1) * (this.cardSpacing * 0.8);
+                  const cardX =
+                    baseX + (cardIndex - 1) * (this.cardSpacing * 0.8);
                   cardInfo.sprite.setScale(this.cardScale * 0.9);
                   cardInfo.sprite.setPosition(cardX, playerY);
                 }
@@ -2912,7 +3086,10 @@
               }, index * 300);
             } else {
               console.error(`유효하지 않은 플레이어 카드 ${index}:`, card);
-              console.error("전체 플레이어 핸드:", JSON.stringify(gameSession.playerHand));
+              console.error(
+                "전체 플레이어 핸드:",
+                JSON.stringify(gameSession.playerHand)
+              );
             }
           });
         } else {
@@ -2953,7 +3130,7 @@
       // 카드 추가 (Phaser 버전)
       function addCardToHand(handType, card) {
         console.log("addCardToHand 호출됨:", handType, card);
-        
+
         if (!card) {
           console.error("카드가 전달되지 않았습니다:", handType, card);
           console.error("현재 gameSession:", gameSession);
