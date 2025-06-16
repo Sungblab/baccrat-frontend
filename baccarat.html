@@ -2226,13 +2226,22 @@
           }
 
           try {
-            // 간단한 API 호출로 토큰 유효성 검사
+            // fetch에 timeout 추가
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+
             const res = await fetch(
               "https://port-0-baccrat-backend-m5l6sc488b056240.sel4.cloudtype.app/api/auth/user-info",
               {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { 
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                signal: controller.signal
               }
             );
+
+            clearTimeout(timeoutId);
 
             if (res.status === 401 || res.status === 403) {
               console.log(
@@ -2243,10 +2252,23 @@
               return false;
             }
 
+            if (!res.ok) {
+              console.warn("토큰 검증 응답 상태:", res.status);
+              // 서버 오류의 경우 계속 진행
+              return true;
+            }
+
             return true;
           } catch (err) {
             console.error("토큰 검증 중 오류:", err);
-            // 네트워크 오류는 토큰 문제가 아닐 수 있으므로 계속 진행
+            
+            // AbortError (타임아웃)이나 네트워크 오류는 토큰 문제가 아닐 수 있으므로 계속 진행
+            if (err.name === 'AbortError') {
+              console.warn("토큰 검증 타임아웃 - 계속 진행");
+              return true;
+            }
+            
+            // 네트워크 오류의 경우에도 계속 진행
             return true;
           }
         }
@@ -2292,11 +2314,27 @@
               const remainingTime = new Date(data.bettingEndTime) - new Date();
               if (remainingTime > 0) {
                 startTimer(new Date(data.bettingEndTime));
+                showNotification(`베팅 시간이 ${Math.ceil(remainingTime/1000)}초 남았습니다.`, 'info', 2000);
               }
             }
             
             // 베팅 버튼들 활성화
             enableBettingUI();
+          } else {
+            // 베팅 중이 아니라면 베팅 UI 비활성화
+            disableBettingUI();
+          }
+          
+          // 현재 베팅 정보 복원
+          if (data.currentBets && Object.keys(data.currentBets).length > 0) {
+            currentBets = data.currentBets;
+            updateBettingDisplay();
+            showNotification('기존 베팅이 복원되었습니다.', 'success', 2000);
+          }
+          
+          // 베팅 통계 업데이트
+          if (data.bettingStats) {
+            updateBettingStats(data.bettingStats);
           }
           
           // 사용자 잔액 업데이트
@@ -2307,6 +2345,11 @@
           // 자동 게임 상태 표시
           if (data.autoGameActive) {
             showNotification('자동 게임이 진행 중입니다.', 'info', 2000);
+          }
+          
+          // 예약 종료 상태 표시
+          if (data.scheduledStop && data.scheduledStop.isScheduled) {
+            showScheduledStopIndicator(data.scheduledStop);
           }
         });
 
@@ -2424,6 +2467,24 @@
           balanceElements.forEach(element => {
             element.textContent = balance.toLocaleString();
           });
+          
+          // 잔액 표시 UI 업데이트
+          const coinBalanceEl = document.getElementById("coinBalance");
+          if (coinBalanceEl) {
+            coinBalanceEl.textContent = `잔액: ${balance.toLocaleString()}원`;
+          }
+        }
+        
+        // 베팅 통계 업데이트 함수
+        function updateBettingStats(stats) {
+          // 각 선택지별 통계 업데이트
+          for (const [choice, data] of Object.entries(stats)) {
+            const countEl = document.getElementById(`${choice}Count`);
+            const totalEl = document.getElementById(`${choice}Total`);
+            
+            if (countEl) countEl.textContent = data.count || 0;
+            if (totalEl) totalEl.textContent = (data.total || 0).toLocaleString();
+          }
         }
 
         // 실제 페이지 나가기만 처리 (새로고침/탭 전환은 무시)
@@ -2450,10 +2511,44 @@
             // 페이지가 숨겨짐 - 게임은 계속 진행
             isPageVisible = false;
             console.log('페이지 숨김 (게임은 계속 진행)');
+            
+            // Phaser 게임 일시정지 (메모리 절약)
+            if (miniGame && miniGame.scene && miniGame.scene.scenes.length > 0) {
+              try {
+                miniGame.scene.scenes.forEach(scene => {
+                  if (scene && scene.sys && !scene.sys.isDestroyed && scene.scene.isPaused) {
+                    scene.scene.pause();
+                  }
+                });
+              } catch (error) {
+                console.warn('[MiniGame] Error pausing scenes:', error);
+              }
+            }
           } else if (!document.hidden && !isPageVisible) {
             // 페이지가 다시 보임 - 게임 상태 재동기화
             isPageVisible = true;
             console.log('페이지 표시 - 게임 상태 재동기화');
+            
+            // Phaser 게임 재개
+            if (miniGame && miniGame.scene && miniGame.scene.scenes.length > 0) {
+              try {
+                miniGame.scene.scenes.forEach(scene => {
+                  if (scene && scene.sys && !scene.sys.isDestroyed && scene.scene.isPaused()) {
+                    scene.scene.resume();
+                  }
+                });
+                
+                // Phaser 씬 상태 검증 및 복구
+                setTimeout(() => {
+                  if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive()) {
+                    // 씬이 활성화되어 있으면 안전성 확인
+                    console.log('[MiniGame] Scene resumed successfully');
+                  }
+                }, 100);
+              } catch (error) {
+                console.warn('[MiniGame] Error resuming scenes:', error);
+              }
+            }
             
             // 게임 재접속 시도
             if (socket && socket.connected && !hasJoinedGame) {
@@ -5010,17 +5105,22 @@
             clearInterval(window.bettingTimerInterval);
           }
 
+          // 베팅 상태 활성화
+          bettingActive = true;
+
           window.bettingTimerInterval = setInterval(() => {
             const now = new Date();
             const distance = endTime - now;
             if (distance < 0) {
               clearInterval(window.bettingTimerInterval);
+              bettingActive = false;
               timerElement.innerText =
                 "베팅 시간이 종료되었습니다. 결과를 기다려주세요.";
               timerElement.className = "text-red-500 font-bold";
               selectedChoice = null;
               // selectedChipAmount = 0; // 베팅 금액은 유지
               updateCurrentBet();
+              disableBettingUI();
               return;
             }
             const seconds = Math.floor((distance / 1000) % 60);
@@ -5084,8 +5184,14 @@
             .catch((err) => {});
 
           // 미니게임에도 결과 표시
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            baccaratSceneMini.setGameResult(result, playerScore, bankerScore);
+          try {
+            if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+              if (typeof baccaratSceneMini.setGameResult === 'function') {
+                baccaratSceneMini.setGameResult(result, playerScore, bankerScore);
+              }
+            }
+          } catch (error) {
+            console.warn("[MiniGame] Error setting game result:", error);
           }
 
           const timerEl = document.getElementById("timer");
@@ -5137,8 +5243,14 @@
             updateMyBetAmounts({}); // 내 베팅액 표시 초기화 (총 베팅 금액도 함께 초기화됨)
 
             // 미니게임 클리어
-            if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-              baccaratSceneMini.clearAllCardsAndText();
+            try {
+              if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+                if (typeof baccaratSceneMini.clearAllCardsAndText === 'function') {
+                  baccaratSceneMini.clearAllCardsAndText();
+                }
+              }
+            } catch (error) {
+              console.warn("[MiniGame] Error clearing cards and text:", error);
             }
 
             updateBettingStatsDisplay({
@@ -5179,8 +5291,6 @@
         socket.on("balance_updated", (data) => {
           // 데이터 유효성 검사
           if (!data || typeof data.newBalance === 'undefined' || data.newBalance === null) {
-            console.error('Invalid balance_updated data:', data);
-            showNotification("잔액 업데이트 중 오류가 발생했습니다.");
             return;
           }
 
@@ -6373,14 +6483,24 @@
             try {
               if (
                 cardSpritesRef[cardIndex] &&
-                cardSpritesRef[cardIndex].scene
+                cardSpritesRef[cardIndex].scene &&
+                !cardSpritesRef[cardIndex].scene.sys.isDestroyed &&
+                cardSpritesRef[cardIndex].texture
               ) {
                 // 기존 스프라이트가 있고, 파괴되지 않았다면
                 cardSprite = cardSpritesRef[cardIndex];
-                cardSprite.setTexture(cardKey);
-                cardSprite.setAlpha(0).setScale(this.cardScale * 0.8);
-                cardSprite.setPosition(baseStartX, cardY - 100);
-              } else {
+                if (cardSprite.setTexture && typeof cardSprite.setTexture === 'function') {
+                  cardSprite.setTexture(cardKey);
+                  cardSprite.setAlpha(0).setScale(this.cardScale * 0.8);
+                  cardSprite.setPosition(baseStartX, cardY - 100);
+                } else {
+                  // 스프라이트가 손상된 경우 새로 생성
+                  cardSprite = null;
+                }
+              }
+              
+              if (!cardSprite) {
+                // 새 스프라이트 생성
                 cardSprite = this.add.image(
                   baseStartX, // 임시 위치
                   cardY - 100, // 시작 위치를 위쪽으로
@@ -6414,15 +6534,22 @@
                     duration: 150,
                     ease: "Power2",
                     onComplete: () => {
-                      // 카드 텍스처를 앞면으로 변경
-                      cardSprite.setTexture(cardKey);
-                      // X축 스케일 복원
-                      this.tweens.add({
-                        targets: cardSprite,
-                        scaleX: this.cardScale,
-                        duration: 150,
-                        ease: "Power2",
-                      });
+                      // 카드 스프라이트가 여전히 유효한지 확인
+                      if (cardSprite && cardSprite.scene && !cardSprite.scene.sys.isDestroyed) {
+                        try {
+                          // 카드 텍스처를 앞면으로 변경
+                          cardSprite.setTexture(cardKey);
+                          // X축 스케일 복원
+                          this.tweens.add({
+                            targets: cardSprite,
+                            scaleX: this.cardScale,
+                            duration: 150,
+                            ease: "Power2",
+                          });
+                        } catch (error) {
+                          console.error(`[MiniGame] Error setting texture for card ${cardKey}:`, error);
+                        }
+                      }
                     },
                   });
                 },
@@ -6465,7 +6592,10 @@
               if (
                 handDataRef[i] !== null &&
                 cardSpritesRef[i] &&
-                cardSpritesRef[i].scene
+                cardSpritesRef[i].scene &&
+                !cardSpritesRef[i].scene.sys.isDestroyed &&
+                cardSpritesRef[i].texture &&
+                typeof cardSpritesRef[i].setPosition === 'function'
               ) {
                 existingCards.push({ index: i, sprite: cardSpritesRef[i] });
               }
@@ -6512,7 +6642,14 @@
 
             cardSpritesToClear.forEach((sprite) => {
               if (sprite && typeof sprite.destroy === "function") {
-                sprite.destroy();
+                try {
+                  // 스프라이트가 이미 파괴되지 않았는지 확인
+                  if (sprite.scene && !sprite.scene.sys.isDestroyed) {
+                    sprite.destroy();
+                  }
+                } catch (error) {
+                  console.warn('[MiniGame] Error destroying sprite:', error);
+                }
               }
             });
             cardSpritesToClear.length = 0;
@@ -6715,14 +6852,22 @@
 
         // 창 크기 변경 시 게임 리사이즈 및 반응형 설정 재적용
         window.addEventListener("resize", () => {
-          if (miniGame) {
+          if (miniGame && miniGame.scene) {
             const container = document.getElementById("miniGameContainer");
             if (container) {
-              // 반응형 설정 재적용
-              if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-                baccaratSceneMini.setupResponsiveSettings();
-                // 기존 카드들을 새로운 설정으로 다시 배치
-                baccaratSceneMini.repositionCards();
+              try {
+                // 반응형 설정 재적용
+                if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+                  if (typeof baccaratSceneMini.setupResponsiveSettings === 'function') {
+                    baccaratSceneMini.setupResponsiveSettings();
+                  }
+                  // 기존 카드들을 새로운 설정으로 다시 배치
+                  if (typeof baccaratSceneMini.repositionCards === 'function') {
+                    baccaratSceneMini.repositionCards();
+                  }
+                }
+              } catch (error) {
+                console.warn('[MiniGame] Error during resize handling:', error);
               }
             }
           }
@@ -6735,47 +6880,67 @@
 
         // 기존 카드 표시 이벤트 (game.html 호환)
         socket.on("display_card_on_user_html", (data) => {
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
-            if (isNewHand && cardIndex === 0) {
-              baccaratSceneMini.clearCards(
-                target === "player" ? "player" : "banker"
-              ); // 해당 타겟의 카드만 클리어
+          try {
+            if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+              const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
+              if (isNewHand && cardIndex === 0) {
+                if (typeof baccaratSceneMini.clearCards === 'function') {
+                  baccaratSceneMini.clearCards(
+                    target === "player" ? "player" : "banker"
+                  ); // 해당 타겟의 카드만 클리어
+                }
+              }
+              if (typeof baccaratSceneMini.displayCard === 'function') {
+                baccaratSceneMini.displayCard(
+                  target,
+                  cardValue,
+                  cardSuit,
+                  cardIndex,
+                  isNewHand
+                );
+              }
             }
-            baccaratSceneMini.displayCard(
-              target,
-              cardValue,
-              cardSuit,
-              cardIndex,
-              isNewHand
-            );
-          } else {
-            // console.warn("[user.html] BaccaratSceneMini not active or not available when receiving card data.");
+          } catch (error) {
+            console.warn("[MiniGame] Error in display_card_on_user_html:", error);
           }
         });
 
         // 새로운 카드 표시 이벤트 (admin 시스템 호환)
         socket.on("card_dealt_to_user_ui", (data) => {
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
-            if (isNewHand && cardIndex === 0) {
-              baccaratSceneMini.clearCards(
-                target === "player" ? "player" : "banker"
-              ); // 해당 타겟의 카드만 클리어
+          try {
+            if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+              const { target, cardValue, cardSuit, cardIndex, isNewHand } = data;
+              if (isNewHand && cardIndex === 0) {
+                if (typeof baccaratSceneMini.clearCards === 'function') {
+                  baccaratSceneMini.clearCards(
+                    target === "player" ? "player" : "banker"
+                  ); // 해당 타겟의 카드만 클리어
+                }
+              }
+              if (typeof baccaratSceneMini.displayCard === 'function') {
+                baccaratSceneMini.displayCard(
+                  target,
+                  cardValue,
+                  cardSuit,
+                  cardIndex,
+                  isNewHand
+                );
+              }
             }
-            baccaratSceneMini.displayCard(
-              target,
-              cardValue,
-              cardSuit,
-              cardIndex,
-              isNewHand
-            );
+          } catch (error) {
+            console.warn("[MiniGame] Error in card_dealt_to_user_ui:", error);
           }
         });
 
         socket.on("clear_cards_display_on_user_html", () => {
-          if (baccaratSceneMini && baccaratSceneMini.sys.isActive()) {
-            baccaratSceneMini.clearAllCardsAndText();
+          try {
+            if (baccaratSceneMini && baccaratSceneMini.sys && baccaratSceneMini.sys.isActive() && !baccaratSceneMini.sys.isDestroyed) {
+              if (typeof baccaratSceneMini.clearAllCardsAndText === 'function') {
+                baccaratSceneMini.clearAllCardsAndText();
+              }
+            }
+          } catch (error) {
+            console.warn("[MiniGame] Error in clear_cards_display_on_user_html:", error);
           }
         });
       }); // DOMContentLoaded event listener 닫기
