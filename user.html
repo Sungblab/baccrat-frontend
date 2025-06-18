@@ -3567,34 +3567,48 @@
             }
           });
           
-          // showNotification(message); // "베팅이 완료되었습니다." 알림 제거됨
+          // 서버에서 새 잔액을 보내준 경우 즉시 업데이트
           if (data.newBalance !== undefined) {
-            // 서버에서 새 잔액을 보내준 경우 즉시 업데이트
             const coinBalanceEl = document.getElementById("coinBalance");
             if (coinBalanceEl) {
               coinBalanceEl.textContent = `잔액: ${data.newBalance.toLocaleString()}원`;
             }
+            // 모달의 잔액 표시도 업데이트
+            const modalCoinBalance = document.getElementById("modalCoinBalance");
+            const modalCoinBalance2 = document.getElementById("modalCoinBalance2");
+            if (modalCoinBalance) {
+              modalCoinBalance.textContent = `${data.newBalance.toLocaleString()}원`;
+            }
+            if (modalCoinBalance2) {
+              modalCoinBalance2.textContent = `${data.newBalance.toLocaleString()}원`;
+            }
           } else {
-            // 기존 방식으로 전체 정보 다시 가져오기
-            fetchUserInfo(); // 잔액 업데이트
+            // 기존 방식으로 전체 정보 다시 가져오기 (fallback)
+            fetchUserInfo();
           }
         });
 
         socket.on("bet_cancelled_success", (data) => {
-          // showNotification(data.message); // "베팅(선택: X, 금액: Y)이 취소되었습니다." 알림 제거
+          // 서버에서 새 잔액을 보내준 경우 즉시 업데이트
           if (data.newBalance !== undefined) {
-            // 서버에서 새 잔액을 보내준 경우 즉시 업데이트
             const coinBalanceEl = document.getElementById("coinBalance");
             if (coinBalanceEl) {
-              coinBalanceEl.textContent = `보유금액: ${data.newBalance.toLocaleString()}원`;
+              coinBalanceEl.textContent = `잔액: ${data.newBalance.toLocaleString()}원`;
+            }
+            // 모달의 잔액 표시도 업데이트
+            const modalCoinBalance = document.getElementById("modalCoinBalance");
+            const modalCoinBalance2 = document.getElementById("modalCoinBalance2");
+            if (modalCoinBalance) {
+              modalCoinBalance.textContent = `${data.newBalance.toLocaleString()}원`;
+            }
+            if (modalCoinBalance2) {
+              modalCoinBalance2.textContent = `${data.newBalance.toLocaleString()}원`;
             }
           } else {
-            fetchUserInfo(); // 잔액 즉시 업데이트
+            // 기존 방식으로 전체 정보 다시 가져오기 (fallback)
+            fetchUserInfo();
           }
-          // 현재 선택된 칩/종류는 그대로 두거나, 취소된 베팅에 맞춰 UI를 조정할 수도 있습니다.
-          // 예를 들어, 취소된 베팅과 동일한 선택이었다면 UI 선택도 해제하는 것을 고려할 수 있습니다.
-          // 지금은 단순히 잔액만 업데이트합니다.
-          updateCurrentBet(); // 현재 선택 상태(selectedChipAmount, selectedChoice)에 따른 UI 업데이트
+          updateCurrentBet(); // 현재 선택 상태에 따른 UI 업데이트
         });
 
         socket.on("error", (message) => {
@@ -3830,8 +3844,19 @@
 
 
 
+        // 중복 업데이트 방지를 위한 디바운싱
+        let updateCoinsTimeout = null;
         socket.on("update_coins", () => {
-          fetchUserInfo();
+          // 기존 timeout이 있으면 클리어
+          if (updateCoinsTimeout) {
+            clearTimeout(updateCoinsTimeout);
+          }
+          
+          // 500ms 후에 사용자 정보 업데이트 (중복 요청 방지)
+          updateCoinsTimeout = setTimeout(() => {
+            fetchUserInfo();
+            updateCoinsTimeout = null;
+          }, 500);
         });
 
         // 관리자 잔액 조정 시 실시간 업데이트
