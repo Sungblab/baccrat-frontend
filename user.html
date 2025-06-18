@@ -3818,9 +3818,9 @@
             showNotification(data.message, 'info');
           }
           
-          // 현재 선택 상태 초기화
+          // 금액 선택은 유지하고 선택 상태만 초기화
           selectedChoice = null;
-          selectedChipAmount = 0;
+          // selectedChipAmount는 초기화하지 않음 (유지)
           updateCurrentBet();
         });
 
