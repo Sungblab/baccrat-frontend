@@ -306,8 +306,8 @@
         
         /* 금액 선택 버튼 영역 패딩 줄이기 */
         .amount-button {
-          padding: 6px 8px !important; /* 기본 패딩에서 줄임 */
-          font-size: 0.75rem !important;
+          padding: 4px 6px !important; /* 기본 패딩에서 더 줄임 (6px 8px -> 4px 6px) */
+          font-size: 0.7rem !important; /* 폰트 크기도 살짝 줄임 */
         }
         
         /* 하단 버튼 그리드 패딩 줄이기 */
@@ -680,9 +680,9 @@
       
       /* 모바일 우선 - 카지노 칩 스타일 금액 선택 버튼 */
       .amount-button {
-        width: 45px; /* 모바일 기본 크기 - 칩 스타일 */
-        height: 45px;
-        font-size: 0.55rem; /* 모바일 기본 폰트 */
+        width: 40px; /* 모바일 기본 크기 - 칩 스타일 (45px -> 40px) */
+        height: 40px;
+        font-size: 0.5rem; /* 모바일 기본 폰트 (0.55rem -> 0.5rem) */
         border-radius: 50%; /* 완전한 원형 칩 */
         display: flex;
         align-items: center;
@@ -690,8 +690,8 @@
         text-align: center;
         transition: all 0.3s ease;
         touch-action: manipulation; /* 터치 최적화 */
-        min-width: 45px; /* 최소 터치 타겟 크기 보장 */
-        min-height: 45px;
+        min-width: 40px; /* 최소 터치 타겟 크기 보장 (45px -> 40px) */
+        min-height: 40px;
         
         /* 카지노 칩 그라데이션 효과 */
         background: linear-gradient(145deg, #b8860b 0%, #daa520 30%, #ffd700 50%, #daa520 70%, #b8860b 100%);
@@ -1007,8 +1007,8 @@
       </div>
 
    <!-- 금액 선택 영역 - 동그라미 스타일 -->
-   <div class="mb-2 lg:mb-1 lg:flex-shrink-0">
-    <div class="flex justify-center items-center gap-2 sm:gap-3 md:gap-4 px-4"> <!-- 반응형 간격 -->
+   <div class="mb-1 lg:mb-1 lg:flex-shrink-0">
+    <div class="flex justify-center items-center gap-1 sm:gap-2 md:gap-3 px-2 sm:px-4"> <!-- 모바일 간격 최소화 -->
       <button data-amount="1000" class="amount-button coin-button relative">
         1K
       </button>
@@ -1041,7 +1041,7 @@
       </button>
       <button
         id="undoBetButton"
-        class="golden-btn px-4 py-2 rounded-lg text-sm font-semibold ml-2"
+        class="golden-btn px-2 py-2 rounded-lg text-sm font-semibold ml-1"
       >
         <i class="fas fa-undo"></i>
       </button>
