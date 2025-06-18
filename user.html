@@ -4773,11 +4773,8 @@
             winMessage.classList.remove("hidden");
             messageDiv.classList.add("win-message-enter");
             
-            // 승리 사운드 재생
-            const playerWinSound = document.getElementById("playerWinSound");
-            if (playerWinSound) {
-              playerWinSound.play().catch(() => {});
-            }
+            // 승리 사운드는 game_result에서 이미 재생되므로 여기서는 재생하지 않음
+            // (페어 베팅과 메인 베팅이 겹칠 때 중복 사운드 방지)
             
             // 1.2초 후 사라지는 애니메이션 시작
             setTimeout(() => {
