@@ -3620,15 +3620,6 @@
 
             // 베팅 처리 시작
             isBettingInProgress = true;
-            
-            // 버튼에 로딩 효과 추가
-            button.classList.add("opacity-50", "pointer-events-none");
-            const originalContent = button.innerHTML;
-            const loadingSpinner = document.createElement("div");
-            loadingSpinner.className = "absolute inset-0 flex items-center justify-center";
-            loadingSpinner.innerHTML = '<i class="fas fa-spinner fa-spin text-white text-2xl"></i>';
-            button.style.position = "relative";
-            button.appendChild(loadingSpinner);
 
             // 베팅 정보 저장
             lastBetChoice = selectedChoice;
@@ -3639,15 +3630,6 @@
               amount: selectedChipAmount,
               token: token,
             });
-            
-            // 응답 대기 (타임아웃 설정)
-            setTimeout(() => {
-              if (isBettingInProgress) {
-                isBettingInProgress = false;
-                button.classList.remove("opacity-50", "pointer-events-none");
-                button.removeChild(loadingSpinner);
-              }
-            }, 3000); // 3초 타임아웃
             
             updateCurrentBet();
           });
@@ -3763,15 +3745,6 @@
           // 베팅 처리 완료
           isBettingInProgress = false;
           
-          // 모든 베팅 버튼의 로딩 상태 해제
-          document.querySelectorAll(".choice-button").forEach((btn) => {
-            btn.classList.remove("opacity-50", "pointer-events-none");
-            const spinner = btn.querySelector(".fa-spinner");
-            if (spinner && spinner.parentElement) {
-              btn.removeChild(spinner.parentElement);
-            }
-          });
-          
           // 임시 잔액 표시 (실제 잔액 - 베팅 예정 금액)
           if (data.newBalance !== undefined) {
             const coinBalanceEl = document.getElementById("coinBalance");
@@ -3827,15 +3800,6 @@
         socket.on("error", (message) => {
           // 베팅 처리 완료 (에러 발생)
           isBettingInProgress = false;
-          
-          // 모든 베팅 버튼의 로딩 상태 해제
-          document.querySelectorAll(".choice-button").forEach((btn) => {
-            btn.classList.remove("opacity-50", "pointer-events-none");
-            const spinner = btn.querySelector(".fa-spinner");
-            if (spinner && spinner.parentElement) {
-              btn.removeChild(spinner.parentElement);
-            }
-          });
           
           showNotification(message);
         });
@@ -3916,15 +3880,6 @@
         socket.on("betting_closed", () => {
           bettingActive = false;
           isBettingInProgress = false; // 베팅 진행 중 플래그 초기화
-          
-          // 모든 베팅 버튼의 로딩 상태 해제 (혹시 남아있을 경우)
-          document.querySelectorAll(".choice-button").forEach((btn) => {
-            btn.classList.remove("opacity-50", "pointer-events-none");
-            const spinner = btn.querySelector(".fa-spinner");
-            if (spinner && spinner.parentElement) {
-              btn.removeChild(spinner.parentElement);
-            }
-          });
           
           const timerEl = document.getElementById("timer");
           if (timerEl)
