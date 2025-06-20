@@ -1009,8 +1009,8 @@
    <!-- 금액 선택 영역 - 동그라미 스타일 -->
    <div class="mb-1 lg:mb-1 lg:flex-shrink-0">
     <div class="flex justify-center items-center gap-1 sm:gap-2 md:gap-3 px-2 sm:px-4"> <!-- 모바일 간격 최소화 -->
-      <button data-amount="1000" class="amount-button coin-button relative">
-        1K
+      <button data-amount="2000" class="amount-button coin-button relative">
+        2K
       </button>
       <button data-amount="5000" class="amount-button coin-button relative">
         5K
@@ -1235,8 +1235,8 @@
                       <input
                         type="number"
                         id="depositAmount"
-                        min="10000"
-                        placeholder="최소 10,000원"
+                                                  min="20000"
+                        placeholder="최소 20,000원"
                         class="w-full bg-black bg-opacity-50 border border-[#b8860b] rounded-lg px-4 py-3 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500"
                       />
                   </div>
@@ -1272,10 +1272,10 @@
                 >
               </div>
               <div>
-                * 수수료: <span class="text-yellow-500">환전액의 10%</span>
+                                  * 수수료: <span class="text-yellow-500">0%</span>
               </div>
-              <div>* 최소 환전 가능 금액: 5,000원</div>
-              <div>* 롤링 조건: <span class="text-yellow-500">충전액의 150%</span> 베팅 완료 시 전액 환전 가능</div>
+                                <div>* 최소 환전 가능 금액: 30,000원</div>
+                              <div>* 롤링 조건: <span class="text-yellow-500">충전액의 100%</span> 베팅 완료 시 전액 환전 가능</div>
               <div>* 새로 충전할 때마다 롤링이 초기화됩니다</div>
               <div>* 현재 환전 가능 금액: <span class="text-green-400 font-bold" id="maxExchangeAmount">0원</span></div>
               <div
@@ -2638,7 +2638,7 @@
             return;
           }
           
-          const fee = Math.floor(amount * 0.05); // 5% 수수료
+          const fee = 0; // 0% 수수료
           const total = amount + fee;
           
           document.getElementById("sendAmountPreview").textContent = `${amount.toLocaleString()}원`;
@@ -2936,8 +2936,8 @@
           submitDepositButton.addEventListener("click", async () => {
             const amount = parseInt(depositAmountInput?.value || "0");
             
-            if (!amount || isNaN(amount) || amount < 10000) {
-              showNotification("충전 금액은 최소 10,000원 이상이어야 합니다.");
+                          if (!amount || isNaN(amount) || amount < 20000) {
+              showNotification("충전 금액은 최소 20,000원 이상이어야 합니다.");
               return;
             }
             
@@ -3078,7 +3078,7 @@
               }
               // 환전 모달 롤링 정보 업데이트
               if (rollingInfoDiv) {
-                const rollingRequirement = rollingDeposit * 1.5;
+                const rollingRequirement = rollingDeposit * 1.0;
                 const progress = rollingRequirement > 0 ? (rollingWagered / rollingRequirement) * 100 : 100;
 
                 const progressTextEl = document.getElementById('rollingProgressText');
@@ -4632,9 +4632,9 @@
             const submitButton = document.getElementById("submitExchange");
             const amountValue = parseInt(exchangeAmountInput?.value || "0");
 
-            if (!amountValue || isNaN(amountValue) || amountValue < 5000) {
+                          if (!amountValue || isNaN(amountValue) || amountValue < 30000) {
               showNotification(
-                "올바른 환전 금액을 입력해주세요. (최소 5,000원)"
+                "올바른 환전 금액을 입력해주세요. (최소 30,000원)"
               );
               return;
             }
