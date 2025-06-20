@@ -1007,21 +1007,6 @@
           </div>
 
           <div class="space-y-4">
-            <!-- 패턴 선택 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">
-                게임 패턴 선택
-              </label>
-              <select
-                id="patternSelect"
-                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="1">패턴 1 - 내추럴 승부 (9 vs 8)</option>
-                <option value="2">패턴 2 - 역전승/뱅커룰 승부</option>
-                <option value="3">패턴 3 - 간발의 차이/압도적 승부</option>
-              </select>
-            </div>
-
             <!-- 결과 선택 버튼들 -->
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -1069,7 +1054,7 @@
             <div
               class="text-xs text-gray-500 text-center bg-gray-800 rounded-lg p-3"
             >
-              ⚠️ 이 기능은 베팅이 활성화된 상태에서만 사용할 수 있습니다
+              ⚠️ 베팅 시간에만 사용 가능 (패턴은 자동으로 랜덤 선택)
             </div>
           </div>
         </div>
@@ -4096,9 +4081,8 @@
           return;
         }
 
-        // 선택된 패턴 가져오기
-        const patternSelect = document.getElementById("patternSelect");
-        const selectedPattern = parseInt(patternSelect.value);
+        // 랜덤 패턴 생성 (1~6)
+        const randomPattern = Math.floor(Math.random() * 6) + 1;
 
         const resultText =
           result === "player"
@@ -4107,34 +4091,12 @@
             ? "뱅커"
             : "타이";
 
-        // 패턴 설명
-        const patternDescriptions = {
-          player: {
-            1: "내추럴 9 vs 8",
-            2: "세 번째 카드로 역전승",
-            3: "간발의 차이로 승리",
-          },
-          banker: {
-            1: "내추럴 9 vs 8",
-            2: "뱅커 룰에 의한 승리",
-            3: "압도적 승리",
-          },
-          tie: {
-            1: "내추럴 8 타이",
-            2: "세 번째 카드 후 타이",
-            3: "낮은 점수 타이",
-          },
-        };
-
-        const patternDesc =
-          patternDescriptions[result][selectedPattern] || "기본 패턴";
-
         if (
           confirm(
-            `다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?\n패턴: ${patternDesc}`
+            `다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`
           )
         ) {
-          socket.emit("admin_fix_result", { result, pattern: selectedPattern });
+          socket.emit("admin_fix_result", { result, pattern: randomPattern });
 
           // 버튼 시각적 피드백
           const buttons = ["fixPlayerBtn", "fixBankerBtn", "fixTieBtn"];
@@ -4162,7 +4124,7 @@
           const statusDisplay = document.getElementById("fixStatusDisplay");
           const statusText = document.getElementById("fixStatusText");
           statusDisplay.classList.remove("hidden");
-          statusText.textContent = `설정됨: ${resultText} 승리 (${patternDesc})`;
+          statusText.textContent = `설정됨: ${resultText} 승리`;
           statusDisplay.classList.remove("text-gray-400");
           statusDisplay.classList.add("text-green-400");
 
