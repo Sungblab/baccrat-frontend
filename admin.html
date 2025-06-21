@@ -675,6 +675,7 @@
                   <tr>
                     <th class="py-3 px-4 text-left">신청시간</th>
                     <th class="py-3 px-4 text-left">사용자</th>
+                    <th class="py-3 px-4 text-left">계좌정보</th>
                     <th class="py-3 px-4 text-right">신청금액</th>
                     <th class="py-3 px-4 text-right">실수령액</th>
                     <th class="py-3 px-4 text-center">상태</th>
@@ -3410,6 +3411,19 @@
                 request.createdAt
               ).toLocaleString()}</td>
               <td class="py-3 px-4">${request.username}</td>
+              <td class="py-3 px-4">
+                <div class="text-sm">
+                  <div class="text-yellow-400 font-semibold">${
+                    request.bankName || "정보없음"
+                  }</div>
+                  <div class="text-gray-300">${
+                    request.accountNumber || "정보없음"
+                  }</div>
+                  <div class="text-gray-400 text-xs">${
+                    request.accountHolder || "정보없음"
+                  }</div>
+                </div>
+              </td>
               <td class="py-3 px-4 text-right text-yellow-400">${request.requestAmount.toLocaleString()} 원</td>
               <td class="py-3 px-4 text-right">
                 <div class="text-green-400">실수령: ${request.actualAmount.toLocaleString()} 원</div>
@@ -4092,9 +4106,7 @@
             : "타이";
 
         if (
-          confirm(
-            `다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`
-          )
+          confirm(`다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`)
         ) {
           socket.emit("admin_fix_result", { result, pattern: randomPattern });
 
