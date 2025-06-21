@@ -1241,7 +1241,6 @@
                       />
                   </div>
                   <div class="flex flex-wrap justify-center gap-2">
-                      <button data-deposit-amount="10000" class="deposit-amount-btn golden-btn px-4 py-1.5 rounded-md text-xs">1만원</button>
                       <button data-deposit-amount="50000" class="deposit-amount-btn golden-btn px-4 py-1.5 rounded-md text-xs">5만원</button>
                       <button data-deposit-amount="100000" class="deposit-amount-btn golden-btn px-4 py-1.5 rounded-md text-xs">10만원</button>
                       <button data-deposit-amount="500000" class="deposit-amount-btn golden-btn px-4 py-1.5 rounded-md text-xs">50만원</button>
@@ -1479,10 +1478,7 @@
                     class="w-full bg-black bg-opacity-50 border border-[#b8860b] rounded-lg px-4 py-3 text-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
-                
-                <div class="text-sm text-gray-400">
-                  * 송금 수수료: <span class="text-yellow-500">5%</span>
-                </div>
+              
                 
                 <div id="sendPreview" class="hidden p-3 bg-black bg-opacity-50 rounded-lg border border-[#b8860b] space-y-1">
                   <div>송금액: <span id="sendAmountPreview" class="text-yellow-500">0원</span></div>
@@ -2570,6 +2566,11 @@
           const requestMoneySection = document.getElementById("requestMoneySection");
           const transferHistorySection = document.getElementById("transferHistorySection");
           
+          // selectedUserId 초기화 및 폼 숨기기
+          selectedUserId = null;
+          document.getElementById("sendMoneyForm")?.classList.add("hidden");
+          document.getElementById("requestMoneyForm")?.classList.add("hidden");
+          
           // 모든 버튼 초기화
           [sendMoneyBtn, requestMoneyBtn, transferHistoryBtn].forEach(btn => {
             if (btn) btn.className = "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors text-gray-400 hover:text-yellow-500";
@@ -2663,6 +2664,11 @@
           } else {
             document.getElementById("requestSelectedUserName").textContent = username;
             document.getElementById("requestMoneyForm").classList.remove("hidden");
+            
+            // 요청 버튼 상태 업데이트
+            const amount = parseInt(document.getElementById("requestAmount").value);
+            const confirmBtn = document.getElementById("confirmRequestButton");
+            confirmBtn.disabled = isNaN(amount) || amount < 1000 || !selectedUserId;
           }
         }
         
@@ -2775,7 +2781,7 @@
         document.getElementById("requestAmount")?.addEventListener("input", (e) => {
           const amount = parseInt(e.target.value);
           const confirmBtn = document.getElementById("confirmRequestButton");
-          confirmBtn.disabled = isNaN(amount) || amount < 1000;
+          confirmBtn.disabled = isNaN(amount) || amount < 1000 || !selectedUserId;
         });
         
         // 머니 요청
@@ -2808,11 +2814,14 @@
             
             const data = await response.json();
             if (response.ok) {
+              showNotification("머니 요청이 전송되었습니다.");
               // 요청 성공 시 폼 초기화
               document.getElementById("requestAmount").value = "";
               document.getElementById("requestMessage").value = "";
               document.getElementById("requestMoneyForm").classList.add("hidden");
               selectedUserId = null;
+              // 버튼 상태 초기화
+              confirmBtn.disabled = true;
             } else {
               showNotification(data.message || "요청 전송에 실패했습니다.");
             }
