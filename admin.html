@@ -135,6 +135,14 @@
         z-index: 10;
       }
 
+      /* 아이패드 전용 스타일 - 양옆 패딩 제거 */
+      @media (min-width: 768px) and (max-width: 1024px) {
+        .ipad-no-padding {
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+        }
+      }
+
       /* 최근 게임 결과 (Big Road) 스타일 추가 */
       #recentResults {
         display: flex;
@@ -213,7 +221,7 @@
     </style>
   </head>
   <body class="bg-gray-900 text-white">
-    <div class="w-[100%] md:w-[80%] mx-auto p-2 md:p-6">
+    <div class="w-[100%] mx-auto p-2 md:p-6 ipad-no-padding">
       <!-- 헤더 및 로그아웃 버튼 -->
       <header
         class="flex flex-col md:flex-row justify-between items-center mb-4 md:mb-6"
