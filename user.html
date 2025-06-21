@@ -2671,7 +2671,15 @@
             
             console.log("사용자 선택됨:", { selectedRequestUserId, username });
             
-            // 버튼 상태는 금액 입력 시에만 업데이트하므로 여기서는 처리하지 않음
+            // 사용자 선택 후 버튼 상태 업데이트
+            const requestAmount = document.getElementById("requestAmount").value;
+            const amount = requestAmount ? parseInt(requestAmount) : 0;
+            const confirmBtn = document.getElementById("confirmRequestButton");
+            
+            if (amount >= 1000) {
+              confirmBtn.textContent = "요청하기";
+              confirmBtn.disabled = false;
+            }
           }
         }
         
@@ -2783,20 +2791,37 @@
         
         // 요청 금액 입력 검증
         document.getElementById("requestAmount")?.addEventListener("input", (e) => {
+          console.log("요청 금액 입력 이벤트 발생!");
+          
           const inputValue = e.target.value ? e.target.value.trim() : "";
           const amount = inputValue ? parseInt(inputValue) : 0;
           const confirmBtn = document.getElementById("confirmRequestButton");
           
+          console.log("현재 상태:", {
+            inputValue,
+            amount,
+            selectedRequestUserId,
+            buttonElement: confirmBtn
+          });
+          
           // 금액만 체크하고, 사용자 선택은 버튼 클릭 시에 확인
           const shouldDisable = !inputValue || isNaN(amount) || amount < 1000;
-          console.log("요청 금액 검증:", { inputValue, amount, selectedRequestUserId, shouldDisable });
-          confirmBtn.disabled = shouldDisable;
+          console.log("버튼 상태 결정:", { shouldDisable });
           
-          // 사용자가 선택되지 않았을 때 안내 메시지 표시
-          if (!shouldDisable && !selectedRequestUserId) {
-            confirmBtn.textContent = "사용자를 먼저 선택하세요";
-          } else if (!shouldDisable) {
-            confirmBtn.textContent = "요청하기";
+          if (confirmBtn) {
+            confirmBtn.disabled = shouldDisable;
+            console.log("버튼 disabled 설정:", shouldDisable);
+            
+            // 사용자가 선택되지 않았을 때 안내 메시지 표시
+            if (!shouldDisable && !selectedRequestUserId) {
+              confirmBtn.textContent = "사용자를 먼저 선택하세요";
+              console.log("버튼 텍스트 변경: 사용자를 먼저 선택하세요");
+            } else if (!shouldDisable) {
+              confirmBtn.textContent = "요청하기";
+              console.log("버튼 텍스트 변경: 요청하기");
+            }
+          } else {
+            console.error("confirmRequestButton 요소를 찾을 수 없습니다!");
           }
         });
         

@@ -3710,6 +3710,7 @@
       });
 
       socket.on("auto_game_status", (data) => {
+        console.log("🤖 자동게임 상태 업데이트:", data);
         autoGameState.isActive = data.isActive;
         autoGameState.gameCount = data.gameCount;
         autoGameState.maxGames = data.maxGames;
