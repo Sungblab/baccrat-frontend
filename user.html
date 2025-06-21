@@ -2786,9 +2786,18 @@
           const inputValue = e.target.value ? e.target.value.trim() : "";
           const amount = inputValue ? parseInt(inputValue) : 0;
           const confirmBtn = document.getElementById("confirmRequestButton");
-          const shouldDisable = !inputValue || isNaN(amount) || amount < 1000 || !selectedRequestUserId;
+          
+          // 금액만 체크하고, 사용자 선택은 버튼 클릭 시에 확인
+          const shouldDisable = !inputValue || isNaN(amount) || amount < 1000;
           console.log("요청 금액 검증:", { inputValue, amount, selectedRequestUserId, shouldDisable });
           confirmBtn.disabled = shouldDisable;
+          
+          // 사용자가 선택되지 않았을 때 안내 메시지 표시
+          if (!shouldDisable && !selectedRequestUserId) {
+            confirmBtn.textContent = "사용자를 먼저 선택하세요";
+          } else if (!shouldDisable) {
+            confirmBtn.textContent = "요청하기";
+          }
         });
         
         // 머니 요청

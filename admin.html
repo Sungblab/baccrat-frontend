@@ -1919,8 +1919,11 @@
       document
         .getElementById("adminStartGame")
         .addEventListener("click", () => {
+          console.log("🎮 게임 시작 버튼 클릭됨");
+
           // 자동 게임 모드일 때는 수동 게임 시작 방지
           if (autoGameState.isActive) {
+            console.log("❌ 자동 게임 진행 중");
             showToast(
               "자동 게임 진행 중에는 수동 게임을 시작할 수 없습니다.",
               "error"
@@ -1928,9 +1931,17 @@
             return;
           }
 
+          // 버튼이 이미 비활성화되어 있으면 무시
+          const button = document.getElementById("adminStartGame");
+          if (button.disabled) {
+            console.log("❌ 버튼이 이미 비활성화됨");
+            return;
+          }
+
+          console.log("✅ 게임 시작 이벤트 전송");
           socket.emit("admin_start_game");
           showToast("게임을 시작합니다!");
-          document.getElementById("adminStartGame").disabled = true;
+          button.disabled = true;
         });
 
       document
@@ -2021,12 +2032,8 @@
           bettingEndSound.play().catch((err) => {});
         }
 
-        // 자동 게임 모드가 아닐 때만 수동으로 게임 시작 (1초 후)
-        if (!autoGameState.isActive) {
-          setTimeout(() => {
-            socket.emit("admin_start_game");
-          }, 1000);
-        }
+        // 조작 기능을 위해 자동 게임 시작 제거
+        // 관리자가 수동으로 "게임 시작" 버튼을 클릭해야 함
       });
 
       // 새로운 베팅이 들어올 때 실시간 업데이트
