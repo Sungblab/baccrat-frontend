@@ -4903,9 +4903,9 @@
               return;
             }
 
-            // 수수료 정책 (환전액의 10%)
-            const fee = Math.floor(amount * 0.1);
-            const actual = amount - fee;
+            // 수수료 정책 (환전액의 0%)
+            const fee = 0;
+            const actual = amount;
 
             requestAmountSpan.textContent = `${amount.toLocaleString()}원`;
             feeAmountSpan.textContent = `${fee.toLocaleString()}원`;
