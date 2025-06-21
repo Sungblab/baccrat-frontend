@@ -2555,6 +2555,8 @@
 
         // 뽀찌 관련 변수 및 함수들
         let selectedUserId = null;
+        let selectedSendUserId = null;  // 송금용 선택된 사용자
+        let selectedRequestUserId = null;  // 요청용 선택된 사용자
         let transferMode = 'send'; // 'send' or 'request'
         
         // 뽀찌 내부 탭 전환
@@ -2566,8 +2568,7 @@
           const requestMoneySection = document.getElementById("requestMoneySection");
           const transferHistorySection = document.getElementById("transferHistorySection");
           
-          // selectedUserId 초기화 및 폼 숨기기
-          selectedUserId = null;
+          // 폼 숨기기 (selectedUserId는 각 모드에서 개별 관리)
           document.getElementById("sendMoneyForm")?.classList.add("hidden");
           document.getElementById("requestMoneyForm")?.classList.add("hidden");
           
@@ -2657,18 +2658,20 @@
         
         // 사용자 선택
         function selectUser(userId, username, mode) {
-          selectedUserId = userId;
           if (mode === 'send') {
+            selectedSendUserId = userId;
+            selectedUserId = userId; // 호환성을 위해 유지
             document.getElementById("selectedUserName").textContent = username;
             document.getElementById("sendMoneyForm").classList.remove("hidden");
           } else {
+            selectedRequestUserId = userId;
+            selectedUserId = userId; // 호환성을 위해 유지
             document.getElementById("requestSelectedUserName").textContent = username;
             document.getElementById("requestMoneyForm").classList.remove("hidden");
             
-            // 요청 버튼 상태 업데이트
-            const amount = parseInt(document.getElementById("requestAmount").value);
-            const confirmBtn = document.getElementById("confirmRequestButton");
-            confirmBtn.disabled = isNaN(amount) || amount < 1000 || !selectedUserId;
+            console.log("사용자 선택됨:", { selectedRequestUserId, username });
+            
+            // 버튼 상태는 금액 입력 시에만 업데이트하므로 여기서는 처리하지 않음
           }
         }
         
@@ -2728,7 +2731,7 @@
         // 송금 요청
         document.getElementById("confirmSendButton")?.addEventListener("click", async () => {
           const amount = parseInt(document.getElementById("sendAmount").value);
-          if (!selectedUserId || !amount || amount < 1000) {
+          if (!selectedSendUserId || !amount || amount < 1000) {
             showNotification("올바른 송금 정보를 입력해주세요.");
             return;
           }
@@ -2745,7 +2748,7 @@
                 Authorization: `Bearer ${token}`
               },
               body: JSON.stringify({
-                toUserId: selectedUserId,
+                toUserId: selectedSendUserId,
                 amount: amount
               })
             });
@@ -2756,7 +2759,8 @@
               document.getElementById("sendAmount").value = "";
               document.getElementById("sendMoneyForm").classList.add("hidden");
               document.getElementById("sendPreview").classList.add("hidden");
-              selectedUserId = null;
+              selectedSendUserId = null;
+              selectedUserId = null; // 호환성을 위해 유지
               
               // 잔액 업데이트
               fetchUserInfo();
@@ -2779,17 +2783,21 @@
         
         // 요청 금액 입력 검증
         document.getElementById("requestAmount")?.addEventListener("input", (e) => {
-          const amount = parseInt(e.target.value);
+          const inputValue = e.target.value ? e.target.value.trim() : "";
+          const amount = inputValue ? parseInt(inputValue) : 0;
           const confirmBtn = document.getElementById("confirmRequestButton");
-          confirmBtn.disabled = isNaN(amount) || amount < 1000 || !selectedUserId;
+          const shouldDisable = !inputValue || isNaN(amount) || amount < 1000 || !selectedRequestUserId;
+          console.log("요청 금액 검증:", { inputValue, amount, selectedRequestUserId, shouldDisable });
+          confirmBtn.disabled = shouldDisable;
         });
         
         // 머니 요청
         document.getElementById("confirmRequestButton")?.addEventListener("click", async () => {
+          console.log("요청하기 버튼 클릭됨!");
           const amount = parseInt(document.getElementById("requestAmount").value);
           const message = document.getElementById("requestMessage").value;
           
-          if (!selectedUserId || !amount || amount < 1000) {
+          if (!selectedRequestUserId || !amount || amount < 1000) {
             showNotification("올바른 요청 정보를 입력해주세요.");
             return;
           }
@@ -2806,7 +2814,7 @@
                 Authorization: `Bearer ${token}`
               },
               body: JSON.stringify({
-                fromUserId: selectedUserId,
+                fromUserId: selectedRequestUserId,
                 amount: amount,
                 message: message
               })
@@ -2819,7 +2827,8 @@
               document.getElementById("requestAmount").value = "";
               document.getElementById("requestMessage").value = "";
               document.getElementById("requestMoneyForm").classList.add("hidden");
-              selectedUserId = null;
+              selectedRequestUserId = null;
+              selectedUserId = null; // 호환성을 위해 유지
               // 버튼 상태 초기화
               confirmBtn.disabled = true;
             } else {

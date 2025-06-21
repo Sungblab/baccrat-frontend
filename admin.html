@@ -3622,6 +3622,9 @@
 
       // 게임 결과 수신 이벤트 (카드 정보 포함)
       socket.on("game_result_with_cards", (gameData) => {
+        console.log("🎮 관리자: 게임 결과 받음:", gameData.result);
+        console.log("🃏 전체 게임 데이터:", gameData);
+
         // 카드 정보 표시
         displayCards("playerCards", gameData.playerHand);
         displayCards("bankerCards", gameData.bankerHand);
@@ -3734,6 +3737,8 @@
 
       // 페이지 로드 시 자동 게임 상태 확인
       socket.on("connect", () => {
+        // 소켓 인증 (토큰 전송)
+        socket.emit("authenticate", token);
         // 자동 게임 상태 요청
         socket.emit("get_auto_game_status");
       });
@@ -4084,19 +4089,24 @@
 
       // 승부 조작 함수
       function fixGameResult(result) {
+        console.log("🎯 조작 버튼 클릭됨:", result);
+
         if (!socket) {
+          console.log("❌ 소켓 연결 없음");
           showToast("소켓 연결이 없습니다.");
           return;
         }
 
         // 베팅이 진행 중일 때만 조작 가능
         if (!bettingActive) {
+          console.log("❌ 베팅 비활성화 상태");
           showToast("베팅 시간이 아닙니다.");
           return;
         }
 
         // 랜덤 패턴 생성 (1~6)
         const randomPattern = Math.floor(Math.random() * 6) + 1;
+        console.log("🎲 생성된 패턴:", randomPattern);
 
         const resultText =
           result === "player"
@@ -4105,9 +4115,15 @@
             ? "뱅커"
             : "타이";
 
+        console.log("📤 조작 데이터 전송 준비:", {
+          result,
+          pattern: randomPattern,
+        });
+
         if (
           confirm(`다음 게임 결과를 ${resultText} 승리로 조작하시겠습니까?`)
         ) {
+          console.log("✅ 사용자 확인 완료, 서버로 전송");
           socket.emit("admin_fix_result", { result, pattern: randomPattern });
 
           // 버튼 시각적 피드백
@@ -4149,17 +4165,20 @@
 
       // 승부 조작 관련 소켓 이벤트 리스너
       socket.on("result_fixed", (data) => {
+        console.log("🎉 서버로부터 조작 설정 확인:", data);
         showToast(data.message);
       });
 
       // 게임 시작 시 조작 버튼 초기화
       socket.on("betting_started", () => {
+        console.log("🟢 베팅 시작됨");
         bettingActive = true; // 베팅 활성화
         resetFixPanel();
       });
 
       // 베팅 종료 시 상태 업데이트
       socket.on("betting_closed", () => {
+        console.log("🔴 베팅 종료됨");
         bettingActive = false; // 베팅 비활성화
         resetFixPanel();
       });
